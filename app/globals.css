@@ -1,26 +1,95 @@
 @import "tailwindcss";
 
+/* ============================================
+   VibeCoding Design System
+   Inspirado en Discord + Fortnite
+   ============================================ */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Fondos */
+  --vibe-bg: #0a0a0f;
+  --vibe-card: #13131a;
+  --vibe-border: #2a2a3a;
+
+  /* Acentos */
+  --vibe-accent: #7c3aed;
+  --vibe-accent-secondary: #06b6d4;
+
+  /* Texto */
+  --vibe-text: #f1f5f9;
+  --vibe-text-muted: #94a3b8;
+
+  /* Houses */
+  --vibe-house-william-brown: #3b82f6;
+  --vibe-house-james-dodds: #eab308;
+  --vibe-house-james-fleming: #ef4444;
+  --vibe-house-john-monteith: #22c55e;
+
+  /* Utilidades (focus glow, gradientes) */
+  --vibe-glow: 0 0 20px rgba(124, 58, 237, 0.4);
+  --vibe-glow-strong: 0 0 28px rgba(124, 58, 237, 0.5);
+  --vibe-gradient-primary: linear-gradient(135deg, #7c3aed 0%, #06b6d4 100%);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-background: var(--vibe-bg);
+  --color-foreground: var(--vibe-text);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* Design system colors for Tailwind */
+  --color-vibe-bg: var(--vibe-bg);
+  --color-vibe-card: var(--vibe-card);
+  --color-vibe-border: var(--vibe-border);
+  --color-vibe-accent: var(--vibe-accent);
+  --color-vibe-accent-secondary: var(--vibe-accent-secondary);
+  --color-vibe-text: var(--vibe-text);
+  --color-vibe-text-muted: var(--vibe-text-muted);
+  --color-vibe-house-wb: var(--vibe-house-william-brown);
+  --color-vibe-house-jd: var(--vibe-house-james-dodds);
+  --color-vibe-house-jf: var(--vibe-house-james-fleming);
+  --color-vibe-house-jm: var(--vibe-house-john-monteith);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--vibe-bg);
+  color: var(--vibe-text);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Input focus glow (violet) */
+.vibe-input {
+  border: 1px solid var(--vibe-border);
+  background: var(--vibe-card);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  outline: none;
+}
+.vibe-input:focus {
+  outline: none;
+  border-color: var(--vibe-accent);
+  box-shadow: var(--vibe-glow);
+}
+
+/* Botón con gradiente violeta → cyan */
+.vibe-btn-gradient {
+  background: var(--vibe-gradient-primary);
+  background-size: 200% 200%;
+  transition: filter 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+}
+.vibe-btn-gradient:hover:not(:disabled) {
+  filter: brightness(1.1);
+  box-shadow: 0 0 24px rgba(124, 58, 237, 0.4), 0 0 40px rgba(6, 182, 212, 0.2);
+  transform: translateY(-1px);
+}
+.vibe-btn-gradient:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Card con borde sutil y sensación gaming */
+.vibe-card {
+  background: var(--vibe-card);
+  border: 1px solid var(--vibe-border);
+  border-radius: 1rem;
 }
