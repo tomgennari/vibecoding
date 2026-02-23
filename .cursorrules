@@ -1,5 +1,6 @@
 # Campus San Andrés — Vibe Coding San Andrés
-# Reglas de desarrollo para Cursor
+# PRD completo: docs/PRD.md
+# Repositorio: github.com/tomgennari/vibecoding
 
 ## Proyecto
 Plataforma de fundraising gamificado para St. Andrew's Scots School (SASS).
@@ -7,10 +8,11 @@ URL: sass.vibecoding.ar
 Stack: Next.js 16 + Tailwind CSS + Supabase + MercadoPago + Vercel
 
 ## Usuarios
-- Alumnos: pueden jugar, comprar juegos, subir juegos. NO pueden donar directamente.
-- Padres: pueden jugar, comprar juegos, donar directamente. Eligen House al registrarse.
+- Alumnos: juegan, compran juegos, suben juegos. NO donan directamente.
+- Padres: juegan, compran juegos, donan directamente. AMBOS eligen House al registrarse.
 - Ningún usuario tiene foto de perfil.
-- NO existe chat, comentarios ni mensajes. Solo emojis en el campus 3D (Fase 4).
+- NO existe chat, comentarios ni mensajes. Solo emojis en campus 3D (Fase 4).
+- Botón compartir WhatsApp para que alumnos pidan donaciones a sus padres.
 
 ## Houses
 - William Brown: #3b82f6 (azul)
@@ -19,31 +21,38 @@ Stack: Next.js 16 + Tailwind CSS + Supabase + MercadoPago + Vercel
 - John Monteith: #22c55e (verde)
 
 ## Diseño — Modo Claro (registro, login, páginas públicas)
-- Fondo: #ffffff
+- Fondo: #ffffff | Cards: #f8fafc
 - Color institucional SASS: #00478E (títulos, links)
 - Acento botones: #7c3aed
-- Texto: #0f172a
+- Texto: #0f172a | Texto secundario: #64748b
+- Borde inputs: #e2e8f0
 
-## Diseño — Modo Oscuro (plataforma, juegos)
-- Fondo: #0a0a0f
-- Cards: #13131a
-- Borde: #2a2a3a
-- Acento: #7c3aed
-- Acento secundario: #06b6d4
-- Texto: #f1f5f9
+## Diseño — Modo Oscuro (plataforma, juegos, campus 3D)
+- --vibe-bg: #0a0a0f | --vibe-card: #13131a | --vibe-border: #2a2a3a
+- --vibe-accent: #7c3aed | --vibe-accent-secondary: #06b6d4
+- --vibe-text: #f1f5f9 | --vibe-text-muted: #94a3b8
+- Gradiente principal: #7c3aed → #06b6d4
 
-## Reglas técnicas obligatorias
-- Nunca TypeScript, solo JavaScript (.js)
-- RLS habilitado en todas las tablas de Supabase
-- Variables de entorno siempre en .env.local, nunca en el código
-- Nunca dejar columnas o tablas sin usar en la DB
-- Archivos de código máximo 300 líneas
-- Convenciones: archivos kebab-case, componentes PascalCase, DB snake_case
-- Nomenclatura CSS: clases con prefijo .vibe-, variables con --vibe-
-- Commits en español, verbo en infinitivo
+## Tipografía
+- Fuente: Inter (Google Fonts), fallback Arial
+- H1: 48-72px, weight 900, uppercase
+- Labels formulario: 12-14px, weight 700, uppercase
+- Scores: weight 900, tabular-nums
+
+## Clases CSS reutilizables
+- .vibe-btn-gradient: botón violeta→cyan
+- .vibe-btn-secondary: borde violeta, fondo transparente
+- .vibe-input: input oscuro, glow violeta al foco
+- .vibe-card: fondo #13131a, borde sutil, radius 1rem
+- .vibe-badge-house: badge color según House
+- .vibe-progress: barra de progreso con gradiente
+- .vibe-scoreboard: tabla de líderes, top 3 con colores especiales
 
 ## Precios
 - Juego individual: $5.000 ARS
-- Paquete 10 juegos: $30.000 ARS
-- Paquete 50 juegos: $100.000 ARS (activar cuando haya 50+ juegos)
+- Pack 10 juegos: $30.000 ARS
+- Pack 50 juegos: $100.000 ARS (activar cuando haya 50+ juegos)
 - ALL ACCESS: $250.000 ARS (activar cuando haya 100+ juegos)
+
+## Reglas técnicas obligatorias
+- Solo JavaScript (.js)
