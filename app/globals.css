@@ -34,7 +34,7 @@
 @theme inline {
   --color-background: var(--vibe-bg);
   --color-foreground: var(--vibe-text);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-inter), var(--font-geist-sans), system-ui, Arial, sans-serif;
   --font-mono: var(--font-geist-mono);
 
   /* Design system colors for Tailwind */
