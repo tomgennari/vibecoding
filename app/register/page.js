@@ -141,11 +141,16 @@ export default function RegisterPage() {
           <header className="text-center mb-10">
             <h1
               className="text-4xl sm:text-5xl font-extrabold tracking-tight uppercase"
-              style={{ color: isDark ? '#f1f5f9' : '#00478E' }}
+              style={{
+                color: isDark ? '#f1f5f9' : '#00478E',
+                ...(isDark && { fontFamily: "'Burbank Big', sans-serif", fontWeight: 900 }),
+              }}
             >
-              Campus San Andrés
+              CAMPUS
+              <br />
+              SAN ANDRÉS
             </h1>
-            <p className="mt-3 text-[#7c3aed] text-lg font-semibold">Vibe Coding San Andrés</p>
+            <p className="mt-3 text-[#7c3aed] text-lg font-semibold font-sans">Vibe Coding San Andrés</p>
           </header>
 
           <form

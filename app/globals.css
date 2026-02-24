@@ -5,6 +5,22 @@
    Inspirado en Discord + Fortnite
    ============================================ */
 
+/* Burbank Big — títulos modo oscuro (estilo Fortnite) */
+@font-face {
+  font-family: 'Burbank Big';
+  src: url('/fonts/BurbankBigRegular-Bold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Burbank Big';
+  src: url('/fonts/BurbankBigRegular-Black.otf') format('opentype');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   /* Fondos */
   --vibe-bg: #0a0a0f;
