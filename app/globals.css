@@ -110,6 +110,20 @@ body {
   border-radius: 1rem;
 }
 
+/* Barra de progreso con gradiente */
+.vibe-progress {
+  height: 0.5rem;
+  border-radius: 9999px;
+  background: var(--vibe-border);
+  overflow: hidden;
+}
+.vibe-progress-fill {
+  height: 100%;
+  border-radius: 9999px;
+  background: var(--vibe-gradient-primary);
+  transition: width 0.3s ease;
+}
+
 /* Legal pages: light theme, PRD title color */
 .legal-content h1,
 .legal-content h2,

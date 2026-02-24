@@ -26,6 +26,7 @@ Stack: Next.js 16 + Tailwind CSS + Supabase + MercadoPago + Vercel
 - Acento botones: #7c3aed
 - Texto: #0f172a | Texto secundario: #64748b
 - Borde inputs: #e2e8f0
+- **Dashboard modo claro:** tipografía principal (títulos y texto) #00478E — mismo azul que "CAMPUS SAN ANDRÉS"
 
 ## Diseño — Modo Oscuro (plataforma, juegos, campus 3D)
 - --vibe-bg: #0a0a0f | --vibe-card: #13131a | --vibe-border: #2a2a3a
@@ -56,3 +57,4 @@ Stack: Next.js 16 + Tailwind CSS + Supabase + MercadoPago + Vercel
 
 ## Reglas técnicas obligatorias
 - Solo JavaScript (.js)
+- Mobile: en cards y grids usar `min-w-0`, `overflow-hidden` o `break-words` donde haya texto; evitar que el contenido se salga de las cajas en pantallas chicas.
