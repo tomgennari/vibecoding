@@ -280,6 +280,18 @@ export default function RegisterPage() {
               >
                 {loading ? 'Registrando...' : 'Registrarse'}
               </button>
+
+              <p className="text-center text-xs" style={{ color: isDark ? '#94a3b8' : '#64748b' }}>
+                Al registrarte aceptás nuestros{' '}
+                <Link href="/terminos" className={`font-medium underline ${isDark ? 'text-vibe-accent hover:text-vibe-accent-secondary' : 'text-[#00478E] hover:text-[#7c3aed]'}`}>
+                  Términos y Condiciones
+                </Link>
+                {' y '}
+                <Link href="/privacidad" className={`font-medium underline ${isDark ? 'text-vibe-accent hover:text-vibe-accent-secondary' : 'text-[#00478E] hover:text-[#7c3aed]'}`}>
+                  Política de Privacidad
+                </Link>
+                .
+              </p>
             </div>
           </form>
 

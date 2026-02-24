@@ -93,3 +93,27 @@ body {
   border: 1px solid var(--vibe-border);
   border-radius: 1rem;
 }
+
+/* Legal pages: light theme, PRD title color */
+.legal-content h1,
+.legal-content h2,
+.legal-content h3 {
+  color: #00478e;
+  font-weight: 700;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+}
+.legal-content h1 { font-size: 1.75rem; margin-top: 0; }
+.legal-content h2 { font-size: 1.35rem; }
+.legal-content h3 { font-size: 1.1rem; }
+.legal-content p { margin-bottom: 0.75em; color: #1e293b; }
+.legal-content a { color: #00478e; text-decoration: underline; }
+.legal-content a:hover { opacity: 0.85; }
+.legal-content ul, .legal-content ol { margin: 0.75em 0; padding-left: 1.5em; }
+.legal-content li { margin-bottom: 0.25em; }
+.legal-content strong { font-weight: 700; color: #1e293b; }
+.legal-content hr { border: none; border-top: 1px solid #e2e8f0; margin: 1.5em 0; }
+.legal-content table { width: 100%; border-collapse: collapse; margin: 1em 0; font-size: 0.9rem; }
+.legal-content th, .legal-content td { border: 1px solid #e2e8f0; padding: 0.5rem 0.75rem; text-align: left; }
+.legal-content th { background: #f8fafc; color: #00478e; font-weight: 600; }
+.legal-content blockquote { margin: 1em 0; padding-left: 1em; border-left: 4px solid #00478e; color: #64748b; }
