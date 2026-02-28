@@ -124,6 +124,15 @@ body {
   transition: width 0.3s ease;
 }
 
+/* Ocultar scrollbar manteniendo scroll (mobile) */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* Legal pages: light theme, PRD title color */
 .legal-content h1,
 .legal-content h2,

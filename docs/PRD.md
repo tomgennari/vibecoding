@@ -457,6 +457,19 @@ Tablas principales (todas con RLS habilitado):
 - [ ] Activación de paquetes de juegos
 - [ ] Sentry para logging de errores
 
+### Fase 2.5 — Generador de Juegos con IA (2-3 semanas)
+
+- [ ] Integración con API de Anthropic (Claude) dentro de la plataforma
+- [ ] Página `/crear-juego` con interfaz simplificada para padres y alumnos
+- [ ] El usuario describe el juego en lenguaje natural y Claude genera el HTML5 completo
+- [ ] Sistema de límite de tokens por usuario (columnas `tokens_used` y `tokens_limit` en profiles)
+- [ ] Límite sugerido: 3 intentos por usuario — costo estimado ~$0.15 USD máximo por usuario
+- [ ] El juego generado va directo al flujo de moderación existente
+- [ ] System prompt optimizado para HTML5 que funcione en iframe sandboxeado
+- [ ] Panel de admin para ver consumo de tokens y ajustar límites
+- [ ] Costo operativo: ~$0.01-0.05 USD por juego generado, sin suscripción mensual
+- [ ] Diferencial clave para el pitch: democratiza la creación para familias sin conocimientos técnicos
+
 ### Fase 3 — Gamificación (4-6 semanas)
 
 - [ ] Sistema de puntos individuales y por House
