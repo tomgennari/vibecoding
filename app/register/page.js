@@ -1,16 +1,17 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase.js';
 import { useAuthTheme } from '@/lib/use-auth-theme.js';
 import { ThemeToggle } from '@/components/auth-theme-toggle.js';
 
 const HOUSES = [
-  { id: 'william_brown', name: 'William Brown', colorClass: 'bg-[#3b82f6]' },
-  { id: 'james_dodds', name: 'James Dodds', colorClass: 'bg-[#eab308]' },
-  { id: 'james_fleming', name: 'James Fleming', colorClass: 'bg-[#ef4444]' },
-  { id: 'john_monteith', name: 'John Monteith', colorClass: 'bg-[#22c55e]' },
+  { id: 'william_brown', name: 'William Brown', color: '#3b82f6', image: '/images/houses/house-brown.png' },
+  { id: 'james_dodds', name: 'James Dodds', color: '#eab308', image: '/images/houses/house-dodds.png' },
+  { id: 'james_fleming', name: 'James Fleming', color: '#ef4444', image: '/images/houses/house-fleming.png' },
+  { id: 'john_monteith', name: 'John Monteith', color: '#22c55e', image: '/images/houses/house-monteith.png' },
 ];
 
 export default function RegisterPage() {
@@ -128,7 +129,6 @@ export default function RegisterPage() {
   const radioClass = isDark
     ? 'flex flex-1 min-w-0 cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-vibe-border bg-vibe-card px-4 py-4 font-bold text-vibe-text-muted transition-all has-[:checked]:border-vibe-accent has-[:checked]:bg-vibe-accent/10 has-[:checked]:text-vibe-text has-[:checked]:shadow-[0_0_20px_rgba(124,58,237,0.3)]'
     : 'flex flex-1 min-w-0 cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-[#e2e8f0] bg-white px-4 py-4 font-bold text-[#64748b] transition-all has-[:checked]:border-[#7c3aed] has-[:checked]:bg-[#7c3aed]/10 has-[:checked]:text-[#00478E] has-[:checked]:shadow-[0_0_20px_rgba(124,58,237,0.2)]';
-  const houseRing = isDark ? 'ring-vibe-text ring-offset-vibe-card' : 'ring-[#00478E] ring-offset-[#f8fafc]';
 
   return (
     <>
@@ -139,6 +139,16 @@ export default function RegisterPage() {
       >
         <div className="w-full max-w-lg min-w-0">
           <header className="text-center mb-10">
+            <div className="flex justify-center mb-4">
+              <Image
+                src="/images/logo-sass.png"
+                alt="St. Andrew's Scots School"
+                width={120}
+                height={40}
+                className="object-contain object-center"
+                style={isDark ? { filter: 'brightness(0) invert(1)' } : undefined}
+              />
+            </div>
             <h1
               className="text-4xl sm:text-5xl font-extrabold tracking-tight uppercase"
               style={{
@@ -258,17 +268,28 @@ export default function RegisterPage() {
                 <p className="text-sm mb-3" style={{ color: isDark ? '#94a3b8' : '#64748b' }}>
                   Elige tu House (alumnos y padres)
                 </p>
-                <div className="grid grid-cols-2 sm:flex sm:flex-nowrap gap-2 sm:gap-3 min-w-0">
-                  {HOUSES.map((h) => (
-                    <button
-                      key={h.id}
-                      type="button"
-                      onClick={() => setHouse(h.id)}
-                      className={`min-w-0 inline-flex items-center justify-center rounded-xl px-4 sm:px-5 py-3.5 text-xs sm:text-sm font-bold text-white transition-all truncate outline-none ${h.colorClass} ${house === h.id ? `ring-2 ${houseRing} ring-offset-2 shadow-lg` : 'opacity-90 hover:opacity-100'}`}
-                    >
-                      {h.name}
-                    </button>
-                  ))}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 min-w-0">
+                  {HOUSES.map((h) => {
+                    const selected = house === h.id;
+                    const borderColor = isDark ? '#2a2a3a' : '#e2e8f0';
+                    return (
+                      <button
+                        key={h.id}
+                        type="button"
+                        onClick={() => setHouse(h.id)}
+                        className="min-w-0 rounded-xl border-2 p-4 flex flex-col items-center justify-center gap-2 transition-all outline-none overflow-hidden"
+                        style={{
+                          borderColor: selected ? h.color : borderColor,
+                          background: selected ? `${h.color}15` : 'transparent',
+                        }}
+                      >
+                        <Image src={h.image} alt={h.name} width={48} height={48} className="flex-shrink-0 object-contain" />
+                        <span className="text-xs font-bold text-center break-words min-w-0 w-full" style={{ color: selected ? h.color : (isDark ? '#94a3b8' : '#64748b') }}>
+                          {h.name}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 

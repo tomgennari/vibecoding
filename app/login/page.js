@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase.js';
@@ -96,6 +97,16 @@ export default function LoginPage() {
       >
         <div className="w-full max-w-lg min-w-0">
           <header className="text-center mb-10">
+            <div className="flex justify-center mb-4">
+              <Image
+                src="/images/logo-sass.png"
+                alt="St. Andrew's Scots School"
+                width={120}
+                height={40}
+                className="object-contain object-center"
+                style={isDark ? { filter: 'brightness(0) invert(1)' } : undefined}
+              />
+            </div>
             <h1
               className="text-4xl sm:text-5xl font-extrabold tracking-tight uppercase"
               style={{
