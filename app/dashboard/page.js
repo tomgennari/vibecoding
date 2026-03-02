@@ -259,13 +259,13 @@ export default function DashboardPage() {
         </div>
 
         <div className="flex items-center gap-3 flex-shrink-0">
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border min-w-0" style={{ borderColor: userHouseMeta.color, background: `${userHouseMeta.color}15` }}>
+          <Link href="/perfil" className="flex items-center gap-2 px-3 py-1.5 rounded-lg border min-w-0 transition-opacity hover:opacity-90" style={{ borderColor: userHouseMeta.color, background: `${userHouseMeta.color}15` }}>
             <Image src={userHouseMeta.image} alt={userHouseMeta.name} width={28} height={28} className="flex-shrink-0 object-contain" />
             <div className="min-w-0 flex flex-col items-start">
               <span className="text-sm font-bold truncate w-full" style={{ color: text }}>{displayName}</span>
               <span className="text-xs truncate w-full" style={{ color: userHouseMeta.color }}>{userHouseMeta.name}</span>
             </div>
-          </div>
+          </Link>
           <button type="button" onClick={toggleTheme} aria-label={isDark ? 'Modo claro' : 'Modo oscuro'} className="p-2 rounded-lg transition-colors" style={navStyle}>
             {isDark ? <IconSun /> : <IconMoon />}
           </button>
@@ -280,10 +280,10 @@ export default function DashboardPage() {
         className="lg:hidden flex-shrink-0 flex items-center justify-between gap-2 px-3 h-12 border-b"
         style={{ background: cardBg, borderColor: border }}
       >
-        <div className="flex items-center gap-2 min-w-0">
+        <Link href="/perfil" className="flex items-center gap-2 min-w-0 transition-opacity hover:opacity-90">
           <Image src={userHouseMeta.image} alt={userHouseMeta.name} width={24} height={24} className="flex-shrink-0 object-contain" />
           <span className="text-sm font-bold truncate" style={{ color: userHouseMeta.color }}>{userHouseMeta.name}</span>
-        </div>
+        </Link>
         <span className="text-2xl font-black tabular-nums flex-shrink-0" style={{ color: accent }}>{stats.puntos}</span>
         <div className="flex items-center gap-0 flex-shrink-0">
           <button type="button" onClick={toggleTheme} aria-label={isDark ? 'Modo claro' : 'Modo oscuro'} className="p-2 rounded-lg" style={navStyle}>
