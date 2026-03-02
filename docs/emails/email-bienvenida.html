@@ -1,0 +1,160 @@
+<!-- PLANTILLA: Confirmación de registro / Welcome Email -->
+<!-- Pegar en Supabase > Authentication > Email Templates > Confirm signup -->
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bienvenido/a a Campus San Andrés</title>
+</head>
+<body style="margin:0;padding:0;background-color:#0a0a0f;font-family:Arial,sans-serif;">
+
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#0a0a0f;padding:40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
+
+          <!-- HEADER -->
+          <tr>
+            <td align="center" style="padding-bottom:32px;">
+              <img src="https://www.sanandres.esc.edu.ar/wp-content/uploads/2023/12/Logo-Color.png"
+                   alt="St. Andrew's Scots School"
+                   width="160"
+                   style="filter:brightness(0) invert(1);display:block;margin:0 auto 16px;">
+              <h1 style="margin:0;font-size:32px;font-weight:900;color:#ffffff;letter-spacing:2px;text-transform:uppercase;">
+                CAMPUS SAN ANDRÉS
+              </h1>
+              <p style="margin:4px 0 0;font-size:14px;color:#7c3aed;font-weight:600;letter-spacing:1px;">
+                Vibe Coding San Andrés
+              </p>
+            </td>
+          </tr>
+
+          <!-- CARD PRINCIPAL -->
+          <tr>
+            <td style="background-color:#13131a;border-radius:16px;border:1px solid #2a2a3a;padding:40px;">
+
+              <!-- Saludo -->
+              <p style="margin:0 0 8px;font-size:14px;color:#94a3b8;text-transform:uppercase;letter-spacing:2px;">
+                ¡Bienvenido/a!
+              </p>
+              <h2 style="margin:0 0 24px;font-size:24px;font-weight:700;color:#f1f5f9;">
+                Ya sos parte de la comunidad
+              </h2>
+              <p style="margin:0 0 24px;font-size:16px;color:#94a3b8;line-height:1.6;">
+                Confirmá tu email para activar tu cuenta y empezar a jugar, competir con tu House y ayudar a construir el nuevo campus del SASS.
+              </p>
+
+              <!-- BOTÓN CONFIRMAR -->
+              <table cellpadding="0" cellspacing="0" style="margin:0 auto 32px;">
+                <tr>
+                  <td align="center" style="background:linear-gradient(135deg,#7c3aed,#06b6d4);border-radius:8px;padding:1px;">
+                    <a href="{{ .ConfirmationURL }}"
+                       style="display:inline-block;padding:14px 40px;background:linear-gradient(135deg,#7c3aed,#06b6d4);border-radius:8px;color:#ffffff;font-size:16px;font-weight:700;text-decoration:none;letter-spacing:1px;">
+                      ✓ Confirmar mi cuenta
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin:0 0 32px;font-size:13px;color:#64748b;text-align:center;">
+                Este link expira en 24 horas. Si no te registraste, ignorá este email.
+              </p>
+
+              <!-- SEPARADOR -->
+              <hr style="border:none;border-top:1px solid #2a2a3a;margin:0 0 32px;">
+
+              <!-- HOUSES -->
+              <p style="margin:0 0 16px;font-size:13px;color:#94a3b8;text-align:center;text-transform:uppercase;letter-spacing:2px;">
+                Las Houses del SASS
+              </p>
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center" width="25%" style="padding:8px;">
+                    <img src="https://www.sanandres.esc.edu.ar/wp-content/uploads/2023/12/SASS_House_B-265x265.png"
+                         alt="William Brown" width="48" style="display:block;margin:0 auto 6px;">
+                    <p style="margin:0;font-size:11px;color:#3b82f6;font-weight:700;">William Brown</p>
+                  </td>
+                  <td align="center" width="25%" style="padding:8px;">
+                    <img src="https://www.sanandres.esc.edu.ar/wp-content/uploads/2023/12/SASS_House_D-265x265.png"
+                         alt="James Dodds" width="48" style="display:block;margin:0 auto 6px;">
+                    <p style="margin:0;font-size:11px;color:#eab308;font-weight:700;">James Dodds</p>
+                  </td>
+                  <td align="center" width="25%" style="padding:8px;">
+                    <img src="https://www.sanandres.esc.edu.ar/wp-content/uploads/2023/12/SASS_House_F-265x265.png"
+                         alt="James Fleming" width="48" style="display:block;margin:0 auto 6px;">
+                    <p style="margin:0;font-size:11px;color:#ef4444;font-weight:700;">James Fleming</p>
+                  </td>
+                  <td align="center" width="25%" style="padding:8px;">
+                    <img src="https://www.sanandres.esc.edu.ar/wp-content/uploads/2023/12/SASS_House_M-265x265.png"
+                         alt="John Monteith" width="48" style="display:block;margin:0 auto 6px;">
+                    <p style="margin:0;font-size:11px;color:#22c55e;font-weight:700;">John Monteith</p>
+                  </td>
+                </tr>
+              </table>
+
+            </td>
+          </tr>
+
+          <!-- ENGLISH VERSION -->
+          <tr>
+            <td style="padding:32px 0 0;">
+              <hr style="border:none;border-top:1px solid #2a2a3a;margin:0 0 32px;">
+              <p style="margin:0 0 8px;font-size:12px;color:#64748b;text-align:center;text-transform:uppercase;letter-spacing:2px;">
+                English version below
+              </p>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="background-color:#13131a;border-radius:16px;border:1px solid #2a2a3a;padding:40px;">
+              <p style="margin:0 0 8px;font-size:14px;color:#94a3b8;text-transform:uppercase;letter-spacing:2px;">
+                Welcome!
+              </p>
+              <h2 style="margin:0 0 24px;font-size:24px;font-weight:700;color:#f1f5f9;">
+                You're now part of the community
+              </h2>
+              <p style="margin:0 0 24px;font-size:16px;color:#94a3b8;line-height:1.6;">
+                Confirm your email to activate your account and start playing, competing with your House, and helping build the new SASS campus.
+              </p>
+              <table cellpadding="0" cellspacing="0" style="margin:0 auto 24px;">
+                <tr>
+                  <td align="center" style="background:linear-gradient(135deg,#7c3aed,#06b6d4);border-radius:8px;">
+                    <a href="{{ .ConfirmationURL }}"
+                       style="display:inline-block;padding:14px 40px;background:linear-gradient(135deg,#7c3aed,#06b6d4);border-radius:8px;color:#ffffff;font-size:16px;font-weight:700;text-decoration:none;letter-spacing:1px;">
+                      ✓ Confirm my account
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              <p style="margin:0;font-size:13px;color:#64748b;text-align:center;">
+                This link expires in 24 hours. If you didn't register, please ignore this email.
+              </p>
+            </td>
+          </tr>
+
+          <!-- FOOTER -->
+          <tr>
+            <td align="center" style="padding:32px 0 0;">
+              <p style="margin:0 0 4px;font-size:12px;color:#64748b;">
+                Campus San Andrés — Vibe Coding San Andrés
+              </p>
+              <p style="margin:0 0 4px;font-size:12px;color:#64748b;">
+                <a href="https://sass.vibecoding.ar" style="color:#7c3aed;text-decoration:none;">sass.vibecoding.ar</a>
+                &nbsp;·&nbsp;
+                <a href="mailto:vibes@vibecoding.ar" style="color:#7c3aed;text-decoration:none;">vibes@vibecoding.ar</a>
+              </p>
+              <p style="margin:8px 0 0;font-size:11px;color:#475569;font-style:italic;">
+                Sic itur ad astra — St. Andrew's Scots School, 1838
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>

@@ -83,6 +83,11 @@ export default function PerfilPage() {
   const [passwordMessage, setPasswordMessage] = useState({ type: '', text: '' });
   const [passwordSaving, setPasswordSaving] = useState(false);
 
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
+
   const isDark = theme === 'dark';
   const bg = isDark ? '#0a0a0f' : '#ffffff';
   const cardBg = isDark ? '#13131a' : '#f8fafc';
@@ -138,6 +143,13 @@ export default function PerfilPage() {
     fetchData();
   }, [fetchData]);
 
+  useEffect(() => {
+    if (!deleteModalOpen) return;
+    const onKey = (e) => { if (e.key === 'Escape') closeDeleteModal(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [deleteModalOpen]);
+
   async function handleLogout() {
     await supabase.auth.signOut();
     router.replace('/login');
@@ -188,6 +200,49 @@ export default function PerfilPage() {
       setConfirmPassword('');
     }
     setPasswordSaving(false);
+  }
+
+  function openDeleteModal() {
+    setDeleteModalOpen(true);
+    setDeleteConfirmText('');
+    setDeleteError('');
+  }
+
+  function closeDeleteModal() {
+    if (!deleteLoading) {
+      setDeleteModalOpen(false);
+      setDeleteConfirmText('');
+      setDeleteError('');
+    }
+  }
+
+  async function handleDeleteAccount() {
+    if (deleteConfirmText !== 'ELIMINAR' || deleteLoading) return;
+    setDeleteError('');
+    setDeleteLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        setDeleteError('Sesión expirada. Volvé a iniciar sesión.');
+        setDeleteLoading(false);
+        return;
+      }
+      const res = await fetch('/api/delete-account', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setDeleteError(data.error || 'No se pudo eliminar la cuenta. Intentá de nuevo.');
+        setDeleteLoading(false);
+        return;
+      }
+      await supabase.auth.signOut();
+      router.replace('/register?message=' + encodeURIComponent('Tu cuenta fue eliminada correctamente'));
+    } catch (err) {
+      setDeleteError(err.message || 'Error de conexión.');
+      setDeleteLoading(false);
+    }
   }
 
   const userHouse = profile?.house || 'william_brown';
@@ -290,6 +345,17 @@ export default function PerfilPage() {
                   <span className="text-lg font-black tabular-nums" style={{ color: accent }}>{stats.puntos}</span>
                 </div>
               </div>
+              {/* Zona de peligro */}
+              <hr className="my-4" style={{ borderColor: 'rgba(239, 68, 68, 0.4)' }} />
+              <p className="text-xs mb-2" style={{ color: textMuted }}>Eliminar cuenta</p>
+              <button
+                type="button"
+                onClick={openDeleteModal}
+                className="text-sm px-3 py-1.5 rounded-lg font-medium transition-opacity hover:opacity-90"
+                style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.4)' }}
+              >
+                Eliminar mi cuenta
+              </button>
             </div>
           </aside>
 
@@ -489,6 +555,63 @@ export default function PerfilPage() {
           </main>
         </div>
       </div>
+
+      {/* Modal eliminar cuenta */}
+      {deleteModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.6)' }}
+          onClick={closeDeleteModal}
+          onKeyDown={(e) => e.key === 'Escape' && closeDeleteModal()}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-modal-title"
+        >
+          <div
+            className="rounded-xl border shadow-xl max-w-md w-full p-6"
+            style={{ background: cardBg, borderColor: border }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 id="delete-modal-title" className="text-lg font-bold mb-2" style={{ color: text }}>¿Eliminar tu cuenta?</h2>
+            <p className="text-sm mb-4" style={{ color: textMuted }}>
+              Esta acción eliminará permanentemente tu cuenta y todos tus datos. Los juegos que hayas subido serán desactivados. Esta acción no se puede deshacer.
+            </p>
+            <label className="block text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: textMuted }}>
+              Escribí ELIMINAR para confirmar
+            </label>
+            <input
+              type="text"
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
+              placeholder="ELIMINAR"
+              className="w-full rounded-xl px-4 py-3 border outline-none focus:ring-2 mb-4 min-w-0"
+              style={{ background: isDark ? '#0a0a0f' : '#fff', borderColor: border, color: text }}
+              autoComplete="off"
+            />
+            {deleteError && <p className="text-sm mb-3" style={{ color: '#ef4444' }}>{deleteError}</p>}
+            <div className="flex gap-3 justify-end">
+              <button
+                type="button"
+                onClick={closeDeleteModal}
+                disabled={deleteLoading}
+                className="px-4 py-2.5 rounded-xl font-medium text-sm disabled:opacity-50"
+                style={{ background: isDark ? '#2a2a3a' : '#e2e8f0', color: text }}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteAccount}
+                disabled={deleteConfirmText !== 'ELIMINAR' || deleteLoading}
+                className="px-4 py-2.5 rounded-xl font-medium text-sm text-white disabled:opacity-50"
+                style={{ background: deleteConfirmText === 'ELIMINAR' && !deleteLoading ? '#ef4444' : '#94a3b8' }}
+              >
+                {deleteLoading ? 'Eliminando...' : 'Eliminar cuenta definitivamente'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

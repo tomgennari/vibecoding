@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase.js';
 import { useAuthTheme } from '@/lib/use-auth-theme.js';
 import { ThemeToggle } from '@/components/auth-theme-toggle.js';
@@ -15,6 +16,7 @@ const HOUSES = [
 ];
 
 export default function RegisterPage() {
+  const searchParams = useSearchParams();
   const [theme, , toggleTheme] = useAuthTheme();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -25,6 +27,12 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [urlMessage, setUrlMessage] = useState('');
+
+  useEffect(() => {
+    const message = searchParams.get('message');
+    if (message) setUrlMessage(decodeURIComponent(message));
+  }, [searchParams]);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -162,6 +170,15 @@ export default function RegisterPage() {
             </h1>
             <p className="mt-3 text-[#7c3aed] text-lg font-semibold font-sans">Vibe Coding San Andrés</p>
           </header>
+
+          {urlMessage && (
+            <div
+              className="mb-6 p-4 rounded-xl border text-center text-sm font-medium"
+              style={{ borderColor: '#22c55e', background: 'rgba(34, 197, 94, 0.1)', color: '#16a34a' }}
+            >
+              {urlMessage}
+            </div>
+          )}
 
           <form
             onSubmit={handleSubmit}
