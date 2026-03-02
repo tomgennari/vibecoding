@@ -14,31 +14,21 @@ const HOUSES = [
   { id: 'john_monteith', name: 'John Monteith', color: '#22c55e', image: '/images/houses/house-monteith.png' },
 ];
 
-const BUILDINGS = [
-  'Natatorio',
-  'Community Hub',
-  'Secundaria',
-  'Dining Hall',
-  'Performing Arts Center',
-  'Sports Pavilion',
-  'Barco Symmetry',
-];
-
-const GAMES_PLACEHOLDER = [
-  { title: 'Aventura Espacial', description: 'Recolectá estrellas y esquivá meteoritos.', houseId: 'william_brown' },
-  { title: 'Carrera de Houses', description: 'Competí con tu House en pistas de obstáculos.', houseId: 'james_fleming' },
-  { title: 'Puzzle del Campus', description: 'Armá el mapa del nuevo campus.', houseId: 'john_monteith' },
-];
-
 const GOALS_ARS = [20000, 100000, 500000, 2000000, 5000000, 10000000, 25000000, 50000000, 100000000, 1000000000];
 
-const GAME_CARD_METRICS = { players: 47, likes: 23, raised: '235.000' };
-
-const STATS = [
-  { key: 'juegos', label: 'Juegos desbloqueados', value: '0' },
-  { key: 'tiempo', label: 'Tiempo jugado', value: '0 h' },
-  { key: 'puntos', label: 'Puntos', value: '0' },
+const STATS_KEYS = [
+  { key: 'juegos', label: 'Juegos desbloqueados' },
+  { key: 'tiempo', label: 'Tiempo jugado' },
+  { key: 'puntos', label: 'Puntos' },
 ];
+
+function formatDuration(totalSeconds) {
+  if (totalSeconds == null || totalSeconds < 0) return '0 h';
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  if (hours > 0) return `${hours} h${minutes > 0 ? ` ${minutes} min` : ''}`;
+  return `${minutes} min`;
+}
 
 function IconLogout() {
   return (
@@ -74,11 +64,16 @@ export default function DashboardPage() {
   const [theme, toggleTheme] = useDashboardTheme();
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState(null);
+  const [stats, setStats] = useState({ juegos: 0, tiempoSeconds: 0, puntos: 0 });
+  const [dailyGames, setDailyGames] = useState([]);
+  const [gamesToUnlock, setGamesToUnlock] = useState([]);
+  const [unlockedGames, setUnlockedGames] = useState([]);
+  const [houseRanking, setHouseRanking] = useState([]);
+  const [buildings, setBuildings] = useState([]);
+  const [totalRaised, setTotalRaised] = useState(0);
   const [rankingOpen, setRankingOpen] = useState(false);
   const [campusOpen, setCampusOpen] = useState(false);
   const [mobileTab, setMobileTab] = useState('juegos');
-
-  const hasUnlockedGames = false; // placeholder: sin juegos desbloqueados
 
   const isDark = theme === 'dark';
   const bg = isDark ? '#0a0a0f' : '#ffffff';
@@ -95,12 +90,57 @@ export default function DashboardPage() {
         router.replace('/login');
         return;
       }
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('first_name, last_name, house')
-        .eq('id', session.user.id)
-        .single();
-      setProfile(profileData || { first_name: 'Usuario', last_name: '', house: 'william_brown' });
+      const uid = session.user.id;
+      const today = new Date().toISOString().split('T')[0];
+
+      const [
+        profileRes,
+        unlocksCountRes,
+        sessionsRes,
+        dailyIdsRes,
+        unlocksListRes,
+        approvedGamesRes,
+        housePointsRes,
+        buildingsRes,
+        unlocksAmountRes,
+        donationsRes,
+      ] = await Promise.all([
+        supabase.from('profiles').select('first_name, last_name, house').eq('id', uid).single().then((r) => ({ data: r.data, error: r.error })).catch(() => ({ data: null, error: true })),
+        supabase.from('game_unlocks').select('*', { count: 'exact', head: true }).eq('user_id', uid).then((r) => ({ count: r.count ?? 0, error: r.error })).catch(() => ({ count: 0, error: true })),
+        supabase.from('game_sessions').select('duration_seconds').eq('user_id', uid).then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
+        supabase.from('daily_free_games').select('game_id').eq('active_date', today).then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
+        supabase.from('game_unlocks').select('game_id').eq('user_id', uid).then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
+        supabase.from('games').select('*').eq('status', 'approved').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
+        supabase.from('house_points').select('*').order('total_points', { ascending: false }).then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
+        supabase.from('buildings').select('*').order('display_order', { ascending: true }).then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => supabase.from('buildings').select('*').order('name', { ascending: true }).then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true }))),
+        supabase.from('game_unlocks').select('amount_paid').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
+        supabase.from('donations').select('amount').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
+      ]);
+
+      const profileData = profileRes.data || { first_name: 'Usuario', last_name: '', house: 'william_brown' };
+      setProfile(profileData);
+      const userHouse = profileData.house || 'william_brown';
+
+      setStats({
+        juegos: unlocksCountRes.count ?? 0,
+        tiempoSeconds: (sessionsRes.data || []).reduce((acc, row) => acc + (Number(row.duration_seconds) || 0), 0),
+        puntos: (housePointsRes.data || []).find((row) => row.house === userHouse)?.total_points ?? 0,
+      });
+
+      const dailyIds = (dailyIdsRes.data || []).map((row) => row.game_id).filter(Boolean);
+      const unlockedIds = (unlocksListRes.data || []).map((row) => row.game_id).filter(Boolean);
+      const approvedGames = approvedGamesRes.data || [];
+
+      setDailyGames(approvedGames.filter((g) => g.id && dailyIds.includes(g.id)));
+      setGamesToUnlock(approvedGames.filter((g) => g.id && !unlockedIds.includes(g.id) && !dailyIds.includes(g.id)));
+      setUnlockedGames(approvedGames.filter((g) => g.id && unlockedIds.includes(g.id)));
+
+      setHouseRanking(housePointsRes.data || []);
+      setBuildings(buildingsRes.data || []);
+
+      const sumUnlocks = (unlocksAmountRes.data || []).reduce((acc, row) => acc + (Number(row.amount_paid) || 0), 0);
+      const sumDonations = (donationsRes.data || []).reduce((acc, row) => acc + (Number(row.amount) || 0), 0);
+      setTotalRaised(sumUnlocks + sumDonations);
       setLoading(false);
     }
     init();
@@ -114,16 +154,70 @@ export default function DashboardPage() {
   const userHouse = profile?.house || 'william_brown';
   const userHouseMeta = HOUSES.find((h) => h.id === userHouse) || HOUSES[0];
   const displayName = profile ? [profile.first_name, profile.last_name].filter(Boolean).join(' ') || 'Usuario' : 'Usuario';
+  const hasUnlockedGames = unlockedGames.length > 0;
 
   const progressBarBg = isDark ? 'var(--vibe-border)' : '#e2e8f0';
   const progressBarFill = isDark ? 'var(--vibe-gradient-primary)' : 'linear-gradient(135deg, #7c3aed 0%, #06b6d4 100%)';
   const cardBase = 'rounded-xl border min-w-0 overflow-hidden';
   const cardStyle = { borderColor: border, background: cardBg };
+  const skeletonBg = isDark ? '#2a2a3a' : '#e2e8f0';
+
+  function Skeleton({ className = '', style = {} }) {
+    return (
+      <div
+        className={`animate-pulse rounded ${className}`}
+        style={{ background: skeletonBg, ...style }}
+      />
+    );
+  }
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center font-sans" style={{ background: bg, color: textMuted }}>
-        Cargando...
+      <div className="min-h-screen font-sans flex flex-col" style={{ background: bg }}>
+        <header className="hidden lg:flex flex-shrink-0 items-center gap-4 px-4 h-14 border-b" style={{ borderColor: skeletonBg, background: cardBg }}>
+          <Skeleton className="h-8 w-32" />
+          <div className="flex-1 flex justify-center gap-6">
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-5 w-16" />
+            ))}
+          </div>
+        </header>
+        <header className="lg:hidden flex-shrink-0 flex items-center justify-between px-3 h-12 border-b" style={{ borderColor: skeletonBg, background: cardBg }}>
+          <Skeleton className="h-6 w-24" />
+          <Skeleton className="h-7 w-10" />
+        </header>
+        <div className="hidden lg:flex flex-1 min-h-0">
+          <div className="flex-[2] flex flex-col gap-4 p-4 min-w-0">
+            <Skeleton className="h-6 w-48 mb-2" />
+            <div className="grid grid-cols-3 gap-4">
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-40" />
+              ))}
+            </div>
+            <Skeleton className="h-6 w-40 mb-2" />
+            <div className="flex gap-4 overflow-hidden">
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-36 w-[220px] flex-shrink-0" />
+              ))}
+            </div>
+          </div>
+          <div className="flex-1 flex flex-col gap-4 p-4 border-l min-w-0" style={{ borderColor: skeletonBg }}>
+            <Skeleton className="h-24" />
+            <Skeleton className="h-6 w-32 mb-2" />
+            {[1, 2, 3, 4].map((i) => (
+              <Skeleton key={i} className="h-10" />
+            ))}
+          </div>
+        </div>
+        <div className="lg:hidden flex-1 p-4 space-y-4">
+          <div className="grid grid-cols-3 gap-2">
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-14" />
+            ))}
+          </div>
+          <Skeleton className="h-32" />
+          <Skeleton className="h-24" />
+        </div>
       </div>
     );
   }
@@ -150,12 +244,18 @@ export default function DashboardPage() {
         </Link>
 
         <div className="flex-1 flex items-center justify-center gap-6 min-w-0">
-          {STATS.map((s) => (
-            <div key={s.key} className="flex items-center gap-1.5 flex-shrink-0">
-              <span className="text-sm font-black tabular-nums" style={{ color: accent }}>{s.value}</span>
-              <span className="text-xs font-medium truncate max-w-[100px]" style={{ color: textMuted }}>{s.label}</span>
-            </div>
-          ))}
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            <span className="text-sm font-black tabular-nums" style={{ color: accent }}>{stats.juegos}</span>
+            <span className="text-xs font-medium truncate max-w-[100px]" style={{ color: textMuted }}>{STATS_KEYS[0].label}</span>
+          </div>
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            <span className="text-sm font-black tabular-nums" style={{ color: accent }}>{formatDuration(stats.tiempoSeconds)}</span>
+            <span className="text-xs font-medium truncate max-w-[100px]" style={{ color: textMuted }}>{STATS_KEYS[1].label}</span>
+          </div>
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            <span className="text-sm font-black tabular-nums" style={{ color: accent }}>{stats.puntos}</span>
+            <span className="text-xs font-medium truncate max-w-[100px]" style={{ color: textMuted }}>{STATS_KEYS[2].label}</span>
+          </div>
         </div>
 
         <div className="flex items-center gap-3 flex-shrink-0">
@@ -184,7 +284,7 @@ export default function DashboardPage() {
           <Image src={userHouseMeta.image} alt={userHouseMeta.name} width={24} height={24} className="flex-shrink-0 object-contain" />
           <span className="text-sm font-bold truncate" style={{ color: userHouseMeta.color }}>{userHouseMeta.name}</span>
         </div>
-        <span className="text-2xl font-black tabular-nums flex-shrink-0" style={{ color: accent }}>0</span>
+        <span className="text-2xl font-black tabular-nums flex-shrink-0" style={{ color: accent }}>{stats.puntos}</span>
         <div className="flex items-center gap-0 flex-shrink-0">
           <button type="button" onClick={toggleTheme} aria-label={isDark ? 'Modo claro' : 'Modo oscuro'} className="p-2 rounded-lg" style={navStyle}>
             {isDark ? <IconSun /> : <IconMoon />}
@@ -201,29 +301,33 @@ export default function DashboardPage() {
         <div className="flex-[2] flex flex-col min-w-0 overflow-auto px-4 py-4">
           <section className="flex-shrink-0 mb-6">
             <h2 className="text-xl font-bold mb-4" style={{ color: text }}>🎮 Juegos del día — Gratis</h2>
-            <div className="grid grid-cols-3 gap-4 min-w-0">
-              {GAMES_PLACEHOLDER.map((game) => {
-                const house = HOUSES.find((h) => h.id === game.houseId) || HOUSES[0];
-                return (
-                  <div key={game.title} className={`${cardBase} p-4 flex flex-col`} style={cardStyle}>
-                    <h3 className="font-bold text-lg break-words min-w-0" style={{ color: text }}>{game.title}</h3>
-                    <p className="text-sm mt-2 flex-1 break-words min-w-0" style={{ color: textMuted }}>{game.description}</p>
-                    <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-2 text-[11px]" style={{ color: textMuted }}>
-                      <span>👥 {GAME_CARD_METRICS.players} jugadores</span>
-                      <span>❤️ {GAME_CARD_METRICS.likes} likes</span>
-                      <span>💰 ${GAME_CARD_METRICS.raised} ARS recaudado</span>
+            {dailyGames.length === 0 ? (
+              <p className="text-sm py-6 rounded-xl border text-center min-w-0" style={{ color: textMuted, ...cardStyle }}>Hoy no hay juegos gratuitos disponibles</p>
+            ) : (
+              <div className="grid grid-cols-3 gap-4 min-w-0">
+                {dailyGames.map((game) => {
+                  const house = HOUSES.find((h) => h.id === game.house) || HOUSES[0];
+                  return (
+                    <div key={game.id} className={`${cardBase} p-4 flex flex-col`} style={cardStyle}>
+                      <h3 className="font-bold text-lg break-words min-w-0" style={{ color: text }}>{game.title || 'Juego'}</h3>
+                      <p className="text-sm mt-2 flex-1 break-words min-w-0" style={{ color: textMuted }}>{game.description || ''}</p>
+                      <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-2 text-[11px]" style={{ color: textMuted }}>
+                        <span>👥 0 jugadores</span>
+                        <span>❤️ 0 likes</span>
+                        <span>💰 $0 ARS recaudado</span>
+                      </div>
+                      <div className="flex items-center gap-2 mt-3 min-w-0">
+                        <Image src={house.image} alt={house.name} width={28} height={28} className="flex-shrink-0 object-contain" />
+                        <span className="text-xs font-bold uppercase truncate" style={{ color: house.color }}>{house.name}</span>
+                      </div>
+                      <Link href={`/jugar/${game.id}`} className="vibe-btn-gradient mt-4 w-full rounded-xl py-3.5 font-bold text-white text-center block">
+                        Jugar
+                      </Link>
                     </div>
-                    <div className="flex items-center gap-2 mt-3 min-w-0">
-                      <Image src={house.image} alt={house.name} width={28} height={28} className="flex-shrink-0 object-contain" />
-                      <span className="text-xs font-bold uppercase truncate" style={{ color: house.color }}>{house.name}</span>
-                    </div>
-                    <button type="button" className="vibe-btn-gradient mt-4 w-full rounded-xl py-3.5 font-bold text-white">
-                      Jugar
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </section>
 
           {/* Carrusel 2 — Juegos para desbloquear (segundo en orden) */}
@@ -233,23 +337,23 @@ export default function DashboardPage() {
               <Link href="#juegos-dia" className="text-sm font-semibold flex-shrink-0" style={{ color: accent }}>Ver todos →</Link>
             </div>
             <div className="flex gap-4 overflow-x-auto overflow-y-hidden pb-2 -mx-1 scrollbar-hide" style={{ WebkitOverflowScrolling: 'touch' }}>
-              {GAMES_PLACEHOLDER.map((game) => {
-                const house = HOUSES.find((h) => h.id === game.houseId) || HOUSES[0];
+              {gamesToUnlock.map((game) => {
+                const house = HOUSES.find((h) => h.id === game.house) || HOUSES[0];
                 return (
-                  <div key={game.title} className="flex-shrink-0 w-[220px] rounded-xl border p-4 flex flex-col min-w-0 overflow-hidden" style={cardStyle}>
+                  <div key={game.id} className="flex-shrink-0 w-[220px] rounded-xl border p-4 flex flex-col min-w-0 overflow-hidden" style={cardStyle}>
                     <div className="flex items-center gap-2 mb-2 min-w-0">
                       <Image src={house.image} alt={house.name} width={24} height={24} className="flex-shrink-0 object-contain" />
                       <span className="text-xs font-bold truncate" style={{ color: house.color }}>{house.name}</span>
                     </div>
-                    <h3 className="font-bold text-sm break-words min-w-0" style={{ color: text }}>{game.title}</h3>
-                    <p className="text-xs mt-1 flex-1 break-words min-w-0" style={{ color: textMuted }}>{game.description}</p>
+                    <h3 className="font-bold text-sm break-words min-w-0" style={{ color: text }}>{game.title || 'Juego'}</h3>
+                    <p className="text-xs mt-1 flex-1 break-words min-w-0" style={{ color: textMuted }}>{game.description || ''}</p>
                     <div className="flex flex-wrap gap-x-2 gap-y-0.5 mt-2 text-[11px] min-w-0" style={{ color: textMuted }}>
-                      <span>👥 {GAME_CARD_METRICS.players} jugadores</span>
-                      <span>❤️ {GAME_CARD_METRICS.likes} likes</span>
-                      <span>💰 ${GAME_CARD_METRICS.raised} ARS recaudado</span>
+                      <span>👥 0 jugadores</span>
+                      <span>❤️ 0 likes</span>
+                      <span>💰 $0 ARS recaudado</span>
                     </div>
                     <p className="text-lg font-black tabular-nums mt-2 flex-shrink-0" style={{ color: accent }}>$5.000 ARS</p>
-                    <button type="button" className="vibe-btn-gradient mt-3 w-full rounded-xl py-2.5 font-bold text-white text-sm">Desbloquear</button>
+                    <Link href={`/jugar/${game.id}`} className="vibe-btn-gradient mt-3 w-full rounded-xl py-2.5 font-bold text-white text-sm text-center block">Desbloquear</Link>
                   </div>
                 );
               })}
@@ -277,7 +381,24 @@ export default function DashboardPage() {
             </div>
             {hasUnlockedGames ? (
               <div className="flex gap-4 overflow-x-auto overflow-y-hidden pb-2 -mx-1 scrollbar-hide flex-1 min-h-0" style={{ WebkitOverflowScrolling: 'touch' }}>
-                {/* placeholder: cards con escudo + nombre + métricas + Jugar cuando haya juegos */}
+                {unlockedGames.map((game) => {
+                  const house = HOUSES.find((h) => h.id === game.house) || HOUSES[0];
+                  return (
+                    <div key={game.id} className="flex-shrink-0 w-[220px] rounded-xl border p-4 flex flex-col min-w-0 overflow-hidden" style={cardStyle}>
+                      <div className="flex items-center gap-2 mb-2 min-w-0">
+                        <Image src={house.image} alt={house.name} width={24} height={24} className="flex-shrink-0 object-contain" />
+                        <span className="text-xs font-bold truncate" style={{ color: house.color }}>{house.name}</span>
+                      </div>
+                      <h3 className="font-bold text-sm break-words min-w-0" style={{ color: text }}>{game.title || 'Juego'}</h3>
+                      <div className="flex flex-wrap gap-x-2 gap-y-0.5 mt-2 text-[11px] min-w-0" style={{ color: textMuted }}>
+                        <span>👥 0</span>
+                        <span>❤️ 0</span>
+                        <span>💰 $0 ARS</span>
+                      </div>
+                      <Link href={`/jugar/${game.id}`} className="vibe-btn-gradient mt-3 w-full rounded-xl py-2.5 font-bold text-white text-sm text-center block">Jugar</Link>
+                    </div>
+                  );
+                })}
               </div>
             ) : (
               <p className="text-sm py-4 rounded-xl border text-center min-w-0 flex-shrink-0" style={{ color: textMuted, ...cardStyle }}>Todavía no desbloqueaste ningún juego</p>
@@ -289,8 +410,7 @@ export default function DashboardPage() {
         <div className="flex-1 flex flex-col min-w-0 overflow-auto px-4 py-4 border-l" style={{ borderColor: border }}>
           {/* Próximo objetivo — barra de progreso por recaudación */}
           {(() => {
-            const totalRaised = 0;
-            const formatArs = (n) => n.toLocaleString('es-AR');
+            const formatArs = (n) => Number(n).toLocaleString('es-AR');
             const currentIndex = GOALS_ARS.findIndex((g) => totalRaised < g);
             const currentGoal = currentIndex === -1 ? GOALS_ARS[GOALS_ARS.length - 1] : GOALS_ARS[currentIndex];
             const completedGoals = currentIndex <= 0 ? [] : GOALS_ARS.slice(0, currentIndex);
@@ -335,39 +455,61 @@ export default function DashboardPage() {
           <section className="flex-shrink-0 mb-6">
             <h2 className="text-lg font-bold mb-3" style={{ color: text }}>Ranking de Houses</h2>
             <div className="space-y-2 min-w-0">
-              {HOUSES.map((h) => {
-                const isUser = h.id === userHouse;
-                return (
-                  <div
-                    key={h.id}
-                    className={`${cardBase} p-2.5 flex items-center gap-2`}
-                    style={{ ...cardStyle, borderColor: isUser ? h.color : border, borderWidth: isUser ? 2 : 1 }}
-                  >
-                    <Image src={h.image} alt={h.name} width={28} height={28} className="flex-shrink-0 object-contain" />
-                    <span className="font-bold text-sm truncate min-w-0 flex-1" style={{ color: h.color }}>{h.name}</span>
-                    <span className="text-sm font-black tabular-nums flex-shrink-0" style={{ color: text }}>0</span>
-                    <div className="w-12 rounded-full overflow-hidden flex-shrink-0" style={{ height: '0.25rem', background: progressBarBg }}>
-                      <div className="h-full rounded-full transition-[width] duration-300" style={{ width: '0%', background: progressBarFill }} />
+              {houseRanking.length === 0
+                ? HOUSES.map((h) => (
+                    <div key={h.id} className={`${cardBase} p-2.5 flex items-center gap-2`} style={{ ...cardStyle, borderColor: h.id === userHouse ? h.color : border, borderWidth: h.id === userHouse ? 2 : 1 }}>
+                      <Image src={h.image} alt={h.name} width={28} height={28} className="flex-shrink-0 object-contain" />
+                      <span className="font-bold text-sm truncate min-w-0 flex-1" style={{ color: h.color }}>{h.name}</span>
+                      <span className="text-sm font-black tabular-nums flex-shrink-0" style={{ color: text }}>0</span>
+                      <div className="w-12 rounded-full overflow-hidden flex-shrink-0" style={{ height: '0.25rem', background: progressBarBg }}>
+                        <div className="h-full rounded-full transition-[width] duration-300" style={{ width: '0%', background: progressBarFill }} />
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  ))
+                : (() => {
+                    const maxPoints = Math.max(...houseRanking.map((r) => Number(r.total_points) || 0), 1);
+                    return houseRanking.map((row) => {
+                      const meta = HOUSES.find((h) => h.id === row.house);
+                      const pts = Number(row.total_points) || 0;
+                      const pct = maxPoints > 0 ? (pts / maxPoints) * 100 : 0;
+                      const isUser = row.house === userHouse;
+                      return (
+                        <div
+                          key={row.house}
+                          className={`${cardBase} p-2.5 flex items-center gap-2`}
+                          style={{ ...cardStyle, borderColor: isUser && meta ? meta.color : border, borderWidth: isUser ? 2 : 1 }}
+                        >
+                          {meta ? <Image src={meta.image} alt={meta.name} width={28} height={28} className="flex-shrink-0 object-contain" /> : <span className="w-7 h-7 flex-shrink-0" />}
+                          <span className="font-bold text-sm truncate min-w-0 flex-1" style={{ color: meta ? meta.color : text }}>{meta ? meta.name : row.house}</span>
+                          <span className="text-sm font-black tabular-nums flex-shrink-0" style={{ color: text }}>{pts}</span>
+                          <div className="w-12 rounded-full overflow-hidden flex-shrink-0" style={{ height: '0.25rem', background: progressBarBg }}>
+                            <div className="h-full rounded-full transition-[width] duration-300" style={{ width: `${pct}%`, background: progressBarFill }} />
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()}
             </div>
           </section>
 
-          {/* Progreso del Campus — 7 filas compactas: nombre + barra + % */}
+          {/* Progreso del Campus — nombre + barra + % */}
           <section className="flex-shrink-0">
             <h2 className="text-lg font-bold mb-3" style={{ color: text }}>Progreso del Campus</h2>
             <div className="space-y-2 min-w-0">
-              {BUILDINGS.map((name) => (
-                <div key={name} className={`${cardBase} p-2 flex items-center gap-2`} style={cardStyle}>
-                  <span className="text-xs font-semibold truncate min-w-0 flex-1" style={{ color: text }}>{name}</span>
-                  <div className="w-16 rounded-full overflow-hidden flex-shrink-0" style={{ height: '0.25rem', background: progressBarBg }}>
-                    <div className="h-full rounded-full transition-[width] duration-300" style={{ width: '0%', background: progressBarFill }} />
+              {(buildings.length > 0 ? buildings : []).map((b) => {
+                const target = Number(b.target_amount) || 0;
+                const current = Number(b.current_amount) || 0;
+                const pct = target > 0 ? Math.min(100, Math.round((current / target) * 100)) : 0;
+                return (
+                  <div key={b.id} className={`${cardBase} p-2 flex items-center gap-2`} style={cardStyle}>
+                    <span className="text-xs font-semibold truncate min-w-0 flex-1" style={{ color: text }}>{b.name || 'Edificio'}</span>
+                    <div className="w-16 rounded-full overflow-hidden flex-shrink-0" style={{ height: '0.25rem', background: progressBarBg }}>
+                      <div className="h-full rounded-full transition-[width] duration-300" style={{ width: `${pct}%`, background: progressBarFill }} />
+                    </div>
+                    <span className="text-[10px] font-bold tabular-nums flex-shrink-0 w-6 text-right" style={{ color: textMuted }}>{pct}%</span>
                   </div>
-                  <span className="text-[10px] font-bold tabular-nums flex-shrink-0 w-6 text-right" style={{ color: textMuted }}>0%</span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </section>
         </div>
@@ -377,33 +519,43 @@ export default function DashboardPage() {
       <div className="lg:hidden flex-1 overflow-auto min-h-0" style={{ paddingBottom: '60px' }}>
         {/* Stats — 3 chips full width */}
         <div className="grid grid-cols-3 gap-2 px-4 py-3 min-w-0" style={{ background: cardBg, borderBottom: `1px solid ${border}` }}>
-          {STATS.map((s) => (
-            <div key={s.key} className="rounded-xl border py-2.5 px-2 text-center min-w-0 overflow-hidden" style={cardStyle}>
-              <p className="text-lg font-black tabular-nums truncate" style={{ color: accent }}>{s.value}</p>
-              <p className="text-[10px] font-medium truncate break-words hyphens-auto mt-0.5" style={{ color: textMuted }}>{s.label}</p>
-            </div>
-          ))}
+          <div className="rounded-xl border py-2.5 px-2 text-center min-w-0 overflow-hidden" style={cardStyle}>
+            <p className="text-lg font-black tabular-nums truncate" style={{ color: accent }}>{stats.juegos}</p>
+            <p className="text-[10px] font-medium truncate break-words hyphens-auto mt-0.5" style={{ color: textMuted }}>{STATS_KEYS[0].label}</p>
+          </div>
+          <div className="rounded-xl border py-2.5 px-2 text-center min-w-0 overflow-hidden" style={cardStyle}>
+            <p className="text-lg font-black tabular-nums truncate" style={{ color: accent }}>{formatDuration(stats.tiempoSeconds)}</p>
+            <p className="text-[10px] font-medium truncate break-words hyphens-auto mt-0.5" style={{ color: textMuted }}>{STATS_KEYS[1].label}</p>
+          </div>
+          <div className="rounded-xl border py-2.5 px-2 text-center min-w-0 overflow-hidden" style={cardStyle}>
+            <p className="text-lg font-black tabular-nums truncate" style={{ color: accent }}>{stats.puntos}</p>
+            <p className="text-[10px] font-medium truncate break-words hyphens-auto mt-0.5" style={{ color: textMuted }}>{STATS_KEYS[2].label}</p>
+          </div>
         </div>
 
         <div className="px-4 py-4 space-y-6 min-w-0">
           {/* Juegos del día — scroll horizontal tipo Netflix, cards 75vw, sin scrollbar */}
           <section id="juegos-dia" className="min-w-0 scroll-mt-24">
             <h2 className="text-base font-bold mb-3 w-full" style={{ color: text }}>🎮 Juegos del día — Gratis</h2>
-            <div className="flex gap-4 overflow-x-auto overflow-y-hidden pb-2 -mx-4 px-4 scrollbar-hide" style={{ WebkitOverflowScrolling: 'touch' }}>
-              {GAMES_PLACEHOLDER.map((game) => {
-                const house = HOUSES.find((h) => h.id === game.houseId) || HOUSES[0];
-                return (
-                  <div key={game.title} className="flex-shrink-0 rounded-xl border p-4 flex flex-col min-w-0 overflow-hidden" style={{ width: '75vw', ...cardStyle }}>
-                    <div className="flex items-center gap-2 mb-2 min-w-0">
-                      <Image src={house.image} alt={house.name} width={28} height={28} className="flex-shrink-0 object-contain" />
-                      <span className="text-xs font-bold truncate" style={{ color: house.color }}>{house.name}</span>
+            {dailyGames.length === 0 ? (
+              <p className="text-sm py-4 rounded-xl border text-center min-w-0" style={{ color: textMuted, ...cardStyle }}>Hoy no hay juegos gratuitos disponibles</p>
+            ) : (
+              <div className="flex gap-4 overflow-x-auto overflow-y-hidden pb-2 -mx-4 px-4 scrollbar-hide" style={{ WebkitOverflowScrolling: 'touch' }}>
+                {dailyGames.map((game) => {
+                  const house = HOUSES.find((h) => h.id === game.house) || HOUSES[0];
+                  return (
+                    <div key={game.id} className="flex-shrink-0 rounded-xl border p-4 flex flex-col min-w-0 overflow-hidden" style={{ width: '75vw', ...cardStyle }}>
+                      <div className="flex items-center gap-2 mb-2 min-w-0">
+                        <Image src={house.image} alt={house.name} width={28} height={28} className="flex-shrink-0 object-contain" />
+                        <span className="text-xs font-bold truncate" style={{ color: house.color }}>{house.name}</span>
+                      </div>
+                      <h3 className="font-bold text-sm break-words min-w-0 flex-1" style={{ color: text }}>{game.title || 'Juego'}</h3>
+                      <Link href={`/jugar/${game.id}`} className="vibe-btn-gradient mt-3 w-full rounded-xl py-3 font-bold text-white text-sm text-center block">Jugar</Link>
                     </div>
-                    <h3 className="font-bold text-sm break-words min-w-0 flex-1" style={{ color: text }}>{game.title}</h3>
-                    <button type="button" className="vibe-btn-gradient mt-3 w-full rounded-xl py-3 font-bold text-white text-sm">Jugar</button>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </section>
 
           {/* Banner CTA — Burbank Big + subtexto + botones */}
@@ -435,7 +587,19 @@ export default function DashboardPage() {
             <h2 className="text-base font-bold mb-3" style={{ color: text }}>Mis juegos desbloqueados</h2>
             {hasUnlockedGames ? (
               <div className="grid grid-cols-2 gap-3 min-w-0">
-                {/* placeholder para cuando haya juegos */}
+                {unlockedGames.map((game) => {
+                  const house = HOUSES.find((h) => h.id === game.house) || HOUSES[0];
+                  return (
+                    <div key={game.id} className="rounded-xl border p-4 flex flex-col min-w-0 overflow-hidden" style={cardStyle}>
+                      <div className="flex items-center gap-2 mb-2 min-w-0">
+                        <Image src={house.image} alt={house.name} width={24} height={24} className="flex-shrink-0 object-contain" />
+                        <span className="text-xs font-bold truncate" style={{ color: house.color }}>{house.name}</span>
+                      </div>
+                      <h3 className="font-bold text-sm break-words min-w-0" style={{ color: text }}>{game.title || 'Juego'}</h3>
+                      <Link href={`/jugar/${game.id}`} className="vibe-btn-gradient mt-3 w-full rounded-xl py-2.5 font-bold text-white text-sm text-center block">Jugar</Link>
+                    </div>
+                  );
+                })}
               </div>
             ) : (
               <div className="rounded-xl border p-6 text-center min-w-0" style={cardStyle}>
@@ -460,17 +624,19 @@ export default function DashboardPage() {
             </button>
             {rankingOpen && (
               <div className="mt-2 space-y-2 min-w-0">
-                {HOUSES.map((h) => {
-                  const isUser = h.id === userHouse;
+                {(houseRanking.length > 0 ? houseRanking : HOUSES.map((h) => ({ house: h.id, total_points: 0 }))).map((row) => {
+                  const meta = HOUSES.find((h) => h.id === row.house);
+                  const pts = Number(row.total_points) || 0;
+                  const isUser = row.house === userHouse;
                   return (
                     <div
-                      key={h.id}
+                      key={row.house}
                       className={`${cardBase} p-3 flex items-center gap-3`}
-                      style={{ ...cardStyle, borderColor: isUser ? h.color : border, borderWidth: isUser ? 2 : 1 }}
+                      style={{ ...cardStyle, borderColor: isUser && meta ? meta.color : border, borderWidth: isUser ? 2 : 1 }}
                     >
-                      <Image src={h.image} alt={h.name} width={32} height={32} className="flex-shrink-0 object-contain" />
-                      <span className="font-bold text-sm truncate min-w-0 flex-1" style={{ color: h.color }}>{h.name}</span>
-                      <span className="text-sm font-black tabular-nums flex-shrink-0" style={{ color: text }}>0 pts</span>
+                      {meta ? <Image src={meta.image} alt={meta.name} width={32} height={32} className="flex-shrink-0 object-contain" /> : <span className="w-8 h-8 flex-shrink-0" />}
+                      <span className="font-bold text-sm truncate min-w-0 flex-1" style={{ color: meta ? meta.color : text }}>{meta ? meta.name : row.house}</span>
+                      <span className="text-sm font-black tabular-nums flex-shrink-0" style={{ color: text }}>{pts} pts</span>
                     </div>
                   );
                 })}
@@ -491,15 +657,20 @@ export default function DashboardPage() {
             </button>
             {campusOpen && (
               <div className="mt-2 space-y-2 min-w-0">
-                {BUILDINGS.map((name) => (
-                  <div key={name} className={`${cardBase} p-2.5 flex items-center gap-2`} style={cardStyle}>
-                    <span className="font-semibold text-xs truncate min-w-0 flex-1" style={{ color: text }}>{name}</span>
-                    <div className="w-16 rounded-full overflow-hidden flex-shrink-0" style={{ height: '0.25rem', background: progressBarBg }}>
-                      <div className="h-full rounded-full transition-[width] duration-300" style={{ width: '0%', background: progressBarFill }} />
+                {(buildings.length > 0 ? buildings : []).map((b) => {
+                  const target = Number(b.target_amount) || 0;
+                  const current = Number(b.current_amount) || 0;
+                  const pct = target > 0 ? Math.min(100, Math.round((current / target) * 100)) : 0;
+                  return (
+                    <div key={b.id} className={`${cardBase} p-2.5 flex items-center gap-2`} style={cardStyle}>
+                      <span className="font-semibold text-xs truncate min-w-0 flex-1" style={{ color: text }}>{b.name || 'Edificio'}</span>
+                      <div className="w-16 rounded-full overflow-hidden flex-shrink-0" style={{ height: '0.25rem', background: progressBarBg }}>
+                        <div className="h-full rounded-full transition-[width] duration-300" style={{ width: `${pct}%`, background: progressBarFill }} />
+                      </div>
+                      <span className="text-[10px] font-bold tabular-nums flex-shrink-0 w-6 text-right" style={{ color: textMuted }}>{pct}%</span>
                     </div>
-                    <span className="text-[10px] font-bold tabular-nums flex-shrink-0 w-6 text-right" style={{ color: textMuted }}>0%</span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </section>
