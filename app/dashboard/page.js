@@ -30,6 +30,10 @@ const GAMES_PLACEHOLDER = [
   { title: 'Puzzle del Campus', description: 'Armá el mapa del nuevo campus.', houseId: 'john_monteith' },
 ];
 
+const GOALS_ARS = [20000, 100000, 500000, 2000000, 5000000, 10000000, 25000000, 50000000, 100000000, 1000000000];
+
+const GAME_CARD_METRICS = { players: 47, likes: 23, raised: '235.000' };
+
 const STATS = [
   { key: 'juegos', label: 'Juegos desbloqueados', value: '0' },
   { key: 'tiempo', label: 'Tiempo jugado', value: '0 h' },
@@ -157,7 +161,10 @@ export default function DashboardPage() {
         <div className="flex items-center gap-3 flex-shrink-0">
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border min-w-0" style={{ borderColor: userHouseMeta.color, background: `${userHouseMeta.color}15` }}>
             <Image src={userHouseMeta.image} alt={userHouseMeta.name} width={28} height={28} className="flex-shrink-0 object-contain" />
-            <span className="text-sm font-bold truncate" style={{ color: userHouseMeta.color }}>{userHouseMeta.name}</span>
+            <div className="min-w-0 flex flex-col items-start">
+              <span className="text-sm font-bold truncate w-full" style={{ color: text }}>{displayName}</span>
+              <span className="text-xs truncate w-full" style={{ color: userHouseMeta.color }}>{userHouseMeta.name}</span>
+            </div>
           </div>
           <button type="button" onClick={toggleTheme} aria-label={isDark ? 'Modo claro' : 'Modo oscuro'} className="p-2 rounded-lg transition-colors" style={navStyle}>
             {isDark ? <IconSun /> : <IconMoon />}
@@ -192,10 +199,6 @@ export default function DashboardPage() {
       <div className="hidden lg:flex flex-1 min-h-0 overflow-hidden">
         {/* Columna izquierda (2/3) */}
         <div className="flex-[2] flex flex-col min-w-0 overflow-auto px-4 py-4">
-          {/* Bienvenida sutil + Juegos del día */}
-          <p className="text-base mb-4 flex-shrink-0" style={{ color: isDark ? 'var(--vibe-text-muted)' : '#64748b' }}>
-            Bienvenido/a, {displayName}
-          </p>
           <section className="flex-shrink-0 mb-6">
             <h2 className="text-xl font-bold mb-4" style={{ color: text }}>🎮 Juegos del día — Gratis</h2>
             <div className="grid grid-cols-3 gap-4 min-w-0">
@@ -205,6 +208,11 @@ export default function DashboardPage() {
                   <div key={game.title} className={`${cardBase} p-4 flex flex-col`} style={cardStyle}>
                     <h3 className="font-bold text-lg break-words min-w-0" style={{ color: text }}>{game.title}</h3>
                     <p className="text-sm mt-2 flex-1 break-words min-w-0" style={{ color: textMuted }}>{game.description}</p>
+                    <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-2 text-[11px]" style={{ color: textMuted }}>
+                      <span>👥 {GAME_CARD_METRICS.players} jugadores</span>
+                      <span>❤️ {GAME_CARD_METRICS.likes} likes</span>
+                      <span>💰 ${GAME_CARD_METRICS.raised} ARS recaudado</span>
+                    </div>
                     <div className="flex items-center gap-2 mt-3 min-w-0">
                       <Image src={house.image} alt={house.name} width={28} height={28} className="flex-shrink-0 object-contain" />
                       <span className="text-xs font-bold uppercase truncate" style={{ color: house.color }}>{house.name}</span>
@@ -218,22 +226,37 @@ export default function DashboardPage() {
             </div>
           </section>
 
-          {/* Carrusel 1 — Mis juegos desbloqueados */}
+          {/* Carrusel 2 — Juegos para desbloquear (segundo en orden) */}
           <section className="flex-shrink-0 mb-4">
             <div className="flex items-center justify-between gap-2 mb-3">
-              <h2 className="text-lg font-bold" style={{ color: text }}>🔓 Mis juegos desbloqueados</h2>
+              <h2 className="text-lg font-bold" style={{ color: text }}>🎮 Juegos para desbloquear</h2>
               <Link href="#juegos-dia" className="text-sm font-semibold flex-shrink-0" style={{ color: accent }}>Ver todos →</Link>
             </div>
-            {hasUnlockedGames ? (
-              <div className="flex gap-4 overflow-x-auto overflow-y-hidden pb-2 -mx-1 scrollbar-hide" style={{ WebkitOverflowScrolling: 'touch' }}>
-                {/* placeholder: cards cuando haya juegos */}
-              </div>
-            ) : (
-              <p className="text-sm py-4 rounded-xl border text-center min-w-0" style={{ color: textMuted, ...cardStyle }}>Todavía no desbloqueaste ningún juego</p>
-            )}
+            <div className="flex gap-4 overflow-x-auto overflow-y-hidden pb-2 -mx-1 scrollbar-hide" style={{ WebkitOverflowScrolling: 'touch' }}>
+              {GAMES_PLACEHOLDER.map((game) => {
+                const house = HOUSES.find((h) => h.id === game.houseId) || HOUSES[0];
+                return (
+                  <div key={game.title} className="flex-shrink-0 w-[220px] rounded-xl border p-4 flex flex-col min-w-0 overflow-hidden" style={cardStyle}>
+                    <div className="flex items-center gap-2 mb-2 min-w-0">
+                      <Image src={house.image} alt={house.name} width={24} height={24} className="flex-shrink-0 object-contain" />
+                      <span className="text-xs font-bold truncate" style={{ color: house.color }}>{house.name}</span>
+                    </div>
+                    <h3 className="font-bold text-sm break-words min-w-0" style={{ color: text }}>{game.title}</h3>
+                    <p className="text-xs mt-1 flex-1 break-words min-w-0" style={{ color: textMuted }}>{game.description}</p>
+                    <div className="flex flex-wrap gap-x-2 gap-y-0.5 mt-2 text-[11px] min-w-0" style={{ color: textMuted }}>
+                      <span>👥 {GAME_CARD_METRICS.players} jugadores</span>
+                      <span>❤️ {GAME_CARD_METRICS.likes} likes</span>
+                      <span>💰 ${GAME_CARD_METRICS.raised} ARS recaudado</span>
+                    </div>
+                    <p className="text-lg font-black tabular-nums mt-2 flex-shrink-0" style={{ color: accent }}>$5.000 ARS</p>
+                    <button type="button" className="vibe-btn-gradient mt-3 w-full rounded-xl py-2.5 font-bold text-white text-sm">Desbloquear</button>
+                  </div>
+                );
+              })}
+            </div>
           </section>
 
-          {/* Banner separador full width */}
+          {/* Banner separador full width (tercero) */}
           <div
             className="flex-shrink-0 rounded-xl py-6 px-4 mb-4 text-center -mx-0"
             style={{ background: 'linear-gradient(135deg, #7c3aed 0%, #06b6d4 100%)', border: `2px solid ${border}` }}
@@ -246,34 +269,68 @@ export default function DashboardPage() {
             </p>
           </div>
 
-          {/* Carrusel 2 — Juegos para desbloquear */}
+          {/* Carrusel 1 — Mis juegos desbloqueados (cuarto) */}
           <section className="flex-1 min-h-0 flex flex-col">
             <div className="flex items-center justify-between gap-2 mb-3 flex-shrink-0">
-              <h2 className="text-lg font-bold" style={{ color: text }}>🎮 Juegos para desbloquear</h2>
+              <h2 className="text-lg font-bold" style={{ color: text }}>🔓 Mis juegos desbloqueados</h2>
               <Link href="#juegos-dia" className="text-sm font-semibold flex-shrink-0" style={{ color: accent }}>Ver todos →</Link>
             </div>
-            <div className="flex gap-4 overflow-x-auto overflow-y-hidden pb-2 -mx-1 scrollbar-hide flex-1 min-h-0" style={{ WebkitOverflowScrolling: 'touch' }}>
-              {GAMES_PLACEHOLDER.map((game) => {
-                const house = HOUSES.find((h) => h.id === game.houseId) || HOUSES[0];
-                return (
-                  <div key={game.title} className="flex-shrink-0 w-[220px] rounded-xl border p-4 flex flex-col min-w-0 overflow-hidden" style={cardStyle}>
-                    <div className="flex items-center gap-2 mb-2 min-w-0">
-                      <Image src={house.image} alt={house.name} width={24} height={24} className="flex-shrink-0 object-contain" />
-                      <span className="text-xs font-bold truncate" style={{ color: house.color }}>{house.name}</span>
-                    </div>
-                    <h3 className="font-bold text-sm break-words min-w-0" style={{ color: text }}>{game.title}</h3>
-                    <p className="text-xs mt-1 flex-1 break-words min-w-0" style={{ color: textMuted }}>{game.description}</p>
-                    <p className="text-lg font-black tabular-nums mt-2 flex-shrink-0" style={{ color: accent }}>$5.000 ARS</p>
-                    <button type="button" className="vibe-btn-gradient mt-3 w-full rounded-xl py-2.5 font-bold text-white text-sm">Desbloquear</button>
-                  </div>
-                );
-              })}
-            </div>
+            {hasUnlockedGames ? (
+              <div className="flex gap-4 overflow-x-auto overflow-y-hidden pb-2 -mx-1 scrollbar-hide flex-1 min-h-0" style={{ WebkitOverflowScrolling: 'touch' }}>
+                {/* placeholder: cards con escudo + nombre + métricas + Jugar cuando haya juegos */}
+              </div>
+            ) : (
+              <p className="text-sm py-4 rounded-xl border text-center min-w-0 flex-shrink-0" style={{ color: textMuted, ...cardStyle }}>Todavía no desbloqueaste ningún juego</p>
+            )}
           </section>
         </div>
 
         {/* Columna derecha (1/3) */}
         <div className="flex-1 flex flex-col min-w-0 overflow-auto px-4 py-4 border-l" style={{ borderColor: border }}>
+          {/* Próximo objetivo — barra de progreso por recaudación */}
+          {(() => {
+            const totalRaised = 0;
+            const formatArs = (n) => n.toLocaleString('es-AR');
+            const currentIndex = GOALS_ARS.findIndex((g) => totalRaised < g);
+            const currentGoal = currentIndex === -1 ? GOALS_ARS[GOALS_ARS.length - 1] : GOALS_ARS[currentIndex];
+            const completedGoals = currentIndex <= 0 ? [] : GOALS_ARS.slice(0, currentIndex);
+            const progress = currentGoal ? Math.min(100, (totalRaised / currentGoal) * 100) : 0;
+            return (
+              <section className="flex-shrink-0 mb-6">
+                <h2 className="text-lg font-bold mb-2" style={{ color: text }}>🎯 Próximo objetivo</h2>
+                {completedGoals.length > 0 && (
+                  <div className="flex flex-wrap gap-x-2 gap-y-0.5 mb-2 text-[11px]" style={{ color: textMuted }}>
+                    {completedGoals.map((g) => (
+                      <span key={g}>✅ ${formatArs(g)} ARS</span>
+                    ))}
+                  </div>
+                )}
+                <div
+                  className="rounded-xl p-[2px] min-w-0"
+                  style={{ background: 'linear-gradient(135deg, #7c3aed 0%, #06b6d4 100%)' }}
+                >
+                  <div className="rounded-[10px] p-4 min-w-0 h-full" style={{ background: cardBg }}>
+                    <p
+                      className="text-xl font-black tabular-nums mb-2"
+                      style={{ color: accent, fontFamily: "'Burbank Big', sans-serif", fontWeight: 900 }}
+                    >
+                      ${formatArs(currentGoal)} ARS
+                    </p>
+                    <p className="text-sm mb-2" style={{ color: textMuted }}>
+                      Recaudado: ${formatArs(totalRaised)} ARS de ${formatArs(currentGoal)} ARS
+                    </p>
+                    <div className="rounded-full overflow-hidden h-3" style={{ background: progressBarBg }}>
+                      <div
+                        className="h-full rounded-full transition-[width] duration-300"
+                        style={{ width: `${progress}%`, background: 'linear-gradient(90deg, #7c3aed 0%, #06b6d4 100%)' }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </section>
+            );
+          })()}
+
           {/* Ranking de Houses — 4 filas compactas */}
           <section className="flex-shrink-0 mb-6">
             <h2 className="text-lg font-bold mb-3" style={{ color: text }}>Ranking de Houses</h2>
