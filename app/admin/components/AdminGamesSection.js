@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase.js';
 import { HOUSES, GAME_STATUS, ADMIN_THEME } from '../constants.js';
 import RejectGameModal from './RejectGameModal.js';
 import LoadGameModal from './LoadGameModal.js';
+import DeleteGameModal from './DeleteGameModal.js';
 
 const STATUS_FILTERS = [
   { value: '', label: 'Todos' },
@@ -30,6 +31,8 @@ export default function AdminGamesSection() {
   const [loading, setLoading] = useState(true);
   const [rejectModal, setRejectModal] = useState(null);
   const [loadModalOpen, setLoadModalOpen] = useState(false);
+  const [editGame, setEditGame] = useState(null);
+  const [deleteGame, setDeleteGame] = useState(null);
 
   const fetchGames = useCallback(async () => {
     setLoading(true);
@@ -75,10 +78,35 @@ export default function AdminGamesSection() {
   }
 
   async function handleLoadGame(payload) {
+    if (payload.id) {
+      let fileUrl = payload.file ? null : undefined;
+      if (payload.file) {
+        const name = `games/${Date.now()}-${payload.file.name}`;
+        const { error: uploadError } = await supabase.storage.from('games').upload(name, payload.file, { contentType: 'text/html', upsert: false });
+        if (uploadError) throw new Error('No se pudo subir el archivo.');
+        const { data: urlData } = supabase.storage.from('games').getPublicUrl(name);
+        fileUrl = urlData?.publicUrl ?? name;
+      }
+      const row = {
+        title: payload.title,
+        description: payload.description || null,
+        house: payload.house,
+        price: payload.price,
+        ...(fileUrl != null && { file_url: fileUrl }),
+        ...(payload.game_width != null && { game_width: payload.game_width }),
+        ...(payload.game_height != null && { game_height: payload.game_height }),
+        ...(payload.orientation != null && { orientation: payload.orientation }),
+      };
+      const { error } = await supabase.from('games').update(row).eq('id', payload.id);
+      if (error) throw error;
+      setEditGame(null);
+      fetchGames();
+      return;
+    }
     let fileUrl = null;
     if (payload.file) {
       const name = `games/${Date.now()}-${payload.file.name}`;
-      const { error: uploadError } = await supabase.storage.from('games').upload(name, payload.file, { contentType: 'text/html', upsert: true });
+      const { error: uploadError } = await supabase.storage.from('games').upload(name, payload.file, { contentType: 'text/html', upsert: false });
       if (uploadError) throw new Error('No se pudo subir el archivo.');
       const { data: urlData } = supabase.storage.from('games').getPublicUrl(name);
       fileUrl = urlData?.publicUrl ?? name;
@@ -90,9 +118,30 @@ export default function AdminGamesSection() {
       file_url: fileUrl,
       status: 'approved',
       approved_at: new Date().toISOString(),
+      game_width: payload.game_width ?? 800,
+      game_height: payload.game_height ?? 600,
+      orientation: payload.orientation ?? 'horizontal',
     };
     const { error } = await supabase.from('games').insert(row);
     if (error) throw error;
+    fetchGames();
+  }
+
+  function getStoragePathFromFileUrl(fileUrl) {
+    if (!fileUrl || typeof fileUrl !== 'string') return null;
+    const match = fileUrl.match(/\/games\/(.+)$/);
+    return match ? match[1] : null;
+  }
+
+  async function handleDeleteGame() {
+    if (!deleteGame?.id) return;
+    const game = games.find((g) => g.id === deleteGame.id);
+    if (game?.file_url) {
+      const path = getStoragePathFromFileUrl(game.file_url);
+      if (path) await supabase.storage.from('games').remove([path]);
+    }
+    await supabase.from('games').delete().eq('id', deleteGame.id);
+    setDeleteGame(null);
     fetchGames();
   }
 
@@ -121,7 +170,7 @@ export default function AdminGamesSection() {
           ))}
           <button
             type="button"
-            onClick={() => setLoadModalOpen(true)}
+            onClick={() => { setEditGame(null); setLoadModalOpen(true); }}
             className="px-4 py-2 rounded-lg text-sm font-medium text-white"
             style={{ background: ADMIN_THEME.accent }}
           >
@@ -168,12 +217,16 @@ export default function AdminGamesSection() {
                     <td className="px-4 py-2.5" style={{ color: ADMIN_THEME.text }}>{statusLabel(game.status)}</td>
                     <td className="px-4 py-2.5" style={{ color: ADMIN_THEME.textMuted }}>{formatDate(game.created_at)}</td>
                     <td className="px-4 py-2.5">
-                      {game.status === 'pending' && (
-                        <span className="flex gap-1">
-                          <button type="button" onClick={() => handleApprove(game.id)} className="px-2 py-1 rounded text-xs font-medium text-white" style={{ background: '#22c55e' }}>Aprobar</button>
-                          <button type="button" onClick={() => setRejectModal({ id: game.id, title: game.title })} className="px-2 py-1 rounded text-xs font-medium text-white" style={{ background: '#ef4444' }}>Rechazar</button>
-                        </span>
-                      )}
+                      <span className="flex flex-wrap gap-1">
+                        {game.status === 'pending' && (
+                          <>
+                            <button type="button" onClick={() => handleApprove(game.id)} className="px-2 py-1 rounded text-xs font-medium text-white" style={{ background: '#22c55e' }}>Aprobar</button>
+                            <button type="button" onClick={() => setRejectModal({ id: game.id, title: game.title })} className="px-2 py-1 rounded text-xs font-medium text-white" style={{ background: '#ef4444' }}>Rechazar</button>
+                          </>
+                        )}
+                        <button type="button" onClick={() => setEditGame(game)} className="px-2 py-1 rounded text-xs font-medium" style={{ color: ADMIN_THEME.accent, border: `1px solid ${ADMIN_THEME.accent}` }}>Editar</button>
+                        <button type="button" onClick={() => setDeleteGame({ id: game.id, title: game.title })} className="px-2 py-1 rounded text-xs font-medium text-white" style={{ background: '#ef4444' }}>Eliminar</button>
+                      </span>
                     </td>
                   </tr>
                 );
@@ -193,10 +246,18 @@ export default function AdminGamesSection() {
           onClose={() => setRejectModal(null)}
         />
       )}
-      {loadModalOpen && (
+      {(loadModalOpen || editGame) && (
         <LoadGameModal
+          game={editGame}
           onSave={handleLoadGame}
-          onClose={() => setLoadModalOpen(false)}
+          onClose={() => { setLoadModalOpen(false); setEditGame(null); }}
+        />
+      )}
+      {deleteGame && (
+        <DeleteGameModal
+          gameTitle={deleteGame.title}
+          onConfirm={handleDeleteGame}
+          onClose={() => setDeleteGame(null)}
         />
       )}
     </div>

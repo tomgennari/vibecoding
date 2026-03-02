@@ -189,8 +189,8 @@ export default function DashboardPage() {
         <div className="hidden lg:flex flex-1 min-h-0">
           <div className="flex-[2] flex flex-col gap-4 p-4 min-w-0">
             <Skeleton className="h-6 w-48 mb-2" />
-            <div className="grid grid-cols-3 gap-4">
-              {[1, 2, 3].map((i) => (
+            <div className="grid grid-cols-4 gap-4">
+              {[1, 2, 3, 4].map((i) => (
                 <Skeleton key={i} className="h-40" />
               ))}
             </div>
@@ -304,7 +304,7 @@ export default function DashboardPage() {
             {dailyGames.length === 0 ? (
               <p className="text-sm py-6 rounded-xl border text-center min-w-0" style={{ color: textMuted, ...cardStyle }}>Hoy no hay juegos gratuitos disponibles</p>
             ) : (
-              <div className="grid grid-cols-3 gap-4 min-w-0">
+              <div className="grid grid-cols-4 gap-4 min-w-0">
                 {dailyGames.map((game) => {
                   const house = HOUSES.find((h) => h.id === game.house) || HOUSES[0];
                   return (
