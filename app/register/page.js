@@ -171,6 +171,13 @@ function RegisterContent() {
             <p className="mt-3 text-[#7c3aed] text-lg font-semibold font-sans">Vibe Coding San Andrés</p>
           </header>
 
+          <p className="mb-6 text-center font-medium" style={{ color: isDark ? '#94a3b8' : '#64748b' }}>
+            ¿Ya tienes cuenta?{' '}
+            <Link href="/login" className={`font-bold transition-colors ${isDark ? 'text-vibe-accent hover:text-vibe-accent-secondary' : 'text-[#00478E] hover:text-[#7c3aed]'}`}>
+              Iniciar sesión
+            </Link>
+          </p>
+
           {urlMessage && (
             <div
               className="mb-6 p-4 rounded-xl border text-center text-sm font-medium"
@@ -337,13 +344,6 @@ function RegisterContent() {
               </p>
             </div>
           </form>
-
-          <p className="mt-8 text-center font-medium" style={{ color: isDark ? '#94a3b8' : '#64748b' }}>
-            ¿Ya tienes cuenta?{' '}
-            <Link href="/login" className={`font-bold transition-colors ${isDark ? 'text-vibe-accent hover:text-vibe-accent-secondary' : 'text-[#00478E] hover:text-[#7c3aed]'}`}>
-              Iniciar sesión
-            </Link>
-          </p>
         </div>
       </div>
     </>

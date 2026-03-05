@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
-import { supabase } from '@/lib/supabase.js';
+import { supabase } from '@/utils/supabase/client.js';
 import { HOUSES, GAME_STATUS, ADMIN_THEME } from '../constants.js';
 import RejectGameModal from './RejectGameModal.js';
 import LoadGameModal from './LoadGameModal.js';
