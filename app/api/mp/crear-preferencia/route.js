@@ -5,7 +5,10 @@ import { MercadoPagoConfig, Preference } from 'mercadopago';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const mpAccessToken = process.env.MP_ACCESS_TOKEN;
-const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+// MP no acepta localhost en back_urls; usar siempre producción para redirects
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL?.startsWith('http://localhost')
+  ? 'https://sass.vibecoding.ar'
+  : (process.env.NEXT_PUBLIC_BASE_URL || 'https://sass.vibecoding.ar');
 
 export async function POST(request) {
   if (!supabaseUrl || !supabaseAnonKey || !mpAccessToken) {
@@ -35,6 +38,14 @@ export async function POST(request) {
   if (!gameId || !userId || gameTitle == null || gamePrice == null) {
     return NextResponse.json({ error: 'Faltan gameId, userId, gameTitle o gamePrice' }, { status: 400 });
   }
+  const cleanTitulo = decodeURIComponent(gameTitle)
+    .replace(/'/g, '')
+    .replace(/"/g, '')
+    .replace(/[<>]/g, '')
+    .replace(/[&]/g, 'y')
+    .replace(/[#%]/g, '')
+    .trim();
+  const safeTitulo = encodeURIComponent(cleanTitulo);
 
   if (userId !== user.id) {
     return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
@@ -70,25 +81,35 @@ export async function POST(request) {
   }
 
   try {
+    console.log('MP_ACCESS_TOKEN exists:', !!process.env.MP_ACCESS_TOKEN);
+    console.log('Body recibido:', { gameId, userId, gameTitle, gamePrice });
+    const backUrls = {
+      success: `${BASE_URL}/pago/exitoso?gameId=${gameId}&gameTitle=${safeTitulo}`,
+      failure: `${BASE_URL}/pago/fallido?gameId=${gameId}`,
+      pending: `${BASE_URL}/pago/pendiente?gameId=${gameId}`,
+    };
+    console.log('BASE_URL:', BASE_URL);
+    console.log('back_urls generadas:', {
+      success: `${BASE_URL}/pago/exitoso`,
+      failure: `${BASE_URL}/pago/fallido`,
+      pending: `${BASE_URL}/pago/pendiente`,
+    });
+    console.log('back_urls completas enviadas a MP:', backUrls);
     const client = new MercadoPagoConfig({ accessToken: mpAccessToken });
     const preference = new Preference(client);
     const response = await preference.create({
       body: {
         items: [{
           id: String(gameId),
-          title: `Desbloquear juego: ${String(gameTitle).slice(0, 200)}`,
+          title: `Desbloquear juego: ${String(cleanTitulo).slice(0, 200)}`,
           quantity: 1,
           unit_price: price,
           currency_id: 'ARS',
         }],
-        back_urls: {
-          success: `${baseUrl}/pago/exitoso?gameId=${encodeURIComponent(gameId)}&gameTitle=${encodeURIComponent(String(gameTitle).slice(0, 100))}`,
-          failure: `${baseUrl}/pago/fallido?gameId=${encodeURIComponent(gameId)}`,
-          pending: `${baseUrl}/pago/pendiente?gameId=${encodeURIComponent(gameId)}&gameTitle=${encodeURIComponent(String(gameTitle).slice(0, 100))}`,
-        },
+        back_urls: backUrls,
         auto_return: 'approved',
         external_reference: `${userId}|${gameId}`,
-        notification_url: `${baseUrl}/api/mp/webhook`,
+        notification_url: `${BASE_URL}/api/mp/webhook`,
       },
     });
 
@@ -97,7 +118,8 @@ export async function POST(request) {
       return NextResponse.json({ error: 'MercadoPago no devolvió URL de pago' }, { status: 500 });
     }
     return NextResponse.json({ init_point: initPoint });
-  } catch (err) {
-    return NextResponse.json({ error: err?.message || 'Error al crear la preferencia' }, { status: 500 });
+  } catch (error) {
+    console.error('Error completo:', error);
+    return NextResponse.json({ error: error?.message || 'Error al crear la preferencia' }, { status: 500 });
   }
 }

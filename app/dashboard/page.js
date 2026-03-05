@@ -168,7 +168,7 @@ export default function DashboardPage() {
         body: JSON.stringify({
           gameId: game.id,
           userId: session.user.id,
-          gameTitle: game.title || 'Juego',
+          gameTitle: encodeURIComponent(game.title || 'Juego'),
           gamePrice,
         }),
       });
