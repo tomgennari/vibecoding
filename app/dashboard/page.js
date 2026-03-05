@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase.js';
+import { supabase } from '@/utils/supabase/client.js';
 import { useDashboardTheme } from '@/lib/use-dashboard-theme.js';
 
 const HOUSES = [
@@ -246,15 +246,15 @@ export default function DashboardPage() {
         <div className="flex-1 flex items-center justify-center gap-6 min-w-0">
           <div className="flex items-center gap-1.5 flex-shrink-0">
             <span className="text-sm font-black tabular-nums" style={{ color: accent }}>{stats.juegos}</span>
-            <span className="text-xs font-medium truncate max-w-[100px]" style={{ color: textMuted }}>{STATS_KEYS[0].label}</span>
+            <span className="text-xs font-medium whitespace-nowrap" style={{ color: textMuted }}>{STATS_KEYS[0].label}</span>
           </div>
           <div className="flex items-center gap-1.5 flex-shrink-0">
             <span className="text-sm font-black tabular-nums" style={{ color: accent }}>{formatDuration(stats.tiempoSeconds)}</span>
-            <span className="text-xs font-medium truncate max-w-[100px]" style={{ color: textMuted }}>{STATS_KEYS[1].label}</span>
+            <span className="text-xs font-medium whitespace-nowrap" style={{ color: textMuted }}>{STATS_KEYS[1].label}</span>
           </div>
           <div className="flex items-center gap-1.5 flex-shrink-0">
             <span className="text-sm font-black tabular-nums" style={{ color: accent }}>{stats.puntos}</span>
-            <span className="text-xs font-medium truncate max-w-[100px]" style={{ color: textMuted }}>{STATS_KEYS[2].label}</span>
+            <span className="text-xs font-medium whitespace-nowrap" style={{ color: textMuted }}>{STATS_KEYS[2].label}</span>
           </div>
         </div>
 
@@ -521,15 +521,15 @@ export default function DashboardPage() {
         <div className="grid grid-cols-3 gap-2 px-4 py-3 min-w-0" style={{ background: cardBg, borderBottom: `1px solid ${border}` }}>
           <div className="rounded-xl border py-2.5 px-2 text-center min-w-0 overflow-hidden" style={cardStyle}>
             <p className="text-lg font-black tabular-nums truncate" style={{ color: accent }}>{stats.juegos}</p>
-            <p className="text-[10px] font-medium truncate break-words hyphens-auto mt-0.5" style={{ color: textMuted }}>{STATS_KEYS[0].label}</p>
+            <p className="text-[10px] font-medium break-words hyphens-auto mt-0.5 leading-tight" style={{ color: textMuted }}>{STATS_KEYS[0].label}</p>
           </div>
           <div className="rounded-xl border py-2.5 px-2 text-center min-w-0 overflow-hidden" style={cardStyle}>
             <p className="text-lg font-black tabular-nums truncate" style={{ color: accent }}>{formatDuration(stats.tiempoSeconds)}</p>
-            <p className="text-[10px] font-medium truncate break-words hyphens-auto mt-0.5" style={{ color: textMuted }}>{STATS_KEYS[1].label}</p>
+            <p className="text-[10px] font-medium break-words hyphens-auto mt-0.5 leading-tight" style={{ color: textMuted }}>{STATS_KEYS[1].label}</p>
           </div>
           <div className="rounded-xl border py-2.5 px-2 text-center min-w-0 overflow-hidden" style={cardStyle}>
             <p className="text-lg font-black tabular-nums truncate" style={{ color: accent }}>{stats.puntos}</p>
-            <p className="text-[10px] font-medium truncate break-words hyphens-auto mt-0.5" style={{ color: textMuted }}>{STATS_KEYS[2].label}</p>
+            <p className="text-[10px] font-medium break-words hyphens-auto mt-0.5 leading-tight" style={{ color: textMuted }}>{STATS_KEYS[2].label}</p>
           </div>
         </div>
 
@@ -568,7 +568,7 @@ export default function DashboardPage() {
                 className="text-2xl font-black uppercase tracking-wide text-white mb-2"
                 style={{ fontFamily: "'Burbank Big', sans-serif", fontWeight: 900 }}
               >
-                Cada peso construye el campus
+                ¡Desbloqueá juegos y construyamos el Campus!
               </p>
               <p className="text-sm text-white/90 mb-4">Desbloqueá más juegos o doná directamente</p>
               <div className="flex flex-wrap gap-3 justify-center">

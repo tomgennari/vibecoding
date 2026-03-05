@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase.js';
+import { supabase } from '@/utils/supabase/client.js';
 import { ADMIN_THEME } from './constants.js';
 import AdminNavbar from './components/AdminNavbar.js';
 import AdminSidebar from './components/AdminSidebar.js';

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase.js';
+import { supabase } from '@/utils/supabase/client.js';
 
 const DEFAULT_WIDTH = 800;
 const DEFAULT_HEIGHT = 600;

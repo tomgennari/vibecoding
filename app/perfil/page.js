@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase.js';
+import { supabase } from '@/utils/supabase/client.js';
 import { useDashboardTheme } from '@/lib/use-dashboard-theme.js';
 
 const HOUSES = [

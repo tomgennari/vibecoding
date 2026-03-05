@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase.js';
+import { supabase } from '@/utils/supabase/client.js';
 import { useAuthTheme } from '@/lib/use-auth-theme.js';
 import { ThemeToggle } from '@/components/auth-theme-toggle.js';
 
