@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
@@ -15,7 +15,7 @@ const HOUSES = [
   { id: 'john_monteith', name: 'John Monteith', color: '#22c55e', image: '/images/houses/house-monteith.png' },
 ];
 
-export default function RegisterPage() {
+function RegisterContent() {
   const searchParams = useSearchParams();
   const [theme, , toggleTheme] = useAuthTheme();
   const [firstName, setFirstName] = useState('');
@@ -347,5 +347,13 @@ export default function RegisterPage() {
         </div>
       </div>
     </>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={null}>
+      <RegisterContent />
+    </Suspense>
   );
 }
