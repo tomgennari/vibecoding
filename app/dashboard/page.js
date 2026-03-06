@@ -634,6 +634,51 @@ export default function DashboardPage() {
             </div>
           </section>
 
+          {/* Juegos para desbloquear — scroll horizontal mismo estilo que Juegos del día */}
+          <section className="min-w-0">
+            <h2 className="text-base font-bold mb-3 w-full" style={{ color: text }}>🎮 Juegos para desbloquear</h2>
+            {gamesToUnlock.length === 0 ? (
+              <p className="text-sm py-4 rounded-xl border text-center min-w-0" style={{ color: textMuted, ...cardStyle }}>No hay más juegos para desbloquear</p>
+            ) : (
+              <div className="flex gap-4 overflow-x-auto overflow-y-hidden pb-2 -mx-4 px-4 scrollbar-hide" style={{ WebkitOverflowScrolling: 'touch' }}>
+                {gamesToUnlock.map((game) => {
+                  const house = HOUSES.find((h) => h.id === game.house) || HOUSES[0];
+                  return (
+                    <div key={game.id} className="flex-shrink-0 rounded-xl border p-4 flex flex-col min-w-0 overflow-hidden" style={{ width: '75vw', ...cardStyle }}>
+                      <div className="flex items-center gap-2 mb-2 min-w-0">
+                        <Image src={house.image} alt={house.name} width={24} height={24} className="flex-shrink-0 object-contain" />
+                        <span className="text-xs font-bold truncate" style={{ color: house.color }}>{house.name}</span>
+                      </div>
+                      <h3 className="font-bold text-sm break-words min-w-0" style={{ color: text }}>{game.title || 'Juego'}</h3>
+                      <p className="text-xs mt-1 flex-1 break-words min-w-0 line-clamp-2" style={{ color: textMuted }}>{game.description || ''}</p>
+                      <p className="text-lg font-black tabular-nums mt-2 flex-shrink-0" style={{ color: accent }}>
+                        ${(Number(game.price) || 5000).toLocaleString('es-AR')} ARS
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => handleDesbloquear(game)}
+                        disabled={unlockingGameId === game.id}
+                        className="vibe-btn-gradient mt-3 w-full rounded-xl py-2.5 font-bold text-white text-sm text-center block disabled:opacity-70 disabled:pointer-events-none"
+                      >
+                        {unlockingGameId === game.id ? (
+                          <span className="inline-flex items-center justify-center gap-2">
+                            <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                            </svg>
+                            Redirigiendo...
+                          </span>
+                        ) : (
+                          'Desbloquear'
+                        )}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+
           {/* Mis juegos desbloqueados — vacío o grid 2 cols */}
           <section className="min-w-0">
             <h2 className="text-base font-bold mb-3" style={{ color: text }}>Mis juegos desbloqueados</h2>
