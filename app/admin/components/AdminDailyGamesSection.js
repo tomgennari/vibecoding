@@ -32,7 +32,7 @@ export default function AdminDailyGamesSection() {
   const today = new Date().toISOString().split('T')[0];
   const tomorrow = getTomorrow();
 
-  const fetch = useCallback(async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     const [
       dailyRes,
@@ -110,8 +110,8 @@ export default function AdminDailyGamesSection() {
   }, [today, tomorrow]);
 
   useEffect(() => {
-    fetch();
-  }, [fetch]);
+    loadData();
+  }, [loadData]);
 
   const filtered = useMemo(() => {
     let list = allGamesWithMetrics;
@@ -156,18 +156,34 @@ export default function AdminDailyGamesSection() {
   }
 
   async function scheduleForTomorrow(gameId) {
-    setActioning(gameId);
+    console.log('scheduleForTomorrow llamado con gameId:', gameId)
+    setActioning(gameId)
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) return;
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) throw new Error('No hay sesión activa')
+      
       const res = await fetch('/api/admin/daily-games', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({ gameId }),
-      });
-      if (res.ok) await fetch();
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({ gameId })
+      })
+      
+      console.log('fetch response status:', res?.status)
+
+      if (!res || !res.ok) {
+        const error = res ? await res.json().catch(() => ({})) : {}
+        throw new Error(error.error || 'Error al programar el juego')
+      }
+      
+      await loadData()
+    } catch (err) {
+      console.error(err)
+      alert(err.message || 'Error al programar el juego')
     } finally {
-      setActioning(null);
+      setActioning(null)
     }
   }
 
@@ -180,7 +196,7 @@ export default function AdminDailyGamesSection() {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
-      if (res.ok) await fetch();
+      if (res.ok) await loadData();
     } finally {
       setActioning(null);
     }

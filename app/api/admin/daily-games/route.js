@@ -62,7 +62,7 @@ export async function POST(request) {
   }
   const { error } = await auth.supabase
     .from('daily_free_games')
-    .insert({ game_id: gameId, scheduled_for: tomorrow, auto_selected: false });
+    .insert({ game_id: gameId, scheduled_for: tomorrow, active_date: null, auto_selected: false });
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }

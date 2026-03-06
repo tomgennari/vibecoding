@@ -1,7 +1,7 @@
 # Campus San Andrés — Vibe Coding San Andrés
-## Product Requirements Document (PRD) v3.0
+## Product Requirements Document (PRD) v3.1
 
-**Fecha:** Febrero 2026  
+**Fecha:** Marzo 2026  
 **Autor:** Tomás Gennari  
 **URL:** sass.vibecoding.ar  
 **Repositorio:** github.com/tomgennari/vibecoding  
@@ -92,7 +92,7 @@ Los usuarios desbloquean juegos mediante pagos en pesos argentinos vía MercadoP
 - Aprueba o rechaza juegos con mensaje al alumno
 - Gestión completa de usuarios: alta, baja, modificación, bloqueo
 - Acceso a todas las métricas y reportes de recaudación
-- Configura los 2-3 juegos gratuitos del día
+- Configura los 2-3 juegos gratuitos del día (manualmente o automático)
 - Activa o desactiva paquetes de juegos según volumen disponible
 - En fases futuras: el colegio tendrá su propio administrador
 
@@ -196,6 +196,26 @@ Cada juego registra en la base de datos:
 - Top jugadores individuales
 - Ranking de Houses (suma ponderada de todas las métricas)
 - Progreso de construcción por edificio (barra de avance visible para todos)
+
+### 4.6 Panel de Administración ✅ Implementado
+
+El panel de admin está construido en Next.js en `/app/admin` con las siguientes secciones operativas:
+
+**Juegos del día (`AdminDailyGamesSection`):**
+- Vista de juegos activos hoy
+- Vista de juegos programados para mañana (con botón Quitar)
+- Tabla de todos los juegos aprobados con métricas: jugadores únicos, likes, recaudado, última vez usado como gratis
+- Filtros: Todos / No usados / Ya usados como gratis
+- Ordenamiento por cualquier columna
+- Paginación
+- Botón "Programar para mañana" — inserta con `scheduled_for = mañana` y `active_date = null`
+- Límite de 3 juegos programados por día (validado en frontend y API)
+- Fallback automático: los juegos faltantes se seleccionan automáticamente a las 00:00
+
+**API routes de admin:**
+- `POST /api/admin/daily-games` — programa un juego para mañana
+- `DELETE /api/admin/daily-games?gameId=` — quita un juego programado
+- Ambas rutas verifican sesión activa y rol `is_admin` antes de operar
 
 ---
 
@@ -344,8 +364,15 @@ Tablas principales (todas con RLS habilitado):
 | `game_unlocks` | Desbloqueos | id, user_id, game_id, amount_paid, payment_id, unlocked_at |
 | `donations` | Donaciones directas | id, user_id, building_id, amount, payment_id, donated_at |
 | `buildings` | Edificios | id, name, target_amount, current_amount, unlock_type |
-| `daily_free_games` | Juegos gratuitos del día | id, game_id, active_date |
+| `daily_free_games` | Juegos gratuitos del día | id, game_id, active_date (date\|null), scheduled_for (date\|null), auto_selected (bool) |
 | `house_points` | Puntos por House | house, total_points, points_by_games, points_by_time, points_by_donations |
+
+**Lógica de `daily_free_games`:**
+- `scheduled_for`: fecha para la que está programado el juego (seteada por el admin o el cron)
+- `active_date`: fecha en que el juego fue efectivamente activado (seteada por el cron a las 00:00)
+- `auto_selected`: `true` si fue elegido automáticamente por el cron, `false` si fue elegido por el admin
+- Al insertar manualmente: `active_date = null`, `scheduled_for = mañana`, `auto_selected = false`
+- El cron de las 00:00 setea `active_date` en los registros con `scheduled_for = hoy`
 
 ### 7.3 Seguridad
 
@@ -436,12 +463,14 @@ Tablas principales (todas con RLS habilitado):
 
 ## 8. Roadmap de Desarrollo
 
-### Fase 1 — MVP Funcional (4-6 semanas) ← EN CURSO
+### Fase 1 — MVP Funcional ← EN CURSO
 
-- [ ] Registro y login (alumnos y padres), ambos eligen House
-- [ ] Modo claro para páginas de acceso, oscuro para plataforma
-- [ ] 3-5 juegos HTML5 cargados por el admin
-- [ ] Sistema de juegos gratuitos del día
+- [x] Registro y login (alumnos y padres), ambos eligen House
+- [x] Modo claro para páginas de acceso, oscuro para plataforma
+- [x] Juegos HTML5 cargados por el admin
+- [x] Sistema de juegos gratuitos del día — programación manual y automática
+- [x] Panel de admin con dashboard, rankings de Houses, gestión de juegos del día
+- [x] API routes de admin protegidas por sesión y rol is_admin
 - [ ] Integración MercadoPago — precio fijo $5.000 por juego
 - [ ] Scoreboard básico
 - [ ] Deploy estable en sass.vibecoding.ar
@@ -496,9 +525,12 @@ Tablas principales (todas con RLS habilitado):
 
 ### 9.1 Juegos Gratuitos del Día
 
-- El admin selecciona 2-3 juegos gratuitos cada día
-- Rotan automáticamente a medianoche hora Argentina (UTC-3)
+- El admin puede seleccionar hasta 3 juegos gratuitos manualmente desde el panel, programándolos con `scheduled_for = mañana`
+- Los juegos faltantes se completan automáticamente por el cron a las 00:00 hora Argentina (UTC-3)
+- El cron activa los juegos programados seteando `active_date = hoy`
 - Los juegos ya desbloqueados por compra permanecen desbloqueados para ese usuario
+- No se puede programar el mismo juego dos veces para el mismo día (validado en API)
+- Máximo 3 juegos programados por día (validado en API)
 
 ### 9.2 Precios
 
@@ -547,6 +579,8 @@ Los valores son configurables por el admin.
 | Feb 2026 | Creación tabla `profiles` | Setup inicial |
 | Feb 2026 | Eliminación columnas `nombre`, `apellido`, `tipo` | Duplicadas con `first_name`, `last_name`, `user_type` |
 | Feb 2026 | Eliminación constraint `profiles_house_check` | Conflicto con valores del formulario |
+| Mar 2026 | Agregado columna `scheduled_for` (date, nullable) a `daily_free_games` | Permitir programar juegos para días futuros |
+| Mar 2026 | Agregado columna `auto_selected` (bool, default false) a `daily_free_games` | Distinguir selección manual del admin vs automática del cron |
 
 ---
 
