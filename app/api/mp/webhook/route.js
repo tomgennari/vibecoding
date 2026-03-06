@@ -58,12 +58,16 @@ export async function POST(request) {
       payment_id: String(payment.id),
     });
 
-    const { data: currentGame } = await supabase.from('games').select('total_revenue').eq('id', gameId).single();
-    if (currentGame && typeof currentGame.total_revenue === 'number') {
-      await supabase.from('games').update({ total_revenue: (currentGame.total_revenue || 0) + amountPaid }).eq('id', gameId);
-    } else {
-      await supabase.from('games').update({ total_revenue: amountPaid }).eq('id', gameId);
-    }
+    const { data: gameRevenue } = await supabase
+      .from('games')
+      .select('total_revenue')
+      .eq('id', gameId)
+      .single();
+
+    await supabase
+      .from('games')
+      .update({ total_revenue: (Number(gameRevenue?.total_revenue) || 0) + Number(amountPaid) })
+      .eq('id', gameId);
 
     const house = game.house;
     if (house) {
