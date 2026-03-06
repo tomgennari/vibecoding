@@ -57,11 +57,6 @@ export async function GET(request, context) {
     .eq('active_date', today)
     .maybeSingle();
 
-  console.log('user.id:', user.id);
-  console.log('game_id:', id);
-  console.log('unlock found:', unlock);
-  console.log('dailyFree found:', dailyFree);
-
   if (!unlock && !dailyFree) {
     return NextResponse.json({ error: 'No tenés acceso a este juego' }, { status: 403 });
   }
