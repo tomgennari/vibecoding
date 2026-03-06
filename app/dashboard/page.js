@@ -358,7 +358,7 @@ export default function DashboardPage() {
 
           {/* Carrusel 2 — Juegos para desbloquear (segundo en orden) */}
           <section className="flex-shrink-0 mb-4">
-            <div className="flex items-center justify-between gap-2 mb-3">
+            <div className="flex items-center gap-3 mb-3">
               <h2 className="text-lg font-bold" style={{ color: text }}>🎮 Juegos para desbloquear</h2>
               <Link href="/juegos" className="text-sm font-semibold flex-shrink-0" style={{ color: accent }}>Ver todos →</Link>
             </div>
@@ -428,7 +428,7 @@ export default function DashboardPage() {
 
           {/* Carrusel 1 — Mis juegos desbloqueados (cuarto) */}
           <section className="flex-1 min-h-0 flex flex-col">
-            <div className="flex items-center justify-between gap-2 mb-3 flex-shrink-0">
+            <div className="flex items-center gap-3 mb-3 flex-shrink-0">
               <h2 className="text-lg font-bold" style={{ color: text }}>🔓 Mis juegos desbloqueados</h2>
               <Link href="/juegos" className="text-sm font-semibold flex-shrink-0" style={{ color: accent }}>Ver todos →</Link>
             </div>
