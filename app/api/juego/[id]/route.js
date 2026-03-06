@@ -11,13 +11,15 @@ export async function GET(request, context) {
     return NextResponse.json({ error: 'ID de juego no válido' }, { status: 400 });
   }
 
-  const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
   const authHeader = request.headers.get('authorization');
   const token = authHeader?.replace(/^Bearer\s+/i, '') || new URL(request.url).searchParams.get('token');
   if (!token) {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
   }
+
+  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    global: { headers: { Authorization: `Bearer ${token}` } },
+  });
 
   const { data: { user }, error: authError } = await supabase.auth.getUser(token);
   if (authError || !user) {
@@ -41,13 +43,26 @@ export async function GET(request, context) {
   }
 
   const today = new Date().toISOString().split('T')[0];
-  const [{ data: dailyRow }, { data: unlockRow }] = await Promise.all([
-    supabase.from('daily_free_games').select('id').eq('game_id', id).eq('active_date', today).maybeSingle(),
-    supabase.from('game_unlocks').select('id').eq('user_id', user.id).eq('game_id', id).maybeSingle(),
-  ]);
+  const { data: unlock } = await supabase
+    .from('game_unlocks')
+    .select('id')
+    .eq('user_id', user.id)
+    .eq('game_id', id)
+    .maybeSingle();
 
-  const hasAccess = Boolean(dailyRow || unlockRow);
-  if (!hasAccess) {
+  const { data: dailyFree } = await supabase
+    .from('daily_free_games')
+    .select('id')
+    .eq('game_id', id)
+    .eq('active_date', today)
+    .maybeSingle();
+
+  console.log('user.id:', user.id);
+  console.log('game_id:', id);
+  console.log('unlock found:', unlock);
+  console.log('dailyFree found:', dailyFree);
+
+  if (!unlock && !dailyFree) {
     return NextResponse.json({ error: 'No tenés acceso a este juego' }, { status: 403 });
   }
 
