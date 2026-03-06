@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -34,7 +34,21 @@ export default function JuegosPage() {
   const [dailyIds, setDailyIds] = useState(new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('newest');
+  const [houseFilter, setHouseFilter] = useState('');
+  const [housesDropdownOpen, setHousesDropdownOpen] = useState(false);
+  const housesDropdownRefDesktop = useRef(null);
+  const housesDropdownRefMobile = useRef(null);
   const [unlockingGameId, setUnlockingGameId] = useState(null);
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      const insideDesktop = housesDropdownRefDesktop.current?.contains(e.target);
+      const insideMobile = housesDropdownRefMobile.current?.contains(e.target);
+      if (!insideDesktop && !insideMobile) setHousesDropdownOpen(false);
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const isDark = theme === 'dark';
   const bg = isDark ? '#0a0a0f' : '#ffffff';
@@ -116,6 +130,9 @@ export default function JuegosPage() {
 
   const filteredAndSortedGames = useMemo(() => {
     let list = gamesWithMetrics;
+    if (houseFilter) {
+      list = list.filter((g) => g.house === houseFilter);
+    }
     const q = (searchQuery || '').trim().toLowerCase();
     if (q) {
       list = list.filter(
@@ -134,7 +151,7 @@ export default function JuegosPage() {
       sorted.sort((a, b) => (b.total_revenue || 0) - (a.total_revenue || 0));
     }
     return sorted;
-  }, [gamesWithMetrics, searchQuery, sortBy]);
+  }, [gamesWithMetrics, searchQuery, sortBy, houseFilter]);
 
   async function handleDesbloquear(game) {
     if (unlockingGameId) return;
@@ -212,26 +229,78 @@ export default function JuegosPage() {
             {filteredAndSortedGames.length} juego{filteredAndSortedGames.length !== 1 ? 's' : ''} disponible{filteredAndSortedGames.length !== 1 ? 's' : ''}
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-4 min-w-0">
+          {/* Desktop: una línea — buscador (ancho limitado) | dropdown Houses | orden */}
+          <div className="hidden sm:flex flex-1 items-center gap-3 mb-4 min-w-0">
             <input
               type="search"
               placeholder="Buscar por nombre..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full sm:max-w-xs rounded-xl px-4 py-3 text-sm min-w-0 border transition-all outline-none focus:ring-2"
+              className="w-full max-w-xs min-w-0 rounded-xl px-4 py-2.5 text-sm border transition-all outline-none focus:ring-2"
               style={
                 isDark
                   ? { background: '#13131a', borderColor: border, color: text }
                   : { background: '#fff', borderColor: '#e2e8f0', color: '#0f172a' }
               }
             />
-            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide min-w-0" style={{ WebkitOverflowScrolling: 'touch' }}>
+            <div className="relative flex-shrink-0" ref={housesDropdownRefDesktop}>
+              <button
+                type="button"
+                onClick={() => setHousesDropdownOpen((o) => !o)}
+                className="rounded-xl px-3 py-2.5 text-sm font-bold border flex items-center gap-2 min-w-0"
+                style={{
+                  borderColor: border,
+                  background: houseFilter ? (HOUSES.find((h) => h.id === houseFilter)?.color || cardBg) : cardBg,
+                  color: houseFilter ? '#fff' : textMuted,
+                }}
+              >
+                {houseFilter ? (
+                  <>
+                    <Image src={HOUSES.find((h) => h.id === houseFilter)?.image || HOUSES[0].image} alt="" width={20} height={20} className="object-contain flex-shrink-0" />
+                    <span className="truncate max-w-[120px]">{HOUSES.find((h) => h.id === houseFilter)?.name || ''}</span>
+                  </>
+                ) : (
+                  <>🛡 Houses</>
+                )}
+                <svg className={`w-4 h-4 flex-shrink-0 transition-transform ${housesDropdownOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {housesDropdownOpen && (
+                <div
+                  className="absolute top-full left-0 mt-1 z-20 rounded-xl border py-1 min-w-[180px] shadow-lg"
+                  style={{ background: cardBg, borderColor: border }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => { setHouseFilter(''); setHousesDropdownOpen(false); }}
+                    className="w-full text-left px-3 py-2 text-sm font-bold rounded-lg transition-colors hover:opacity-90 flex items-center gap-2"
+                    style={{ color: text }}
+                  >
+                    Todas
+                  </button>
+                  {HOUSES.map((h) => (
+                    <button
+                      key={h.id}
+                      type="button"
+                      onClick={() => { setHouseFilter(h.id); setHousesDropdownOpen(false); }}
+                      className="w-full text-left px-3 py-2 text-sm font-bold rounded-lg transition-colors hover:opacity-90 flex items-center gap-2"
+                      style={{ color: houseFilter === h.id ? h.color : text }}
+                    >
+                      <Image src={h.image} alt={h.name} width={20} height={20} className="object-contain flex-shrink-0" />
+                      <span className="truncate">{h.name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="flex gap-2 flex-shrink-0">
               {SORT_OPTIONS.map((opt) => (
                 <button
                   key={opt.id}
                   type="button"
                   onClick={() => setSortBy(opt.id)}
-                  className="flex-shrink-0 rounded-xl px-4 py-2.5 text-sm font-bold transition-colors whitespace-nowrap"
+                  className="rounded-xl px-3 py-2.5 text-sm font-bold transition-colors whitespace-nowrap"
                   style={
                     sortBy === opt.id
                       ? { background: accent, color: '#fff' }
@@ -241,6 +310,92 @@ export default function JuegosPage() {
                   {opt.label}
                 </button>
               ))}
+            </div>
+          </div>
+
+          {/* Mobile: buscador full width; segunda línea = dropdown Houses (sin overflow que recorte) + orden en scroll */}
+          <div className="sm:hidden flex flex-col gap-3 mb-4 min-w-0">
+            <input
+              type="search"
+              placeholder="Buscar por nombre..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full min-w-0 rounded-xl px-4 py-3 text-sm border transition-all outline-none focus:ring-2"
+              style={
+                isDark
+                  ? { background: '#13131a', borderColor: border, color: text }
+                  : { background: '#fff', borderColor: '#e2e8f0', color: '#0f172a' }
+              }
+            />
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="relative flex-shrink-0" ref={housesDropdownRefMobile}>
+                <button
+                  type="button"
+                  onClick={() => setHousesDropdownOpen((o) => !o)}
+                  className="rounded-xl px-3 py-2.5 text-sm font-bold border flex items-center gap-2"
+                  style={{
+                    borderColor: border,
+                    background: houseFilter ? (HOUSES.find((h) => h.id === houseFilter)?.color || cardBg) : cardBg,
+                    color: houseFilter ? '#fff' : textMuted,
+                  }}
+                >
+                  {houseFilter ? (
+                    <>
+                      <Image src={HOUSES.find((h) => h.id === houseFilter)?.image || HOUSES[0].image} alt="" width={20} height={20} className="object-contain flex-shrink-0" />
+                      <span className="truncate max-w-[100px]">{HOUSES.find((h) => h.id === houseFilter)?.name || ''}</span>
+                    </>
+                  ) : (
+                    <>🛡 Houses</>
+                  )}
+                  <svg className={`w-4 h-4 flex-shrink-0 transition-transform ${housesDropdownOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {housesDropdownOpen && (
+                  <div
+                    className="absolute top-full left-0 mt-1 z-50 rounded-xl border py-1 min-w-[180px] shadow-lg"
+                    style={{ background: cardBg, borderColor: border }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => { setHouseFilter(''); setHousesDropdownOpen(false); }}
+                      className="w-full text-left px-3 py-2 text-sm font-bold rounded-lg flex items-center gap-2"
+                      style={{ color: text }}
+                    >
+                      Todas
+                    </button>
+                    {HOUSES.map((h) => (
+                      <button
+                        key={h.id}
+                        type="button"
+                        onClick={() => { setHouseFilter(h.id); setHousesDropdownOpen(false); }}
+                        className="w-full text-left px-3 py-2 text-sm font-bold rounded-lg flex items-center gap-2"
+                        style={{ color: houseFilter === h.id ? h.color : text }}
+                      >
+                        <Image src={h.image} alt={h.name} width={20} height={20} className="object-contain flex-shrink-0" />
+                        <span className="truncate">{h.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide min-w-0 flex-1" style={{ WebkitOverflowScrolling: 'touch' }}>
+              {SORT_OPTIONS.map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => setSortBy(opt.id)}
+                  className="flex-shrink-0 rounded-xl px-3 py-2.5 text-sm font-bold transition-colors whitespace-nowrap"
+                  style={
+                    sortBy === opt.id
+                      ? { background: accent, color: '#fff' }
+                      : { background: 'transparent', border: `1px solid ${border}`, color: textMuted }
+                  }
+                >
+                  {opt.label}
+                </button>
+              ))}
+              </div>
             </div>
           </div>
         </header>
