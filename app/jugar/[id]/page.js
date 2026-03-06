@@ -31,6 +31,9 @@ export default function JugarPage() {
   const [shareOpen, setShareOpen] = useState(false);
   const [copyMessage, setCopyMessage] = useState('');
   const shareRef = useRef(null);
+  const sessionIdRef = useRef(null);
+  const startTimeRef = useRef(null);
+  const accessTokenRef = useRef(null);
 
   const [iframeSrc, setIframeSrc] = useState('');
 
@@ -71,10 +74,46 @@ export default function JugarPage() {
       const { data: likeRow } = await supabase.from('game_likes').select('id').eq('user_id', session.user.id).eq('game_id', id).maybeSingle();
       setUserLiked(Boolean(likeRow));
       setIframeSrc(`/api/juego/${id}?token=${encodeURIComponent(session.access_token)}`);
+      accessTokenRef.current = session.access_token;
+      startTimeRef.current = Date.now();
+      try {
+        const res = await fetch('/api/sesion', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+          body: JSON.stringify({ gameId: id }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (data.sessionId) sessionIdRef.current = data.sessionId;
+      } catch (_) {}
       setLoading(false);
     }
     load();
   }, [id]);
+
+  useEffect(() => {
+    const token = () => accessTokenRef.current;
+    const endSession = (durationSeconds) => {
+      const sid = sessionIdRef.current;
+      if (!sid || !token()) return;
+      const body = JSON.stringify({ sessionId: sid, duration_seconds: durationSeconds });
+      fetch('/api/sesion', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token()}` },
+        body,
+        keepalive: true,
+      }).catch(() => {});
+    };
+    const handleBeforeUnload = () => {
+      const duration = Math.floor((Date.now() - (startTimeRef.current || Date.now())) / 1000);
+      endSession(duration);
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      const duration = Math.floor((Date.now() - (startTimeRef.current || Date.now())) / 1000);
+      endSession(duration);
+    };
+  }, []);
 
   const width = game?.game_width ?? DEFAULT_WIDTH;
   const height = game?.game_height ?? DEFAULT_HEIGHT;
