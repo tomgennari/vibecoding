@@ -57,6 +57,7 @@ export default function DashboardPage() {
   const [unlockingGameId, setUnlockingGameId] = useState(null);
   const [userLikedIds, setUserLikedIds] = useState(new Set());
   const [likingGameId, setLikingGameId] = useState(null);
+  const [uniquePlayersByGame, setUniquePlayersByGame] = useState({});
 
   const isDark = theme === 'dark';
   const bg = isDark ? '#0a0a0f' : '#ffffff';
@@ -80,6 +81,7 @@ export default function DashboardPage() {
         profileRes,
         unlocksCountRes,
         sessionsRes,
+        sessionsAllRes,
         dailyIdsRes,
         unlocksListRes,
         approvedGamesRes,
@@ -92,6 +94,7 @@ export default function DashboardPage() {
         supabase.from('profiles').select('first_name, last_name, house').eq('id', uid).single().then((r) => ({ data: r.data, error: r.error })).catch(() => ({ data: null, error: true })),
         supabase.from('game_unlocks').select('*', { count: 'exact', head: true }).eq('user_id', uid).then((r) => ({ count: r.count ?? 0, error: r.error })).catch(() => ({ count: 0, error: true })),
         supabase.from('game_sessions').select('duration_seconds').eq('user_id', uid).then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
+        supabase.from('game_sessions').select('game_id, user_id').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('daily_free_games').select('game_id').eq('active_date', today).then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('game_unlocks').select('game_id').eq('user_id', uid).then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('games').select('*').eq('status', 'approved').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
@@ -111,6 +114,19 @@ export default function DashboardPage() {
         tiempoSeconds: (sessionsRes.data || []).reduce((acc, row) => acc + (Number(row.duration_seconds) || 0), 0),
         puntos: (housePointsRes.data || []).find((row) => row.house === userHouse)?.total_points ?? 0,
       });
+
+      const uniquePlayersByGame = {};
+      (sessionsAllRes.data || []).forEach((s) => {
+        if (s.game_id) {
+          if (!uniquePlayersByGame[s.game_id]) uniquePlayersByGame[s.game_id] = new Set();
+          uniquePlayersByGame[s.game_id].add(s.user_id);
+        }
+      });
+      const uniquePlayersCounts = {};
+      Object.keys(uniquePlayersByGame).forEach((gameId) => {
+        uniquePlayersCounts[gameId] = uniquePlayersByGame[gameId].size;
+      });
+      setUniquePlayersByGame(uniquePlayersCounts);
 
       const dailyIds = (dailyIdsRes.data || []).map((row) => row.game_id).filter(Boolean);
       const unlockedIds = (unlocksListRes.data || []).map((row) => row.game_id).filter(Boolean);
@@ -313,7 +329,7 @@ export default function DashboardPage() {
                       <h3 className="font-bold text-lg break-words min-w-0" style={{ color: text }}>{game.title || 'Juego'}</h3>
                       <p className="text-sm mt-2 flex-1 break-words min-w-0" style={{ color: textMuted }}>{game.description || ''}</p>
                       <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-2 text-[11px] items-center" style={{ color: textMuted }}>
-                        <span>👥 0 jugadores</span>
+                        <span>👥 {uniquePlayersByGame[game.id] ?? 0} jugadores</span>
                         <button
                           type="button"
                           onClick={() => handleToggleLike(game.id)}
@@ -358,7 +374,7 @@ export default function DashboardPage() {
                     <h3 className="font-bold text-sm break-words min-w-0" style={{ color: text }}>{game.title || 'Juego'}</h3>
                     <p className="text-xs mt-1 flex-1 break-words min-w-0" style={{ color: textMuted }}>{game.description || ''}</p>
                     <div className="flex flex-wrap gap-x-2 gap-y-0.5 mt-2 text-[11px] min-w-0" style={{ color: textMuted }}>
-                      <span>👥 0 jugadores</span>
+                      <span>👥 {uniquePlayersByGame[game.id] ?? 0} jugadores</span>
                       <span>❤️ 0 likes</span>
                       <span>💰 $0 ARS recaudado</span>
                     </div>
@@ -428,7 +444,7 @@ export default function DashboardPage() {
                       </div>
                       <h3 className="font-bold text-sm break-words min-w-0" style={{ color: text }}>{game.title || 'Juego'}</h3>
                       <div className="flex flex-wrap gap-x-2 gap-y-0.5 mt-2 text-[11px] min-w-0 items-center" style={{ color: textMuted }}>
-                        <span>👥 0</span>
+                        <span>👥 {uniquePlayersByGame[game.id] ?? 0}</span>
                         <button
                           type="button"
                           onClick={() => handleToggleLike(game.id)}

@@ -86,7 +86,7 @@ export default function JuegosPage() {
       ] = await Promise.all([
         supabase.from('profiles').select('first_name, last_name, house').eq('id', uid).single().then((r) => ({ data: r.data, error: r.error })).catch(() => ({ data: null, error: true })),
         supabase.from('games').select('*').eq('status', 'approved').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
-        supabase.from('game_sessions').select('game_id').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
+        supabase.from('game_sessions').select('game_id, user_id').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('game_likes').select('game_id').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('game_likes').select('game_id').eq('user_id', uid).then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('game_unlocks').select('game_id').eq('user_id', uid).then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
@@ -107,9 +107,12 @@ export default function JuegosPage() {
       });
 
       const gamesList = gamesRes.data || [];
-      const playsByGame = {};
+      const uniquePlayersByGame = {};
       (sessionsRes.data || []).forEach((s) => {
-        if (s.game_id) playsByGame[s.game_id] = (playsByGame[s.game_id] || 0) + 1;
+        if (s.game_id) {
+          if (!uniquePlayersByGame[s.game_id]) uniquePlayersByGame[s.game_id] = new Set();
+          uniquePlayersByGame[s.game_id].add(s.user_id);
+        }
       });
       const likesByGame = {};
       (likesRes.data || []).forEach((r) => {
@@ -118,7 +121,7 @@ export default function JuegosPage() {
 
       const withMetrics = gamesList.map((g) => ({
         ...g,
-        total_plays: playsByGame[g.id] || 0,
+        total_plays: uniquePlayersByGame[g.id]?.size || 0,
         total_likes: likesByGame[g.id] || 0,
         total_revenue: Number(g.total_revenue) || 0,
       }));
