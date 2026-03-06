@@ -340,7 +340,7 @@ export default function DashboardPage() {
                           <span className="tabular-nums">{userLikedIds.has(game.id) ? '❤️' : '🤍'}</span>
                           <span>{game.total_likes ?? 0}</span>
                         </button>
-                        <span>💰 $0 ARS recaudado</span>
+                        <span>💰 ${(game.total_revenue ?? 0).toLocaleString('es-AR')} ARS recaudado</span>
                       </div>
                       <div className="flex items-center gap-2 mt-3 min-w-0">
                         <Image src={house.image} alt={house.name} width={28} height={28} className="flex-shrink-0 object-contain" />
@@ -376,7 +376,7 @@ export default function DashboardPage() {
                     <div className="flex flex-wrap gap-x-2 gap-y-0.5 mt-2 text-[11px] min-w-0" style={{ color: textMuted }}>
                       <span>👥 {uniquePlayersByGame[game.id] ?? 0} jugadores</span>
                       <span>❤️ 0 likes</span>
-                      <span>💰 $0 ARS recaudado</span>
+                      <span>💰 ${(game.total_revenue ?? 0).toLocaleString('es-AR')} ARS recaudado</span>
                     </div>
                     <p className="text-lg font-black tabular-nums mt-2 flex-shrink-0" style={{ color: accent }}>
                       ${(Number(game.price) || 5000).toLocaleString('es-AR')} ARS
@@ -455,7 +455,7 @@ export default function DashboardPage() {
                           <span className="tabular-nums">{userLikedIds.has(game.id) ? '❤️' : '🤍'}</span>
                           <span>{game.total_likes ?? 0}</span>
                         </button>
-                        <span>💰 $0 ARS</span>
+                        <span>💰 ${(game.total_revenue ?? 0).toLocaleString('es-AR')} ARS</span>
                       </div>
                       <Link href={`/jugar/${game.id}`} className="vibe-btn-gradient mt-3 w-full rounded-xl py-2.5 font-bold text-white text-sm text-center block">Jugar</Link>
                     </div>

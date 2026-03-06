@@ -490,7 +490,7 @@ export default function JuegosPage() {
                   ) : (
                     <span>❤️ {game.total_likes ?? 0} likes</span>
                   )}
-                  <span>💰 ${formatArs(game.total_revenue || 0)} ARS</span>
+                  <span>💰 ${(game.total_revenue ?? 0).toLocaleString('es-AR')} ARS</span>
                 </div>
                 {!canPlay && (
                   <p className="text-lg font-black tabular-nums mt-2 flex-shrink-0" style={{ color: accent }}>
