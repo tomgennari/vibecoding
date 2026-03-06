@@ -55,6 +55,8 @@ export default function DashboardPage() {
   const [campusOpen, setCampusOpen] = useState(false);
   const [mobileTab, setMobileTab] = useState('juegos');
   const [unlockingGameId, setUnlockingGameId] = useState(null);
+  const [userLikedIds, setUserLikedIds] = useState(new Set());
+  const [likingGameId, setLikingGameId] = useState(null);
 
   const isDark = theme === 'dark';
   const bg = isDark ? '#0a0a0f' : '#ffffff';
@@ -81,6 +83,7 @@ export default function DashboardPage() {
         dailyIdsRes,
         unlocksListRes,
         approvedGamesRes,
+        userLikesRes,
         housePointsRes,
         buildingsRes,
         unlocksAmountRes,
@@ -92,6 +95,7 @@ export default function DashboardPage() {
         supabase.from('daily_free_games').select('game_id').eq('active_date', today).then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('game_unlocks').select('game_id').eq('user_id', uid).then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('games').select('*').eq('status', 'approved').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
+        supabase.from('game_likes').select('game_id').eq('user_id', uid).then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('house_points').select('*').order('total_points', { ascending: false }).then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('buildings').select('*').order('display_order', { ascending: true }).then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => supabase.from('buildings').select('*').order('name', { ascending: true }).then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true }))),
         supabase.from('game_unlocks').select('amount_paid').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
@@ -115,6 +119,7 @@ export default function DashboardPage() {
       setDailyGames(approvedGames.filter((g) => g.id && dailyIds.includes(g.id)));
       setGamesToUnlock(approvedGames.filter((g) => g.id && !unlockedIds.includes(g.id) && !dailyIds.includes(g.id)));
       setUnlockedGames(approvedGames.filter((g) => g.id && unlockedIds.includes(g.id)));
+      setUserLikedIds(new Set((userLikesRes.data || []).map((r) => r.game_id).filter(Boolean)));
 
       setHouseRanking(housePointsRes.data || []);
       setBuildings(buildingsRes.data || []);
@@ -130,6 +135,47 @@ export default function DashboardPage() {
   async function handleLogout() {
     await supabase.auth.signOut();
     router.replace('/login');
+  }
+
+  async function handleToggleLike(gameId) {
+    if (likingGameId) return;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) return;
+    const liked = userLikedIds.has(gameId);
+    const delta = liked ? -1 : 1;
+    setLikingGameId(gameId);
+    setUserLikedIds((prev) => {
+      const next = new Set(prev);
+      if (liked) next.delete(gameId);
+      else next.add(gameId);
+      return next;
+    });
+    const upd = (g) => (g.id === gameId ? { ...g, total_likes: Math.max(0, (g.total_likes ?? 0) + delta) } : g);
+    setDailyGames((prev) => prev.map(upd));
+    setUnlockedGames((prev) => prev.map(upd));
+    try {
+      const res = liked
+        ? await fetch(`/api/likes?gameId=${encodeURIComponent(gameId)}`, { method: 'DELETE', headers: { Authorization: `Bearer ${session.access_token}` } })
+        : await fetch('/api/likes', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` }, body: JSON.stringify({ gameId }) });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && typeof data.total_likes === 'number') {
+        const setTotal = (g) => (g.id === gameId ? { ...g, total_likes: data.total_likes } : g);
+        setDailyGames((prev) => prev.map(setTotal));
+        setUnlockedGames((prev) => prev.map(setTotal));
+      }
+    } catch (_) {
+      setUserLikedIds((prev) => {
+        const next = new Set(prev);
+        if (liked) next.add(gameId);
+        else next.delete(gameId);
+        return next;
+      });
+      const revert = (g) => (g.id === gameId ? { ...g, total_likes: Math.max(0, (g.total_likes ?? 0) - delta) } : g);
+      setDailyGames((prev) => prev.map(revert));
+      setUnlockedGames((prev) => prev.map(revert));
+    } finally {
+      setLikingGameId(null);
+    }
   }
 
   async function handleDesbloquear(game) {
@@ -266,9 +312,18 @@ export default function DashboardPage() {
                     <div key={game.id} className={`${cardBase} p-4 flex flex-col`} style={cardStyle}>
                       <h3 className="font-bold text-lg break-words min-w-0" style={{ color: text }}>{game.title || 'Juego'}</h3>
                       <p className="text-sm mt-2 flex-1 break-words min-w-0" style={{ color: textMuted }}>{game.description || ''}</p>
-                      <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-2 text-[11px]" style={{ color: textMuted }}>
+                      <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-2 text-[11px] items-center" style={{ color: textMuted }}>
                         <span>👥 0 jugadores</span>
-                        <span>❤️ 0 likes</span>
+                        <button
+                          type="button"
+                          onClick={() => handleToggleLike(game.id)}
+                          disabled={likingGameId === game.id}
+                          className="inline-flex items-center gap-0.5 rounded p-0.5 transition-transform duration-150 hover:scale-110 active:scale-[1.2] disabled:opacity-70"
+                          aria-label={userLikedIds.has(game.id) ? 'Quitar like' : 'Dar like'}
+                        >
+                          <span className="tabular-nums">{userLikedIds.has(game.id) ? '❤️' : '🤍'}</span>
+                          <span>{game.total_likes ?? 0}</span>
+                        </button>
                         <span>💰 $0 ARS recaudado</span>
                       </div>
                       <div className="flex items-center gap-2 mt-3 min-w-0">
@@ -372,9 +427,18 @@ export default function DashboardPage() {
                         <span className="text-xs font-bold truncate" style={{ color: house.color }}>{house.name}</span>
                       </div>
                       <h3 className="font-bold text-sm break-words min-w-0" style={{ color: text }}>{game.title || 'Juego'}</h3>
-                      <div className="flex flex-wrap gap-x-2 gap-y-0.5 mt-2 text-[11px] min-w-0" style={{ color: textMuted }}>
+                      <div className="flex flex-wrap gap-x-2 gap-y-0.5 mt-2 text-[11px] min-w-0 items-center" style={{ color: textMuted }}>
                         <span>👥 0</span>
-                        <span>❤️ 0</span>
+                        <button
+                          type="button"
+                          onClick={() => handleToggleLike(game.id)}
+                          disabled={likingGameId === game.id}
+                          className="inline-flex items-center gap-0.5 rounded p-0.5 transition-transform duration-150 hover:scale-110 active:scale-[1.2] disabled:opacity-70"
+                          aria-label={userLikedIds.has(game.id) ? 'Quitar like' : 'Dar like'}
+                        >
+                          <span className="tabular-nums">{userLikedIds.has(game.id) ? '❤️' : '🤍'}</span>
+                          <span>{game.total_likes ?? 0}</span>
+                        </button>
                         <span>💰 $0 ARS</span>
                       </div>
                       <Link href={`/jugar/${game.id}`} className="vibe-btn-gradient mt-3 w-full rounded-xl py-2.5 font-bold text-white text-sm text-center block">Jugar</Link>
@@ -532,6 +596,19 @@ export default function DashboardPage() {
                         <span className="text-xs font-bold truncate" style={{ color: house.color }}>{house.name}</span>
                       </div>
                       <h3 className="font-bold text-sm break-words min-w-0 flex-1" style={{ color: text }}>{game.title || 'Juego'}</h3>
+                      <div className="flex items-center gap-2 mt-2">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleLike(game.id)}
+                          disabled={likingGameId === game.id}
+                          className="inline-flex items-center gap-0.5 rounded p-0.5 text-[11px] transition-transform duration-150 hover:scale-110 active:scale-[1.2] disabled:opacity-70"
+                          style={{ color: textMuted }}
+                          aria-label={userLikedIds.has(game.id) ? 'Quitar like' : 'Dar like'}
+                        >
+                          <span className="tabular-nums">{userLikedIds.has(game.id) ? '❤️' : '🤍'}</span>
+                          <span>{game.total_likes ?? 0}</span>
+                        </button>
+                      </div>
                       <Link href={`/jugar/${game.id}`} className="vibe-btn-gradient mt-3 w-full rounded-xl py-3 font-bold text-white text-sm text-center block">Jugar</Link>
                     </div>
                   );
@@ -622,6 +699,19 @@ export default function DashboardPage() {
                         <span className="text-xs font-bold truncate" style={{ color: house.color }}>{house.name}</span>
                       </div>
                       <h3 className="font-bold text-sm break-words min-w-0" style={{ color: text }}>{game.title || 'Juego'}</h3>
+                      <div className="flex items-center mt-2">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleLike(game.id)}
+                          disabled={likingGameId === game.id}
+                          className="inline-flex items-center gap-0.5 rounded p-0.5 text-[11px] transition-transform duration-150 hover:scale-110 active:scale-[1.2] disabled:opacity-70"
+                          style={{ color: textMuted }}
+                          aria-label={userLikedIds.has(game.id) ? 'Quitar like' : 'Dar like'}
+                        >
+                          <span className="tabular-nums">{userLikedIds.has(game.id) ? '❤️' : '🤍'}</span>
+                          <span>{game.total_likes ?? 0}</span>
+                        </button>
+                      </div>
                       <Link href={`/jugar/${game.id}`} className="vibe-btn-gradient mt-3 w-full rounded-xl py-2.5 font-bold text-white text-sm text-center block">Jugar</Link>
                     </div>
                   );

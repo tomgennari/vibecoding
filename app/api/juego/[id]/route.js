@@ -42,23 +42,33 @@ export async function GET(request, context) {
     return NextResponse.json({ error: 'Juego sin archivo' }, { status: 404 });
   }
 
-  const today = new Date().toISOString().split('T')[0];
-  const { data: unlock } = await supabase
-    .from('game_unlocks')
-    .select('id')
-    .eq('user_id', user.id)
-    .eq('game_id', id)
-    .maybeSingle();
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('is_admin')
+    .eq('id', user.id)
+    .single();
 
-  const { data: dailyFree } = await supabase
-    .from('daily_free_games')
-    .select('id')
-    .eq('game_id', id)
-    .eq('active_date', today)
-    .maybeSingle();
+  if (profile?.is_admin) {
+    // Admin: acceso directo, saltar verificación
+  } else {
+    const today = new Date().toISOString().split('T')[0];
+    const { data: unlock } = await supabase
+      .from('game_unlocks')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('game_id', id)
+      .maybeSingle();
 
-  if (!unlock && !dailyFree) {
-    return NextResponse.json({ error: 'No tenés acceso a este juego' }, { status: 403 });
+    const { data: dailyFree } = await supabase
+      .from('daily_free_games')
+      .select('id')
+      .eq('game_id', id)
+      .eq('active_date', today)
+      .maybeSingle();
+
+    if (!unlock && !dailyFree) {
+      return NextResponse.json({ error: 'No tenés acceso a este juego' }, { status: 403 });
+    }
   }
 
   let html;

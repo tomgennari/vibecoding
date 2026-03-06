@@ -32,6 +32,8 @@ export default function JuegosPage() {
   const [gamesWithMetrics, setGamesWithMetrics] = useState([]);
   const [unlockedIds, setUnlockedIds] = useState(new Set());
   const [dailyIds, setDailyIds] = useState(new Set());
+  const [userLikedIds, setUserLikedIds] = useState(new Set());
+  const [likingGameId, setLikingGameId] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('newest');
   const [houseFilter, setHouseFilter] = useState('');
@@ -75,6 +77,7 @@ export default function JuegosPage() {
         gamesRes,
         sessionsRes,
         likesRes,
+        userLikesRes,
         unlocksRes,
         dailyRes,
         unlocksCountRes,
@@ -85,6 +88,7 @@ export default function JuegosPage() {
         supabase.from('games').select('*').eq('status', 'approved').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('game_sessions').select('game_id').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('game_likes').select('game_id').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
+        supabase.from('game_likes').select('game_id').eq('user_id', uid).then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('game_unlocks').select('game_id').eq('user_id', uid).then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('daily_free_games').select('game_id').eq('active_date', today).then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('game_unlocks').select('*', { count: 'exact', head: true }).eq('user_id', uid).then((r) => ({ count: r.count ?? 0, error: r.error })).catch(() => ({ count: 0, error: true })),
@@ -123,6 +127,7 @@ export default function JuegosPage() {
       setGamesWithMetrics(withMetrics);
       setUnlockedIds(new Set((unlocksRes.data || []).map((r) => r.game_id).filter(Boolean)));
       setDailyIds(new Set((dailyRes.data || []).map((r) => r.game_id).filter(Boolean)));
+      setUserLikedIds(new Set((userLikesRes.data || []).map((r) => r.game_id).filter(Boolean)));
       setLoading(false);
     }
     init();
@@ -187,6 +192,45 @@ export default function JuegosPage() {
 
   function formatArs(n) {
     return Number(n).toLocaleString('es-AR');
+  }
+
+  async function handleToggleLike(gameId) {
+    if (likingGameId) return;
+    const session = (await supabase.auth.getSession()).data?.session;
+    if (!session?.access_token) return;
+    const liked = userLikedIds.has(gameId);
+    const delta = liked ? -1 : 1;
+    setLikingGameId(gameId);
+    setUserLikedIds((prev) => {
+      const next = new Set(prev);
+      if (liked) next.delete(gameId);
+      else next.add(gameId);
+      return next;
+    });
+    setGamesWithMetrics((prev) =>
+      prev.map((g) => (g.id === gameId ? { ...g, total_likes: Math.max(0, (g.total_likes ?? 0) + delta) } : g))
+    );
+    try {
+      const res = liked
+        ? await fetch(`/api/likes?gameId=${encodeURIComponent(gameId)}`, { method: 'DELETE', headers: { Authorization: `Bearer ${session.access_token}` } })
+        : await fetch('/api/likes', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` }, body: JSON.stringify({ gameId }) });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && typeof data.total_likes === 'number') {
+        setGamesWithMetrics((prev) => prev.map((g) => (g.id === gameId ? { ...g, total_likes: data.total_likes } : g)));
+      }
+    } catch (_) {
+      setUserLikedIds((prev) => {
+        const next = new Set(prev);
+        if (liked) next.add(gameId);
+        else next.delete(gameId);
+        return next;
+      });
+      setGamesWithMetrics((prev) =>
+        prev.map((g) => (g.id === gameId ? { ...g, total_likes: Math.max(0, (g.total_likes ?? 0) - delta) } : g))
+      );
+    } finally {
+      setLikingGameId(null);
+    }
   }
 
   if (loading) {
@@ -427,9 +471,22 @@ export default function JuegosPage() {
                 </div>
                 <h2 className="font-bold text-base break-words min-w-0" style={{ color: text }}>{game.title || 'Juego'}</h2>
                 <p className="text-xs mt-1 line-clamp-2 break-words min-w-0 flex-1" style={{ color: textMuted }}>{game.description || ''}</p>
-                <div className="flex flex-wrap gap-x-2 gap-y-0.5 mt-2 text-[11px] min-w-0" style={{ color: textMuted }}>
+                <div className="flex flex-wrap gap-x-2 gap-y-0.5 mt-2 text-[11px] min-w-0 items-center" style={{ color: textMuted }}>
                   <span>👥 {game.total_plays ?? 0} jugadores</span>
-                  <span>❤️ {game.total_likes ?? 0} likes</span>
+                  {canPlay ? (
+                    <button
+                      type="button"
+                      onClick={() => handleToggleLike(game.id)}
+                      disabled={likingGameId === game.id}
+                      className="inline-flex items-center gap-0.5 rounded p-0.5 transition-transform duration-150 hover:scale-110 active:scale-[1.2] disabled:opacity-70"
+                      aria-label={userLikedIds.has(game.id) ? 'Quitar like' : 'Dar like'}
+                    >
+                      <span className="tabular-nums">{userLikedIds.has(game.id) ? '❤️' : '🤍'}</span>
+                      <span>{game.total_likes ?? 0}</span>
+                    </button>
+                  ) : (
+                    <span>❤️ {game.total_likes ?? 0} likes</span>
+                  )}
                   <span>💰 ${formatArs(game.total_revenue || 0)} ARS</span>
                 </div>
                 {!canPlay && (

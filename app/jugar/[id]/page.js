@@ -15,6 +15,9 @@ export default function JugarPage() {
   const [game, setGame] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [userLiked, setUserLiked] = useState(false);
+  const [totalLikes, setTotalLikes] = useState(0);
+  const [liking, setLiking] = useState(false);
 
   const [iframeSrc, setIframeSrc] = useState('');
 
@@ -31,7 +34,7 @@ export default function JugarPage() {
         setLoading(false);
         return;
       }
-      const { data, error: e } = await supabase.from('games').select('id, title, file_url, game_width, game_height').eq('id', id).eq('status', 'approved').single();
+      const { data, error: e } = await supabase.from('games').select('id, title, file_url, game_width, game_height, total_likes').eq('id', id).eq('status', 'approved').single();
       if (e || !data) {
         setError('Juego no encontrado o no disponible.');
         setLoading(false);
@@ -43,6 +46,9 @@ export default function JugarPage() {
         return;
       }
       setGame(data);
+      setTotalLikes(Number(data.total_likes) || 0);
+      const { data: likeRow } = await supabase.from('game_likes').select('id').eq('user_id', session.user.id).eq('game_id', id).maybeSingle();
+      setUserLiked(Boolean(likeRow));
       setIframeSrc(`/api/juego/${id}?token=${encodeURIComponent(session.access_token)}`);
       setLoading(false);
     }
@@ -51,6 +57,30 @@ export default function JugarPage() {
 
   const width = game?.game_width ?? DEFAULT_WIDTH;
   const height = game?.game_height ?? DEFAULT_HEIGHT;
+
+  async function handleToggleLike() {
+    if (liking || !id) return;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) return;
+    setLiking(true);
+    const wasLiked = userLiked;
+    setUserLiked(!wasLiked);
+    setTotalLikes((n) => Math.max(0, n + (wasLiked ? -1 : 1)));
+    try {
+      const res = wasLiked
+        ? await fetch(`/api/likes?gameId=${encodeURIComponent(id)}`, { method: 'DELETE', headers: { Authorization: `Bearer ${session.access_token}` } })
+        : await fetch('/api/likes', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` }, body: JSON.stringify({ gameId: id }) });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && typeof data.total_likes === 'number') {
+        setTotalLikes(data.total_likes);
+      }
+    } catch (_) {
+      setUserLiked(wasLiked);
+      setTotalLikes((n) => Math.max(0, n + (wasLiked ? 1 : -1)));
+    } finally {
+      setLiking(false);
+    }
+  }
 
   if (loading) {
     return (
@@ -74,9 +104,19 @@ export default function JugarPage() {
   return (
     <div className="min-h-screen flex flex-col font-sans bg-[#0a0a0f] text-[#f1f5f9]">
       <header className="flex-shrink-0 flex items-center justify-between gap-4 px-4 py-3 border-b border-[#2a2a3a] bg-[#13131a]">
-        <Link href="/dashboard" className="text-sm font-medium" style={{ color: '#94a3b8' }}>← Volver</Link>
-        <h1 className="text-lg font-bold truncate max-w-[50%]" style={{ color: '#f1f5f9' }}>{game.title || 'Juego'}</h1>
-        <span className="w-16" />
+        <Link href="/dashboard" className="text-sm font-medium flex-shrink-0" style={{ color: '#94a3b8' }}>← Volver</Link>
+        <h1 className="text-lg font-bold truncate max-w-[40%] min-w-0" style={{ color: '#f1f5f9' }}>{game.title || 'Juego'}</h1>
+        <button
+          type="button"
+          onClick={handleToggleLike}
+          disabled={liking}
+          className="flex-shrink-0 inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-bold transition-transform duration-150 hover:scale-110 active:scale-[1.2] disabled:opacity-70"
+          style={{ color: '#94a3b8' }}
+          aria-label={userLiked ? 'Quitar like' : 'Dar like'}
+        >
+          <span className="tabular-nums">{userLiked ? '❤️' : '🤍'}</span>
+          <span>{totalLikes}</span>
+        </button>
       </header>
       <main className="flex-1 flex items-center justify-center p-4 min-h-0 overflow-auto">
         <div className="rounded-xl overflow-hidden border-2 border-[#2a2a3a] shadow-xl" style={{ width: width, maxWidth: '100%' }}>
