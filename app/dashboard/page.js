@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/utils/supabase/client.js';
 import { useDashboardTheme } from '@/lib/use-dashboard-theme.js';
+import { DashboardNavbar } from '@/components/dashboard-navbar.js';
 
 const HOUSES = [
   { id: 'william_brown', name: 'William Brown', color: '#3b82f6', image: '/images/houses/house-brown.png' },
@@ -30,27 +31,6 @@ function formatDuration(totalSeconds) {
   return `${minutes} min`;
 }
 
-function IconLogout() {
-  return (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-    </svg>
-  );
-}
-function IconSun() {
-  return (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-    </svg>
-  );
-}
-function IconMoon() {
-  return (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-    </svg>
-  );
-}
 function IconChevronDown({ open }) {
   return (
     <svg className={`w-5 h-5 transition-transform flex-shrink-0 ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -255,8 +235,6 @@ export default function DashboardPage() {
     );
   }
 
-  const navStyle = isDark ? { color: textMuted } : { color: '#64748b' };
-
   function scrollToSection(id) {
     const el = document.getElementById(id);
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -264,69 +242,13 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen font-sans flex flex-col" style={{ background: bg, color: text }}>
-      {/* ========== NAVBAR DESKTOP (lg+) ========== */}
-      <header
-        className="hidden lg:flex flex-shrink-0 items-center gap-4 px-4 h-14 border-b"
-        style={{ background: cardBg, borderColor: border }}
-      >
-        <Link href="/dashboard" className="flex items-center gap-2 min-w-0 flex-shrink-0">
-          <Image src="/images/logo-sass.png" alt="SASS" width={32} height={32} className="object-contain" />
-          <span className="text-base md:text-lg font-bold truncate" style={{ color: isDark ? text : '#00478E' }}>
-            Campus San Andrés
-          </span>
-        </Link>
-
-        <div className="flex-1 flex items-center justify-center gap-6 min-w-0">
-          <div className="flex items-center gap-1.5 flex-shrink-0">
-            <span className="text-sm font-black tabular-nums" style={{ color: accent }}>{stats.juegos}</span>
-            <span className="text-xs font-medium whitespace-nowrap" style={{ color: textMuted }}>{STATS_KEYS[0].label}</span>
-          </div>
-          <div className="flex items-center gap-1.5 flex-shrink-0">
-            <span className="text-sm font-black tabular-nums" style={{ color: accent }}>{formatDuration(stats.tiempoSeconds)}</span>
-            <span className="text-xs font-medium whitespace-nowrap" style={{ color: textMuted }}>{STATS_KEYS[1].label}</span>
-          </div>
-          <div className="flex items-center gap-1.5 flex-shrink-0">
-            <span className="text-sm font-black tabular-nums" style={{ color: accent }}>{stats.puntos}</span>
-            <span className="text-xs font-medium whitespace-nowrap" style={{ color: textMuted }}>{STATS_KEYS[2].label}</span>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3 flex-shrink-0">
-          <Link href="/perfil" className="flex items-center gap-2 px-3 py-1.5 rounded-lg border min-w-0 transition-opacity hover:opacity-90" style={{ borderColor: userHouseMeta.color, background: `${userHouseMeta.color}15` }}>
-            <Image src={userHouseMeta.image} alt={userHouseMeta.name} width={28} height={28} className="flex-shrink-0 object-contain" />
-            <div className="min-w-0 flex flex-col items-start">
-              <span className="text-sm font-bold truncate w-full" style={{ color: text }}>{displayName}</span>
-              <span className="text-xs truncate w-full" style={{ color: userHouseMeta.color }}>{userHouseMeta.name}</span>
-            </div>
-          </Link>
-          <button type="button" onClick={toggleTheme} aria-label={isDark ? 'Modo claro' : 'Modo oscuro'} className="p-2 rounded-lg transition-colors" style={navStyle}>
-            {isDark ? <IconSun /> : <IconMoon />}
-          </button>
-          <button type="button" onClick={handleLogout} className="p-2 rounded-lg transition-colors hover:opacity-80" style={{ color: '#ef4444' }} aria-label="Cerrar sesión">
-            <IconLogout />
-          </button>
-        </div>
-      </header>
-
-      {/* ========== NAVBAR MOBILE — minimalista, una sola línea ========== */}
-      <header
-        className="lg:hidden flex-shrink-0 flex items-center justify-between gap-2 px-3 h-12 border-b"
-        style={{ background: cardBg, borderColor: border }}
-      >
-        <Link href="/perfil" className="flex items-center gap-2 min-w-0 transition-opacity hover:opacity-90">
-          <Image src={userHouseMeta.image} alt={userHouseMeta.name} width={24} height={24} className="flex-shrink-0 object-contain" />
-          <span className="text-sm font-bold truncate" style={{ color: userHouseMeta.color }}>{userHouseMeta.name}</span>
-        </Link>
-        <span className="text-2xl font-black tabular-nums flex-shrink-0" style={{ color: accent }}>{stats.puntos}</span>
-        <div className="flex items-center gap-0 flex-shrink-0">
-          <button type="button" onClick={toggleTheme} aria-label={isDark ? 'Modo claro' : 'Modo oscuro'} className="p-2 rounded-lg" style={navStyle}>
-            {isDark ? <IconSun /> : <IconMoon />}
-          </button>
-          <button type="button" onClick={handleLogout} className="p-2 rounded-lg" style={{ color: '#ef4444' }} aria-label="Cerrar sesión">
-            <IconLogout />
-          </button>
-        </div>
-      </header>
+      <DashboardNavbar
+        profile={profile}
+        stats={stats}
+        theme={theme}
+        onToggleTheme={toggleTheme}
+        onLogout={handleLogout}
+      />
 
       {/* ========== DESKTOP: dos columnas 2/3 + 1/3, sin scroll ========== */}
       <div className="hidden lg:flex flex-1 min-h-0 overflow-hidden">
@@ -367,7 +289,7 @@ export default function DashboardPage() {
           <section className="flex-shrink-0 mb-4">
             <div className="flex items-center justify-between gap-2 mb-3">
               <h2 className="text-lg font-bold" style={{ color: text }}>🎮 Juegos para desbloquear</h2>
-              <Link href="#juegos-dia" className="text-sm font-semibold flex-shrink-0" style={{ color: accent }}>Ver todos →</Link>
+              <Link href="/juegos" className="text-sm font-semibold flex-shrink-0" style={{ color: accent }}>Ver todos →</Link>
             </div>
             <div className="flex gap-4 overflow-x-auto overflow-y-hidden pb-2 -mx-1 scrollbar-hide" style={{ WebkitOverflowScrolling: 'touch' }}>
               {gamesToUnlock.map((game) => {
@@ -424,9 +346,9 @@ export default function DashboardPage() {
               ¡Desbloqueá juegos y construyamos el Campus!
             </p>
             <div className="flex flex-wrap gap-3 justify-center">
-              <Link href="#juegos-dia" className="inline-flex items-center justify-center rounded-xl px-5 py-2.5 font-bold text-white bg-white/20 border border-white/40">
-                Ver juegos
-              </Link>
+<Link href="/juegos" className="inline-flex items-center justify-center rounded-xl px-5 py-2.5 font-bold text-white bg-white/20 border border-white/40">
+                  Ver juegos
+                </Link>
               <button type="button" className="inline-flex items-center justify-center rounded-xl px-5 py-2.5 font-bold text-white bg-white/20 border border-white/40">
                 Donar
               </button>
@@ -437,7 +359,7 @@ export default function DashboardPage() {
           <section className="flex-1 min-h-0 flex flex-col">
             <div className="flex items-center justify-between gap-2 mb-3 flex-shrink-0">
               <h2 className="text-lg font-bold" style={{ color: text }}>🔓 Mis juegos desbloqueados</h2>
-              <Link href="#juegos-dia" className="text-sm font-semibold flex-shrink-0" style={{ color: accent }}>Ver todos →</Link>
+              <Link href="/juegos" className="text-sm font-semibold flex-shrink-0" style={{ color: accent }}>Ver todos →</Link>
             </div>
             {hasUnlockedGames ? (
               <div className="flex gap-4 overflow-x-auto overflow-y-hidden pb-2 -mx-1 scrollbar-hide flex-1 min-h-0" style={{ WebkitOverflowScrolling: 'touch' }}>
@@ -631,7 +553,7 @@ export default function DashboardPage() {
                 ¡Desbloqueá juegos y construyamos el Campus!
               </p>
               <div className="flex flex-wrap gap-3 justify-center">
-                <Link href="#juegos-dia" className="inline-flex items-center justify-center rounded-xl px-5 py-2.5 font-bold text-white bg-white/20 border border-white/40">
+                <Link href="/juegos" className="inline-flex items-center justify-center rounded-xl px-5 py-2.5 font-bold text-white bg-white/20 border border-white/40">
                   Ver juegos
                 </Link>
                 <button type="button" className="inline-flex items-center justify-center rounded-xl px-5 py-2.5 font-bold text-white bg-white/20 border border-white/40">
@@ -708,7 +630,7 @@ export default function DashboardPage() {
             ) : (
               <div className="rounded-xl border p-6 text-center min-w-0" style={cardStyle}>
                 <p className="text-sm mb-4" style={{ color: textMuted }}>Todavía no desbloqueaste ningún juego</p>
-                <Link href="#juegos-dia" className="vibe-btn-gradient inline-flex items-center justify-center rounded-xl px-5 py-2.5 font-bold text-white text-sm">
+                <Link href="/juegos" className="vibe-btn-gradient inline-flex items-center justify-center rounded-xl px-5 py-2.5 font-bold text-white text-sm">
                   Ver todos los juegos
                 </Link>
               </div>
