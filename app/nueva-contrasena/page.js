@@ -13,10 +13,8 @@ const MIN_PASSWORD_LENGTH = 6;
 function friendlyUpdateError(message) {
   if (!message) return 'No se pudo actualizar la contraseña. Intentá de nuevo.';
   const lower = message.toLowerCase();
-  if (lower.includes('same') || lower.includes('igual'))
-    return 'La nueva contraseña debe ser distinta a la anterior.';
-  if (lower.includes('weak') || lower.includes('password'))
-    return 'La contraseña es muy débil. Usá al menos 6 caracteres.';
+  if (lower.includes('weak') || lower.includes('same password') || lower.includes('recently used') || lower.includes('same') || lower.includes('igual'))
+    return 'No se pudo actualizar la contraseña. Si estás usando la misma contraseña anterior, intentá con una diferente.';
   if (lower.includes('session') || lower.includes('expired') || lower.includes('invalid'))
     return 'El link expiró o ya fue usado. Solicitá uno nuevo desde "¿Olvidaste tu contraseña?".';
   if (lower.includes('network') || lower.includes('fetch'))
