@@ -17,6 +17,12 @@ const HOUSES = [
 
 const GOALS_ARS = [20000, 100000, 500000, 2000000, 5000000, 10000000, 25000000, 50000000, 100000000, 1000000000];
 const RANKING_PAGE_COUNT = 2;
+const DONATION_AMOUNTS = [
+  { amount: 20000, label: '$20.000 ARS' },
+  { amount: 100000, label: '$100.000 ARS' },
+  { amount: 200000, label: '$200.000 ARS' },
+  { amount: 500000, label: '$500.000 ARS', gold: true },
+];
 
 const STATS_KEYS = [
   { key: 'juegos', label: 'Juegos desbloqueados' },
@@ -64,6 +70,8 @@ export default function DashboardPage() {
   const [approvedGamesAll, setApprovedGamesAll] = useState([]);
   const [rankingPage, setRankingPage] = useState(0);
   const [rankingAutoSeed, setRankingAutoSeed] = useState(0);
+  const [donationModalOpen, setDonationModalOpen] = useState(false);
+  const [donatingAmount, setDonatingAmount] = useState(null);
 
   const isDark = theme === 'dark';
   const bg = isDark ? '#0a0a0f' : '#ffffff';
@@ -100,7 +108,7 @@ export default function DashboardPage() {
         allSessionsRes,
         allDonationsRes,
       ] = await Promise.all([
-        supabase.from('profiles').select('first_name, last_name, house').eq('id', uid).single().then((r) => ({ data: r.data, error: r.error })).catch(() => ({ data: null, error: true })),
+        supabase.from('profiles').select('first_name, last_name, house, user_type').eq('id', uid).single().then((r) => ({ data: r.data, error: r.error })).catch(() => ({ data: null, error: true })),
         supabase.from('game_unlocks').select('*', { count: 'exact', head: true }).eq('user_id', uid).then((r) => ({ count: r.count ?? 0, error: r.error })).catch(() => ({ count: 0, error: true })),
         supabase.from('game_sessions').select('duration_seconds').eq('user_id', uid).then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('game_sessions').select('game_id, user_id').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
@@ -239,6 +247,30 @@ export default function DashboardPage() {
       else setUnlockingGameId(null);
     } catch {
       setUnlockingGameId(null);
+    }
+  }
+
+  async function handleDonationAmount(amount) {
+    if (donatingAmount != null) return;
+    setDonatingAmount(amount);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        router.replace('/login');
+        return;
+      }
+      const res = await fetch('/api/mp/crear-donacion', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ userId: session.user.id, amount }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.init_point) {
+        window.location.href = data.init_point;
+        return;
+      }
+    } finally {
+      setDonatingAmount(null);
     }
   }
 
@@ -463,6 +495,7 @@ export default function DashboardPage() {
         theme={theme}
         onToggleTheme={toggleTheme}
         onLogout={handleLogout}
+        onOpenDonation={() => setDonationModalOpen(true)}
       />
 
       {/* ========== DESKTOP: dos columnas 2/3 + 1/3, sin scroll ========== */}
@@ -580,7 +613,7 @@ export default function DashboardPage() {
 <Link href="/juegos" className="inline-flex items-center justify-center rounded-xl px-5 py-2.5 font-bold text-white bg-white/20 border border-white/40">
                     Ver juegos
                   </Link>
-                <button type="button" className="inline-flex items-center justify-center rounded-xl px-5 py-2.5 font-bold text-white bg-white/20 border border-white/40">
+                <button type="button" onClick={() => setDonationModalOpen(true)} className="inline-flex items-center justify-center rounded-xl px-5 py-2.5 font-bold text-white bg-white/20 border border-white/40">
                   Donar
                 </button>
               </div>
@@ -753,6 +786,14 @@ export default function DashboardPage() {
             >
               🏆 Ver Rankings — ¡Visita el Campus!
             </button>
+            <button
+              type="button"
+              onClick={() => setDonationModalOpen(true)}
+              className="w-full rounded-xl py-2.5 mt-2 font-bold text-sm border"
+              style={{ borderColor: accent, color: accent }}
+            >
+              Donar
+            </button>
           </section>
 
           {/* Progreso del Campus (desktop) oculto temporalmente
@@ -781,8 +822,8 @@ export default function DashboardPage() {
 
       {/* ========== MOBILE: scroll vertical + barra inferior fija ========== */}
       <div className="lg:hidden flex-1 overflow-auto min-h-0" style={{ paddingBottom: '60px' }}>
-        {/* Stats — 3 chips full width */}
-        <div className="grid grid-cols-3 gap-2 px-4 py-3 min-w-0" style={{ background: cardBg, borderBottom: `1px solid ${border}` }}>
+        {/* Stats — 4 chips: 3 stats + Donar */}
+        <div className="grid grid-cols-4 gap-2 px-4 py-3 min-w-0" style={{ background: cardBg, borderBottom: `1px solid ${border}` }}>
           <div className="rounded-xl border py-2.5 px-2 text-center min-w-0 overflow-hidden" style={cardStyle}>
             <p className="text-lg font-black tabular-nums truncate" style={{ color: accent }}>{stats.juegos}</p>
             <p className="text-[10px] font-medium break-words hyphens-auto mt-0.5 leading-tight" style={{ color: textMuted }}>{STATS_KEYS[0].label}</p>
@@ -795,6 +836,9 @@ export default function DashboardPage() {
             <p className="text-lg font-black tabular-nums truncate" style={{ color: accent }}>{stats.puntos}</p>
             <p className="text-[10px] font-medium break-words hyphens-auto mt-0.5 leading-tight" style={{ color: textMuted }}>{STATS_KEYS[2].label}</p>
           </div>
+          <button type="button" onClick={() => setDonationModalOpen(true)} className="rounded-xl border py-2.5 px-2 text-center min-w-0 overflow-hidden font-bold text-sm transition-opacity hover:opacity-90" style={{ ...cardStyle, color: accent, borderColor: accent }}>
+            Donar
+          </button>
         </div>
 
         <div className="px-4 py-4 space-y-6 min-w-0">
@@ -852,7 +896,7 @@ export default function DashboardPage() {
                   <Link href="/juegos" className="inline-flex items-center justify-center rounded-xl px-5 py-2.5 font-bold text-white bg-white/20 border border-white/40">
                     Ver juegos
                   </Link>
-                  <button type="button" className="inline-flex items-center justify-center rounded-xl px-5 py-2.5 font-bold text-white bg-white/20 border border-white/40">
+                  <button type="button" onClick={() => setDonationModalOpen(true)} className="inline-flex items-center justify-center rounded-xl px-5 py-2.5 font-bold text-white bg-white/20 border border-white/40">
                     Donar
                   </button>
                 </div>
@@ -1072,6 +1116,76 @@ export default function DashboardPage() {
           </section>
         </div>
       </div>
+
+      {/* Modal de donación */}
+      {donationModalOpen && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.65)' }}
+          onClick={() => setDonationModalOpen(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="donation-modal-title"
+        >
+          <div
+            className="relative rounded-2xl border shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto"
+            style={{
+              background: cardBg,
+              borderColor: border,
+              color: text,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setDonationModalOpen(false)}
+              className="absolute top-3 right-3 w-9 h-9 rounded-lg flex items-center justify-center transition-opacity hover:opacity-80"
+              style={{ background: isDark ? '#2a2a3a' : '#e2e8f0', color: text }}
+              aria-label="Cerrar"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            <div className="p-6 pt-12">
+              {profile?.user_type !== 'padre' ? (
+                <p className="text-sm leading-relaxed" style={{ color: text }}>
+                  Solo los perfiles de Padres pueden realizar donaciones. Hablá con ellos si querés que ayuden en la construcción del Campus San Andrés 🏫
+                </p>
+              ) : (
+                <>
+                  <h2 id="donation-modal-title" className="text-xl font-bold mb-4" style={{ color: text }}>
+                    Donar al Campus San Andrés 🏗
+                  </h2>
+                  <div className="grid grid-cols-2 gap-3 mb-4">
+                    {DONATION_AMOUNTS.map((item) => (
+                      <button
+                        key={item.amount}
+                        type="button"
+                        disabled={donatingAmount != null}
+                        onClick={() => handleDonationAmount(item.amount)}
+                        className="rounded-xl border-2 py-4 px-3 font-bold text-sm transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 disabled:pointer-events-none"
+                        style={{
+                          borderColor: item.gold ? '#eab308' : border,
+                          background: item.gold ? 'rgba(234,179,8,0.12)' : (isDark ? '#1a1a24' : '#f1f5f9'),
+                          color: item.gold ? '#eab308' : text,
+                        }}
+                      >
+                        {item.gold && <span className="block text-base mb-0.5">⭐</span>}
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-xs leading-relaxed" style={{ color: textMuted }}>
+                    Los montos donados van directamente a la cuenta de la ASOCIACIÓN CIVIL EDUCATIVA ESCOCESA SAN ANDRÉS, sin intermediarios. Los datos del donante serán registrados junto a los datos de la cuenta de Mercado Pago utilizada para realizar la donación.
+                  </p>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Barra inferior fija — solo mobile, 4 tabs */}
       <nav

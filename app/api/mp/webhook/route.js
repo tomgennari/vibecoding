@@ -35,16 +35,51 @@ export async function POST(request) {
 
     const externalRef = payment.external_reference || '';
     const parts = externalRef.split('|');
-    if (parts.length !== 2) {
-      return NextResponse.json({ ok: true }, { status: 200 });
-    }
-
-    const [userId, gameId] = parts;
     const amountPaid = Number(payment.transaction_amount) || 0;
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
+
+    // Donación: userId|donacion|amount (3 partes)
+    if (parts.length === 3 && parts[1] === 'donacion') {
+      const [userId] = parts;
+      const { data: profile } = await supabase.from('profiles').select('house').eq('id', userId).single();
+      const house = profile?.house ?? null;
+
+      await supabase.from('donations').insert({
+        user_id: userId,
+        amount: amountPaid,
+        payment_id: String(payment.id),
+        ...(house && { house }),
+      });
+      if (house) {
+        const pointsToAdd = Math.max(1, Math.floor(amountPaid / 1000));
+        const { data: row } = await supabase.from('house_points').select('total_points, points_by_donations').eq('house', house).single();
+        if (row) {
+          await supabase.from('house_points').update({
+            total_points: (Number(row.total_points) || 0) + pointsToAdd,
+            points_by_donations: (Number(row.points_by_donations) || 0) + pointsToAdd,
+          }).eq('house', house);
+        } else {
+          await supabase.from('house_points').insert({
+            house,
+            total_points: pointsToAdd,
+            points_by_games: 0,
+            points_by_time: 0,
+            points_by_donations: pointsToAdd,
+          });
+        }
+      }
+      return NextResponse.json({ ok: true }, { status: 200 });
+    }
+
+    // Juego: userId|gameId (2 partes)
+    if (parts.length !== 2) {
+      return NextResponse.json({ ok: true }, { status: 200 });
+    }
+
+    const [userId, gameId] = parts;
 
     const { data: game } = await supabase.from('games').select('id, house').eq('id', gameId).single();
     if (!game) {

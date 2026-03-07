@@ -46,7 +46,7 @@ function IconMoon() {
   );
 }
 
-export function DashboardNavbar({ profile, stats, theme, onToggleTheme, onLogout }) {
+export function DashboardNavbar({ profile, stats, theme, onToggleTheme, onLogout, onOpenDonation }) {
   const isDark = theme === 'dark';
   const cardBg = isDark ? '#13131a' : '#f8fafc';
   const border = isDark ? '#2a2a3a' : '#e2e8f0';
@@ -101,6 +101,11 @@ export function DashboardNavbar({ profile, stats, theme, onToggleTheme, onLogout
               <span className="text-xs truncate w-full" style={{ color: userHouseMeta.color }}>{userHouseMeta.name}</span>
             </div>
           </Link>
+          {typeof onOpenDonation === 'function' && (
+            <button type="button" onClick={onOpenDonation} className="px-3 py-1.5 rounded-lg font-bold text-sm border transition-opacity hover:opacity-90" style={{ borderColor: accent, color: accent }}>
+              Donar
+            </button>
+          )}
           <button type="button" onClick={onToggleTheme} aria-label={isDark ? 'Modo claro' : 'Modo oscuro'} className="p-2 rounded-lg transition-colors" style={navStyle}>
             {isDark ? <IconSun /> : <IconMoon />}
           </button>
