@@ -567,6 +567,7 @@ Los valores son configurables por el admin.
 - [ ] Definir proceso para que alumnos de Secundaria compartan repos de GitHub
 - [ ] **PENDIENTE COLEGIO — Whitelist de emails:** consultar al SASS si prefieren que solo emails previamente validados puedan registrarse. Requeriría que el colegio provea una lista actualizada de emails de alumnos y familias.
 - [ ] **PENDIENTE COLEGIO — Registro de emails:** verificar si el SASS tiene un registro de emails de sus ~1.900 alumnos. Si no lo tienen, el registro abierto es la única opción viable para el MVP.
+- [ ] SEGURIDAD — Regenerar service role key antes de producción: la service role key actual fue compartida durante el desarrollo. Antes del lanzamiento oficial con el colegio, regenerarla en Supabase → Settings → API → Legacy keys → service_role → Regenerate. Luego actualizar la variable de entorno en Vercel.
 
 ---
 

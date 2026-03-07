@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -16,6 +16,7 @@ const HOUSES = [
 ];
 
 const GOALS_ARS = [20000, 100000, 500000, 2000000, 5000000, 10000000, 25000000, 50000000, 100000000, 1000000000];
+const RANKING_PAGE_COUNT = 2;
 
 const STATS_KEYS = [
   { key: 'juegos', label: 'Juegos desbloqueados' },
@@ -48,16 +49,21 @@ export default function DashboardPage() {
   const [dailyGames, setDailyGames] = useState([]);
   const [gamesToUnlock, setGamesToUnlock] = useState([]);
   const [unlockedGames, setUnlockedGames] = useState([]);
-  const [houseRanking, setHouseRanking] = useState([]);
   const [buildings, setBuildings] = useState([]);
   const [totalRaised, setTotalRaised] = useState(0);
-  const [rankingOpen, setRankingOpen] = useState(false);
   const [campusOpen, setCampusOpen] = useState(false);
   const [mobileTab, setMobileTab] = useState('juegos');
   const [unlockingGameId, setUnlockingGameId] = useState(null);
   const [userLikedIds, setUserLikedIds] = useState(new Set());
   const [likingGameId, setLikingGameId] = useState(null);
   const [uniquePlayersByGame, setUniquePlayersByGame] = useState({});
+  const [allProfiles, setAllProfiles] = useState([]);
+  const [allSessions, setAllSessions] = useState([]);
+  const [allDonations, setAllDonations] = useState([]);
+  const [allUnlocks, setAllUnlocks] = useState([]);
+  const [approvedGamesAll, setApprovedGamesAll] = useState([]);
+  const [rankingPage, setRankingPage] = useState(0);
+  const [rankingAutoSeed, setRankingAutoSeed] = useState(0);
 
   const isDark = theme === 'dark';
   const bg = isDark ? '#0a0a0f' : '#ffffff';
@@ -90,6 +96,9 @@ export default function DashboardPage() {
         buildingsRes,
         unlocksAmountRes,
         donationsRes,
+        allProfilesRes,
+        allSessionsRes,
+        allDonationsRes,
       ] = await Promise.all([
         supabase.from('profiles').select('first_name, last_name, house').eq('id', uid).single().then((r) => ({ data: r.data, error: r.error })).catch(() => ({ data: null, error: true })),
         supabase.from('game_unlocks').select('*', { count: 'exact', head: true }).eq('user_id', uid).then((r) => ({ count: r.count ?? 0, error: r.error })).catch(() => ({ count: 0, error: true })),
@@ -101,8 +110,11 @@ export default function DashboardPage() {
         supabase.from('game_likes').select('game_id').eq('user_id', uid).then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('house_points').select('*').order('total_points', { ascending: false }).then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('buildings').select('*').order('display_order', { ascending: true }).then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => supabase.from('buildings').select('*').order('name', { ascending: true }).then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true }))),
-        supabase.from('game_unlocks').select('amount_paid').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
+        supabase.from('game_unlocks').select('game_id, amount_paid').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('donations').select('amount').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
+        supabase.from('profiles').select('house, user_type').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
+        supabase.from('game_sessions').select('game_id, duration_seconds').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
+        supabase.from('donations').select('house, amount').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
       ]);
 
       const profileData = profileRes.data || { first_name: 'Usuario', last_name: '', house: 'william_brown' };
@@ -127,6 +139,11 @@ export default function DashboardPage() {
         uniquePlayersCounts[gameId] = uniquePlayersByGame[gameId].size;
       });
       setUniquePlayersByGame(uniquePlayersCounts);
+      setAllProfiles(allProfilesRes.data || []);
+      setAllSessions(allSessionsRes.data || []);
+      setAllDonations(allDonationsRes.data || []);
+      setAllUnlocks(unlocksAmountRes.data || []);
+      setApprovedGamesAll(approvedGamesRes.data || []);
 
       const dailyIds = (dailyIdsRes.data || []).map((row) => row.game_id).filter(Boolean);
       const unlockedIds = (unlocksListRes.data || []).map((row) => row.game_id).filter(Boolean);
@@ -137,7 +154,6 @@ export default function DashboardPage() {
       setUnlockedGames(approvedGames.filter((g) => g.id && unlockedIds.includes(g.id)));
       setUserLikedIds(new Set((userLikesRes.data || []).map((r) => r.game_id).filter(Boolean)));
 
-      setHouseRanking(housePointsRes.data || []);
       setBuildings(buildingsRes.data || []);
 
       const sumUnlocks = (unlocksAmountRes.data || []).reduce((acc, row) => acc + (Number(row.amount_paid) || 0), 0);
@@ -236,6 +252,143 @@ export default function DashboardPage() {
   const cardBase = 'rounded-xl border min-w-0 overflow-hidden';
   const cardStyle = { borderColor: border, background: cardBg };
   const skeletonBg = isDark ? '#2a2a3a' : '#e2e8f0';
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setRankingPage((prev) => (prev + 1) % RANKING_PAGE_COUNT);
+    }, 10000);
+    return () => clearTimeout(timer);
+  }, [rankingPage, rankingAutoSeed]);
+
+  const rankingPages = useMemo(() => {
+    const emptyByHouse = () => HOUSES.reduce((acc, h) => ({ ...acc, [h.id]: 0 }), {});
+    const toRows = (values, formatValue) => {
+      const max = Math.max(...HOUSES.map((h) => Number(values[h.id]) || 0), 1);
+      const rows = HOUSES
+        .map((h) => ({ ...h, value: Number(values[h.id]) || 0 }))
+        .sort((a, b) => b.value - a.value);
+      return { rows, max, formatValue };
+    };
+    const formatInt = (v) => Number(v || 0).toLocaleString('es-AR');
+    const formatMoney = (v) => `$${Number(v || 0).toLocaleString('es-AR')} ARS`;
+    const formatTime = (v) => formatDuration(Number(v || 0));
+    const formatScore = (v) => `${Number(v || 0).toFixed(1)} pts`;
+    const gameById = (approvedGamesAll || []).reduce((acc, g) => {
+      acc[g.id] = g;
+      return acc;
+    }, {});
+
+    const studentsByHouse = emptyByHouse();
+    (allProfiles || []).forEach((p) => {
+      if (p?.house && p.user_type === 'alumno') studentsByHouse[p.house] = (studentsByHouse[p.house] || 0) + 1;
+    });
+
+    const parentsByHouse = emptyByHouse();
+    (allProfiles || []).forEach((p) => {
+      if (p?.house && p.user_type === 'padre') parentsByHouse[p.house] = (parentsByHouse[p.house] || 0) + 1;
+    });
+
+    const gamesByHouse = emptyByHouse();
+    (approvedGamesAll || []).forEach((g) => {
+      if (g?.house) gamesByHouse[g.house] = (gamesByHouse[g.house] || 0) + 1;
+    });
+
+    const likesByHouse = emptyByHouse();
+    (approvedGamesAll || []).forEach((g) => {
+      if (g?.house) likesByHouse[g.house] = (likesByHouse[g.house] || 0) + (Number(g.total_likes) || 0);
+    });
+
+    const unlocksByHouse = emptyByHouse();
+    (allUnlocks || []).forEach((u) => {
+      const game = gameById[u.game_id];
+      if (game?.house) unlocksByHouse[game.house] = (unlocksByHouse[game.house] || 0) + (Number(u.amount_paid) || 0);
+    });
+
+    const donationsByHouse = emptyByHouse();
+    (allDonations || []).forEach((d) => {
+      if (d?.house) donationsByHouse[d.house] = (donationsByHouse[d.house] || 0) + (Number(d.amount) || 0);
+    });
+
+    const timeByHouse = emptyByHouse();
+    (allSessions || []).forEach((s) => {
+      const game = gameById[s.game_id];
+      if (game?.house) timeByHouse[game.house] = (timeByHouse[game.house] || 0) + (Number(s.duration_seconds) || 0);
+    });
+
+    const base = [
+      { key: 'students', title: 'Más alumnos registrados', values: studentsByHouse, formatValue: formatInt },
+      { key: 'parents', title: 'Más padres registrados', values: parentsByHouse, formatValue: formatInt },
+      { key: 'games', title: 'Más juegos creados', values: gamesByHouse, formatValue: formatInt },
+      { key: 'likes', title: 'Ranking de Likes', values: likesByHouse, formatValue: formatInt },
+      { key: 'unlocks', title: 'Juegos Desbloqueados', values: unlocksByHouse, formatValue: formatMoney },
+      { key: 'donations', title: 'Donaciones', values: donationsByHouse, formatValue: formatMoney },
+      { key: 'time', title: 'Tiempo jugado', values: timeByHouse, formatValue: formatTime },
+    ];
+
+    const totalByHouse = emptyByHouse();
+    base.forEach((r) => {
+      const sum = HOUSES.reduce((acc, h) => acc + (Number(r.values[h.id]) || 0), 0);
+      if (sum <= 0) return;
+      HOUSES.forEach((h) => {
+        totalByHouse[h.id] = (totalByHouse[h.id] || 0) + ((Number(r.values[h.id]) || 0) / sum) * 100;
+      });
+    });
+
+    const cards = [
+      { key: 'total', title: 'Ranking Total', ...toRows(totalByHouse, formatScore) },
+      ...base.map((r) => ({ key: r.key, title: r.title, ...toRows(r.values, r.formatValue) })),
+    ];
+
+    return [cards.slice(0, 4), cards.slice(4, 8)];
+  }, [allProfiles, allSessions, allDonations, allUnlocks, approvedGamesAll]);
+
+  function renderRankingCard(ranking) {
+    if (!ranking) return null;
+    return (
+      <div key={ranking.key} className={`${cardBase} p-3`} style={cardStyle}>
+        <h3 className="text-sm font-bold mb-2 truncate" style={{ color: text }}>{ranking.title}</h3>
+        <div className="space-y-1.5">
+          {ranking.rows.map((row) => {
+            const pct = ranking.max > 0 ? (row.value / ranking.max) * 100 : 0;
+            const isUserHouse = row.id === userHouse;
+            return (
+              <div
+                key={row.id}
+                className="rounded-lg border p-2 flex items-center gap-2 min-w-0"
+                style={{ borderColor: isUserHouse ? row.color : border, borderWidth: isUserHouse ? 2 : 1, background: cardBg }}
+              >
+                <Image src={row.image} alt={row.name} width={18} height={18} className="flex-shrink-0 object-contain" />
+                <span className="text-[11px] font-bold truncate min-w-0 flex-1" style={{ color: row.color }}>{row.name}</span>
+                <span className="text-[11px] font-black tabular-nums flex-shrink-0" style={{ color: text }}>{ranking.formatValue(row.value)}</span>
+                <div className="w-10 rounded-full overflow-hidden flex-shrink-0" style={{ height: '0.22rem', background: progressBarBg }}>
+                  <div className="h-full rounded-full transition-[width] duration-300" style={{ width: `${pct}%`, background: progressBarFill }} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  function resetRankingAutoTimer() {
+    setRankingAutoSeed((s) => s + 1);
+  }
+
+  function goRankingNext() {
+    setRankingPage((p) => (p + 1) % RANKING_PAGE_COUNT);
+  }
+
+  function goRankingPrev() {
+    setRankingPage((p) => (p - 1 + RANKING_PAGE_COUNT) % RANKING_PAGE_COUNT);
+  }
+
+  function handleRankingWheel(e) {
+    if (Math.abs(e.deltaX) < 10 && Math.abs(e.deltaY) < 10) return;
+    if (e.deltaX > 0 || e.deltaY > 0) goRankingNext();
+    else goRankingPrev();
+    resetRankingAutoTimer();
+  }
 
   function Skeleton({ className = '', style = {} }) {
     return (
@@ -358,9 +511,15 @@ export default function DashboardPage() {
 
           {/* Carrusel 2 — Juegos para desbloquear (segundo en orden) */}
           <section className="flex-shrink-0 mb-4">
-            <div className="flex items-center gap-3 mb-3">
-              <h2 className="text-lg font-bold" style={{ color: text }}>🎮 Juegos para desbloquear</h2>
-              <Link href="/juegos" className="text-sm font-semibold flex-shrink-0" style={{ color: accent }}>Ver todos →</Link>
+            <div className="flex items-center justify-between gap-2 mb-3">
+              <h2 className="text-lg font-bold min-w-0" style={{ color: text }}>🎮 Juegos para desbloquear</h2>
+              <Link
+                href="/juegos"
+                className="h-8 px-3 rounded-lg border text-sm font-bold inline-flex items-center justify-center flex-shrink-0"
+                style={{ borderColor: border, color: text }}
+              >
+                Ver todos →
+              </Link>
             </div>
             <div className="flex gap-4 overflow-x-auto overflow-y-hidden pb-2 -mx-1 scrollbar-hide" style={{ WebkitOverflowScrolling: 'touch' }}>
               {gamesToUnlock.map((game) => {
@@ -430,9 +589,15 @@ export default function DashboardPage() {
 
           {/* Carrusel 1 — Mis juegos desbloqueados (cuarto) */}
           <section className="flex-1 min-h-0 flex flex-col">
-            <div className="flex items-center gap-3 mb-3 flex-shrink-0">
-              <h2 className="text-lg font-bold" style={{ color: text }}>🔓 Mis juegos desbloqueados</h2>
-              <Link href="/juegos" className="text-sm font-semibold flex-shrink-0" style={{ color: accent }}>Ver todos →</Link>
+            <div className="flex items-center justify-between gap-2 mb-3 flex-shrink-0">
+              <h2 className="text-lg font-bold min-w-0" style={{ color: text }}>🔓 Mis juegos desbloqueados</h2>
+              <Link
+                href="/juegos"
+                className="h-8 px-3 rounded-lg border text-sm font-bold inline-flex items-center justify-center flex-shrink-0"
+                style={{ borderColor: border, color: text }}
+              >
+                Ver todos →
+              </Link>
             </div>
             {hasUnlockedGames ? (
               <div className="flex gap-4 overflow-x-auto overflow-y-hidden pb-2 -mx-1 scrollbar-hide flex-1 min-h-0" style={{ WebkitOverflowScrolling: 'touch' }}>
@@ -515,48 +680,82 @@ export default function DashboardPage() {
             );
           })()}
 
-          {/* Ranking de Houses — 4 filas compactas */}
+          {/* Ranking de Houses — carrusel 8 rankings (desktop 2x2) */}
           <section className="flex-shrink-0 mb-6">
-            <h2 className="text-lg font-bold mb-3" style={{ color: text }}>Ranking de Houses</h2>
-            <div className="space-y-2 min-w-0">
-              {houseRanking.length === 0
-                ? HOUSES.map((h) => (
-                    <div key={h.id} className={`${cardBase} p-2.5 flex items-center gap-2`} style={{ ...cardStyle, borderColor: h.id === userHouse ? h.color : border, borderWidth: h.id === userHouse ? 2 : 1 }}>
-                      <Image src={h.image} alt={h.name} width={28} height={28} className="flex-shrink-0 object-contain" />
-                      <span className="font-bold text-sm truncate min-w-0 flex-1" style={{ color: h.color }}>{h.name}</span>
-                      <span className="text-sm font-black tabular-nums flex-shrink-0" style={{ color: text }}>0</span>
-                      <div className="w-12 rounded-full overflow-hidden flex-shrink-0" style={{ height: '0.25rem', background: progressBarBg }}>
-                        <div className="h-full rounded-full transition-[width] duration-300" style={{ width: '0%', background: progressBarFill }} />
-                      </div>
-                    </div>
-                  ))
-                : (() => {
-                    const maxPoints = Math.max(...houseRanking.map((r) => Number(r.total_points) || 0), 1);
-                    return houseRanking.map((row) => {
-                      const meta = HOUSES.find((h) => h.id === row.house);
-                      const pts = Number(row.total_points) || 0;
-                      const pct = maxPoints > 0 ? (pts / maxPoints) * 100 : 0;
-                      const isUser = row.house === userHouse;
-                      return (
-                        <div
-                          key={row.house}
-                          className={`${cardBase} p-2.5 flex items-center gap-2`}
-                          style={{ ...cardStyle, borderColor: isUser && meta ? meta.color : border, borderWidth: isUser ? 2 : 1 }}
-                        >
-                          {meta ? <Image src={meta.image} alt={meta.name} width={28} height={28} className="flex-shrink-0 object-contain" /> : <span className="w-7 h-7 flex-shrink-0" />}
-                          <span className="font-bold text-sm truncate min-w-0 flex-1" style={{ color: meta ? meta.color : text }}>{meta ? meta.name : row.house}</span>
-                          <span className="text-sm font-black tabular-nums flex-shrink-0" style={{ color: text }}>{pts}</span>
-                          <div className="w-12 rounded-full overflow-hidden flex-shrink-0" style={{ height: '0.25rem', background: progressBarBg }}>
-                            <div className="h-full rounded-full transition-[width] duration-300" style={{ width: `${pct}%`, background: progressBarFill }} />
-                          </div>
-                        </div>
-                      );
-                    });
-                  })()}
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-lg font-bold" style={{ color: text }}>Ranking de Houses</h2>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    goRankingPrev();
+                    resetRankingAutoTimer();
+                  }}
+                  className="w-8 h-8 rounded-lg border text-sm font-bold"
+                  style={{ borderColor: border, color: text }}
+                  aria-label="Ranking anterior"
+                >
+                  ←
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    goRankingNext();
+                    resetRankingAutoTimer();
+                  }}
+                  className="w-8 h-8 rounded-lg border text-sm font-bold"
+                  style={{ borderColor: border, color: text }}
+                  aria-label="Ranking siguiente"
+                >
+                  →
+                </button>
+              </div>
             </div>
+            <div className="overflow-hidden min-w-0" onWheel={handleRankingWheel}>
+              <div
+                className="flex"
+                style={{
+                  transform: `translateX(-${rankingPage * 100}%)`,
+                  transition: 'transform 350ms ease-in-out',
+                }}
+              >
+                {rankingPages.map((pageRankings, pageIdx) => (
+                  <div
+                    key={`desktop-page-${pageIdx}`}
+                    className="w-full shrink-0"
+                    style={{ transition: 'opacity 350ms ease-in-out', opacity: rankingPage === pageIdx ? 1 : 0.9 }}
+                  >
+                    <div className="grid grid-cols-2 gap-3 min-w-0">
+                      {pageRankings.map((ranking) => renderRankingCard(ranking))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="flex items-center justify-center gap-2 mt-3">
+              {[0, 1].map((i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => {
+                    setRankingPage(i);
+                    resetRankingAutoTimer();
+                  }}
+                  className="w-2.5 h-2.5 rounded-full"
+                  style={{ background: rankingPage === i ? accent : border }}
+                  aria-label={`Ir a página ${i + 1} de rankings`}
+                />
+              ))}
+            </div>
+            <button
+              type="button"
+              className="vibe-btn-gradient w-full rounded-xl py-2.5 mt-4 font-bold text-white text-sm"
+            >
+              🏆 Ver Rankings — ¡Visita el Campus!
+            </button>
           </section>
 
-          {/* Progreso del Campus — nombre + barra + % */}
+          {/* Progreso del Campus (desktop) oculto temporalmente
           <section className="flex-shrink-0">
             <h2 className="text-lg font-bold mb-3" style={{ color: text }}>Progreso del Campus</h2>
             <div className="space-y-2 min-w-0">
@@ -576,6 +775,7 @@ export default function DashboardPage() {
               })}
             </div>
           </section>
+          */}
         </div>
       </div>
 
@@ -747,40 +947,82 @@ export default function DashboardPage() {
             )}
           </section>
 
-          {/* Ranking de Houses — acordeón colapsado por defecto */}
+          {/* Ranking de Houses — carrusel 8 rankings (mobile 1x1) */}
           <section id="ranking-houses" className="min-w-0 scroll-mt-24">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-base font-bold" style={{ color: text }}>🏆 Ranking de Houses</h2>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    goRankingPrev();
+                    resetRankingAutoTimer();
+                  }}
+                  className="w-8 h-8 rounded-lg border text-sm font-bold"
+                  style={{ borderColor: border, color: text }}
+                  aria-label="Ranking anterior"
+                >
+                  ←
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    goRankingNext();
+                    resetRankingAutoTimer();
+                  }}
+                  className="w-8 h-8 rounded-lg border text-sm font-bold"
+                  style={{ borderColor: border, color: text }}
+                  aria-label="Ranking siguiente"
+                >
+                  →
+                </button>
+              </div>
+            </div>
+            <div className="overflow-hidden min-w-0" onWheel={handleRankingWheel}>
+              <div
+                className="flex"
+                style={{
+                  transform: `translateX(-${rankingPage * 100}%)`,
+                  transition: 'transform 350ms ease-in-out',
+                }}
+              >
+                {rankingPages.map((pageRankings, pageIdx) => (
+                  <div
+                    key={`mobile-page-${pageIdx}`}
+                    className="w-full shrink-0"
+                    style={{ transition: 'opacity 350ms ease-in-out', opacity: rankingPage === pageIdx ? 1 : 0.9 }}
+                  >
+                    <div className="grid grid-cols-1 gap-3 min-w-0">
+                      {pageRankings.map((ranking) => renderRankingCard(ranking))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="flex items-center justify-center gap-2 mt-3">
+              {[0, 1].map((i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => {
+                    setRankingPage(i);
+                    resetRankingAutoTimer();
+                  }}
+                  className="w-2.5 h-2.5 rounded-full"
+                  style={{ background: rankingPage === i ? accent : border }}
+                  aria-label={`Ir a página ${i + 1} de rankings`}
+                />
+              ))}
+            </div>
             <button
               type="button"
-              onClick={() => setRankingOpen((o) => !o)}
-              className="w-full flex items-center justify-between rounded-xl border p-4 font-bold text-left min-w-0"
-              style={{ ...cardStyle, color: text }}
+              className="vibe-btn-gradient w-full rounded-xl py-2.5 mt-4 font-bold text-white text-sm"
             >
-              <span className="truncate">🏆 Ranking de Houses</span>
-              <IconChevronDown open={rankingOpen} />
+              🏆 Ver Rankings — ¡Visita el Campus!
             </button>
-            {rankingOpen && (
-              <div className="mt-2 space-y-2 min-w-0">
-                {(houseRanking.length > 0 ? houseRanking : HOUSES.map((h) => ({ house: h.id, total_points: 0 }))).map((row) => {
-                  const meta = HOUSES.find((h) => h.id === row.house);
-                  const pts = Number(row.total_points) || 0;
-                  const isUser = row.house === userHouse;
-                  return (
-                    <div
-                      key={row.house}
-                      className={`${cardBase} p-3 flex items-center gap-3`}
-                      style={{ ...cardStyle, borderColor: isUser && meta ? meta.color : border, borderWidth: isUser ? 2 : 1 }}
-                    >
-                      {meta ? <Image src={meta.image} alt={meta.name} width={32} height={32} className="flex-shrink-0 object-contain" /> : <span className="w-8 h-8 flex-shrink-0" />}
-                      <span className="font-bold text-sm truncate min-w-0 flex-1" style={{ color: meta ? meta.color : text }}>{meta ? meta.name : row.house}</span>
-                      <span className="text-sm font-black tabular-nums flex-shrink-0" style={{ color: text }}>{pts} pts</span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
           </section>
 
-          {/* Progreso del Campus — acordeón colapsado por defecto */}
+          {/* Progreso del Campus (mobile) oculto temporalmente
           <section id="progreso-campus" className="min-w-0 scroll-mt-24">
             <button
               type="button"
@@ -810,6 +1052,7 @@ export default function DashboardPage() {
               </div>
             )}
           </section>
+          */}
 
           {/* Perfil — sección mínima para tab inferior */}
           <section id="perfil" className="min-w-0 scroll-mt-24 pb-4">
