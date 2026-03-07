@@ -270,6 +270,9 @@ export default function PerfilPage() {
         className="hidden lg:flex flex-shrink-0 items-center gap-4 px-4 h-14 border-b"
         style={{ background: cardBg, borderColor: border }}
       >
+        <button type="button" onClick={() => router.push('/dashboard')} className="flex items-center gap-1.5 text-sm font-bold flex-shrink-0 hover:opacity-80" style={{ color: accent }}>
+          ← Volver
+        </button>
         <Link href="/dashboard" className="flex items-center gap-2 min-w-0 flex-shrink-0">
           <Image src="/images/logo-sass.png" alt="SASS" width={32} height={32} className="object-contain" />
           <span className="text-base md:text-lg font-bold truncate" style={{ color: isDark ? text : '#00478E' }}>Campus San Andrés</span>
@@ -297,10 +300,9 @@ export default function PerfilPage() {
         className="lg:hidden flex-shrink-0 flex items-center justify-between gap-2 px-3 h-12 border-b"
         style={{ background: cardBg, borderColor: border }}
       >
-        <Link href="/perfil" className="flex items-center gap-2 min-w-0">
-          <Image src={userHouseMeta.image} alt={userHouseMeta.name} width={24} height={24} className="flex-shrink-0 object-contain" />
-          <span className="text-sm font-bold truncate" style={{ color: userHouseMeta.color }}>{userHouseMeta.name}</span>
-        </Link>
+        <button type="button" onClick={() => router.push('/dashboard')} className="flex items-center gap-1.5 text-sm font-bold min-w-0 flex-shrink-0 hover:opacity-80" style={{ color: accent }}>
+          ← Volver
+        </button>
         <span className="text-2xl font-black tabular-nums flex-shrink-0" style={{ color: accent }}>{stats.puntos}</span>
         <div className="flex items-center gap-0 flex-shrink-0">
           <button type="button" onClick={toggleTheme} aria-label={isDark ? 'Modo claro' : 'Modo oscuro'} className="p-2 rounded-lg" style={navStyle}>

@@ -111,15 +111,22 @@ export function DashboardNavbar({ profile, stats, theme, onToggleTheme, onLogout
       </header>
 
       <header
-        className="lg:hidden flex-shrink-0 flex items-center justify-between gap-2 px-3 h-12 border-b"
+        className="lg:hidden flex-shrink-0 flex items-center px-3 h-12 border-b"
         style={{ background: cardBg, borderColor: border }}
       >
-        <Link href="/perfil" className="flex items-center gap-2 min-w-0 transition-opacity hover:opacity-90">
+        <div className="flex-1 min-w-0 flex items-center justify-start">
+          <Link href="/dashboard" className="flex items-center transition-opacity hover:opacity-90" aria-label="Campus San Andrés">
+            <Image src="/images/logo-sass.png" alt="Campus San Andrés" width={28} height={28} className="object-contain flex-shrink-0" />
+          </Link>
+        </div>
+        <Link href="/perfil" className="flex items-center gap-2 px-2 py-1 rounded-lg border min-w-0 flex-shrink-0 overflow-hidden mx-1" style={{ borderColor: userHouseMeta.color, background: `${userHouseMeta.color}15` }}>
           <Image src={userHouseMeta.image} alt={userHouseMeta.name} width={24} height={24} className="flex-shrink-0 object-contain" />
-          <span className="text-sm font-bold truncate" style={{ color: userHouseMeta.color }}>{userHouseMeta.name}</span>
+          <div className="min-w-0 flex flex-col items-start">
+            <span className="text-xs font-bold truncate w-full leading-tight" style={{ color: text }}>{displayName}</span>
+            <span className="text-[10px] truncate w-full leading-tight" style={{ color: userHouseMeta.color }}>{userHouseMeta.name}</span>
+          </div>
         </Link>
-        <span className="text-2xl font-black tabular-nums flex-shrink-0" style={{ color: accent }}>{statValues.puntos}</span>
-        <div className="flex items-center gap-0 flex-shrink-0">
+        <div className="flex-1 min-w-0 flex items-center justify-end gap-0">
           <button type="button" onClick={onToggleTheme} aria-label={isDark ? 'Modo claro' : 'Modo oscuro'} className="p-2 rounded-lg" style={navStyle}>
             {isDark ? <IconSun /> : <IconMoon />}
           </button>

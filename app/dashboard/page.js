@@ -1057,13 +1057,18 @@ export default function DashboardPage() {
           {/* Perfil — sección mínima para tab inferior */}
           <section id="perfil" className="min-w-0 scroll-mt-24 pb-4">
             <h2 className="text-base font-bold mb-3" style={{ color: text }}>👤 Perfil</h2>
-            <div className={`${cardBase} p-4 flex items-center gap-3`} style={cardStyle}>
+            <button
+              type="button"
+              onClick={() => router.push('/perfil')}
+              className={`${cardBase} p-4 flex items-center gap-3 w-full text-left cursor-pointer border transition-opacity hover:opacity-90`}
+              style={cardStyle}
+            >
               <Image src={userHouseMeta.image} alt={userHouseMeta.name} width={48} height={48} className="flex-shrink-0 object-contain" />
               <div className="min-w-0">
                 <p className="font-bold text-sm" style={{ color: userHouseMeta.color }}>{userHouseMeta.name}</p>
                 <p className="text-xs" style={{ color: textMuted }}>Tu House</p>
               </div>
-            </div>
+            </button>
           </section>
         </div>
       </div>
@@ -1084,7 +1089,14 @@ export default function DashboardPage() {
             <button
               key={tab.id}
               type="button"
-              onClick={() => { setMobileTab(tab.id); scrollToSection(tab.id); }}
+              onClick={() => {
+                if (tab.id === 'perfil') {
+                  router.push('/perfil');
+                } else {
+                  setMobileTab(tab.id);
+                  scrollToSection(tab.id);
+                }
+              }}
               className="flex flex-col items-center justify-center gap-0.5 flex-1 py-2 min-w-0 transition-colors"
               style={{
                 color: isActive ? userHouseMeta.color : textMuted,
