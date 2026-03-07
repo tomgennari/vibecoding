@@ -1087,6 +1087,13 @@ export default function DashboardPage() {
             >
               🏆 Ver Rankings — ¡Visita el Campus!
             </button>
+            <button
+              type="button"
+              onClick={() => setDonationModalOpen(true)}
+              className="vibe-btn-gradient w-full rounded-xl py-2.5 mt-2 font-bold text-white text-sm"
+            >
+              Donar
+            </button>
           </section>
 
           {/* Progreso del Campus (mobile) oculto temporalmente
