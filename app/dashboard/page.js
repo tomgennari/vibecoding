@@ -1173,13 +1173,24 @@ export default function DashboardPage() {
             </button>
 
             <div className="p-8 pt-14 pb-10">
-              <div className="flex justify-center mb-6">
-                <Image src="/images/logo-sass.png" alt="Campus San Andrés" width={64} height={64} className="object-contain" />
+              <div className={`flex justify-center ${profile?.user_type !== 'padre' ? 'mb-8' : 'mb-6'}`}>
+                <Image
+                  src="/images/logo-sass.png"
+                  alt="Campus San Andrés"
+                  width={profile?.user_type !== 'padre' ? 96 : 64}
+                  height={profile?.user_type !== 'padre' ? 96 : 64}
+                  className="object-contain"
+                />
               </div>
               {profile?.user_type !== 'padre' ? (
-                <p className="text-base leading-relaxed" style={{ color: text }}>
-                  Solo los perfiles de Padres pueden realizar donaciones. Hablá con ellos si querés que ayuden en la construcción del Campus San Andrés.
-                </p>
+                <div className="text-center px-4 py-6 space-y-4">
+                  <p className="text-base leading-relaxed" style={{ color: text }}>
+                    Solo los perfiles de Padres pueden realizar donaciones.
+                  </p>
+                  <p className="text-base leading-relaxed" style={{ color: text }}>
+                    Hablá con ellos si querés que ayuden en la construcción del Campus San Andrés 🏫
+                  </p>
+                </div>
               ) : (
                 <>
                   <h2 id="donation-modal-title" className="text-2xl font-bold mb-6 text-center" style={{ color: text }}>
