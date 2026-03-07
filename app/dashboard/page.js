@@ -72,6 +72,7 @@ export default function DashboardPage() {
   const [rankingAutoSeed, setRankingAutoSeed] = useState(0);
   const [donationModalOpen, setDonationModalOpen] = useState(false);
   const [donatingAmount, setDonatingAmount] = useState(null);
+  const [hoveredDonationAmount, setHoveredDonationAmount] = useState(null);
 
   const isDark = theme === 'dark';
   const bg = isDark ? '#0a0a0f' : '#ffffff';
@@ -495,7 +496,6 @@ export default function DashboardPage() {
         theme={theme}
         onToggleTheme={toggleTheme}
         onLogout={handleLogout}
-        onOpenDonation={() => setDonationModalOpen(true)}
       />
 
       {/* ========== DESKTOP: dos columnas 2/3 + 1/3, sin scroll ========== */}
@@ -713,6 +713,14 @@ export default function DashboardPage() {
             );
           })()}
 
+          <button
+            type="button"
+            onClick={() => setDonationModalOpen(true)}
+            className="vibe-btn-gradient w-full rounded-xl py-2.5 mb-6 font-bold text-white text-sm"
+          >
+            Donar
+          </button>
+
           {/* Ranking de Houses — carrusel 8 rankings (desktop 2x2) */}
           <section className="flex-shrink-0 mb-6">
             <div className="flex items-center justify-between mb-3">
@@ -786,14 +794,6 @@ export default function DashboardPage() {
             >
               🏆 Ver Rankings — ¡Visita el Campus!
             </button>
-            <button
-              type="button"
-              onClick={() => setDonationModalOpen(true)}
-              className="w-full rounded-xl py-2.5 mt-2 font-bold text-sm border"
-              style={{ borderColor: accent, color: accent }}
-            >
-              Donar
-            </button>
           </section>
 
           {/* Progreso del Campus (desktop) oculto temporalmente
@@ -822,8 +822,8 @@ export default function DashboardPage() {
 
       {/* ========== MOBILE: scroll vertical + barra inferior fija ========== */}
       <div className="lg:hidden flex-1 overflow-auto min-h-0" style={{ paddingBottom: '60px' }}>
-        {/* Stats — 4 chips: 3 stats + Donar */}
-        <div className="grid grid-cols-4 gap-2 px-4 py-3 min-w-0" style={{ background: cardBg, borderBottom: `1px solid ${border}` }}>
+        {/* Stats — 3 chips */}
+        <div className="grid grid-cols-3 gap-2 px-4 py-3 min-w-0" style={{ background: cardBg, borderBottom: `1px solid ${border}` }}>
           <div className="rounded-xl border py-2.5 px-2 text-center min-w-0 overflow-hidden" style={cardStyle}>
             <p className="text-lg font-black tabular-nums truncate" style={{ color: accent }}>{stats.juegos}</p>
             <p className="text-[10px] font-medium break-words hyphens-auto mt-0.5 leading-tight" style={{ color: textMuted }}>{STATS_KEYS[0].label}</p>
@@ -836,10 +836,33 @@ export default function DashboardPage() {
             <p className="text-lg font-black tabular-nums truncate" style={{ color: accent }}>{stats.puntos}</p>
             <p className="text-[10px] font-medium break-words hyphens-auto mt-0.5 leading-tight" style={{ color: textMuted }}>{STATS_KEYS[2].label}</p>
           </div>
-          <button type="button" onClick={() => setDonationModalOpen(true)} className="rounded-xl border py-2.5 px-2 text-center min-w-0 overflow-hidden font-bold text-sm transition-opacity hover:opacity-90" style={{ ...cardStyle, color: accent, borderColor: accent }}>
-            Donar
-          </button>
         </div>
+
+        {/* Próximo objetivo (mobile) — compacto + botón Donar, separado de stats */}
+        {(() => {
+          const formatArs = (n) => Number(n).toLocaleString('es-AR');
+          const currentIndex = GOALS_ARS.findIndex((g) => totalRaised < g);
+          const currentGoal = currentIndex === -1 ? GOALS_ARS[GOALS_ARS.length - 1] : GOALS_ARS[currentIndex];
+          const progress = currentGoal ? Math.min(100, (totalRaised / currentGoal) * 100) : 0;
+          const objetivoBg = isDark ? '#16161f' : '#f1f5f9';
+          return (
+            <div
+              className="px-4 py-2 flex items-stretch gap-2.5 min-w-0 border-t"
+              style={{ background: objetivoBg, borderColor: border }}
+            >
+              <div className="flex-1 min-w-0 rounded-lg border p-2 flex flex-col justify-center" style={{ ...cardStyle, background: cardBg }}>
+                <p className="text-xs font-black tabular-nums truncate mb-0.5" style={{ color: accent }}>🎯 ${formatArs(currentGoal)} ARS</p>
+                <div className="rounded-full overflow-hidden h-1.5 mb-0.5" style={{ background: progressBarBg }}>
+                  <div className="h-full rounded-full transition-[width] duration-300" style={{ width: `${progress}%`, background: 'linear-gradient(90deg, #7c3aed 0%, #06b6d4 100%)' }} />
+                </div>
+                <p className="text-[10px] tabular-nums leading-tight" style={{ color: textMuted }}>Recaudado: ${formatArs(totalRaised)} de ${formatArs(currentGoal)}</p>
+              </div>
+              <button type="button" onClick={() => setDonationModalOpen(true)} className="vibe-btn-gradient flex-shrink-0 rounded-xl px-3 py-2 font-bold text-white text-sm self-center">
+                Donar
+              </button>
+            </div>
+          );
+        })()}
 
         <div className="px-4 py-4 space-y-6 min-w-0">
           {/* Juegos del día — scroll horizontal tipo Netflix, cards 75vw, sin scrollbar */}
@@ -1117,29 +1140,30 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Modal de donación */}
+      {/* Modal de donación — identidad PRD (dark), logo, espaciado, hover botones */}
       {donationModalOpen && (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4"
-          style={{ background: 'rgba(0,0,0,0.65)' }}
+          className="fixed inset-0 z-[100] flex items-center justify-center p-6"
+          style={{ background: 'rgba(10,10,15,0.82)' }}
           onClick={() => setDonationModalOpen(false)}
           role="dialog"
           aria-modal="true"
           aria-labelledby="donation-modal-title"
         >
           <div
-            className="relative rounded-2xl border shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto"
+            className="relative rounded-2xl border shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto"
             style={{
               background: cardBg,
               borderColor: border,
               color: text,
+              boxShadow: isDark ? `0 25px 50px -12px rgba(0,0,0,0.5), 0 0 0 1px ${border}` : undefined,
             }}
             onClick={(e) => e.stopPropagation()}
           >
             <button
               type="button"
               onClick={() => setDonationModalOpen(false)}
-              className="absolute top-3 right-3 w-9 h-9 rounded-lg flex items-center justify-center transition-opacity hover:opacity-80"
+              className="absolute top-4 right-4 w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 hover:scale-105 hover:opacity-90"
               style={{ background: isDark ? '#2a2a3a' : '#e2e8f0', color: text }}
               aria-label="Cerrar"
             >
@@ -1148,37 +1172,53 @@ export default function DashboardPage() {
               </svg>
             </button>
 
-            <div className="p-6 pt-12">
+            <div className="p-8 pt-14 pb-10">
+              <div className="flex justify-center mb-6">
+                <Image src="/images/logo-sass.png" alt="Campus San Andrés" width={64} height={64} className="object-contain" />
+              </div>
               {profile?.user_type !== 'padre' ? (
-                <p className="text-sm leading-relaxed" style={{ color: text }}>
-                  Solo los perfiles de Padres pueden realizar donaciones. Hablá con ellos si querés que ayuden en la construcción del Campus San Andrés 🏫
+                <p className="text-base leading-relaxed" style={{ color: text }}>
+                  Solo los perfiles de Padres pueden realizar donaciones. Hablá con ellos si querés que ayuden en la construcción del Campus San Andrés.
                 </p>
               ) : (
                 <>
-                  <h2 id="donation-modal-title" className="text-xl font-bold mb-4" style={{ color: text }}>
-                    Donar al Campus San Andrés 🏗
+                  <h2 id="donation-modal-title" className="text-2xl font-bold mb-6 text-center" style={{ color: text }}>
+                    Donar al Campus San Andrés
                   </h2>
-                  <div className="grid grid-cols-2 gap-3 mb-4">
-                    {DONATION_AMOUNTS.map((item) => (
-                      <button
-                        key={item.amount}
-                        type="button"
-                        disabled={donatingAmount != null}
-                        onClick={() => handleDonationAmount(item.amount)}
-                        className="rounded-xl border-2 py-4 px-3 font-bold text-sm transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 disabled:pointer-events-none"
-                        style={{
-                          borderColor: item.gold ? '#eab308' : border,
-                          background: item.gold ? 'rgba(234,179,8,0.12)' : (isDark ? '#1a1a24' : '#f1f5f9'),
-                          color: item.gold ? '#eab308' : text,
-                        }}
-                      >
-                        {item.gold && <span className="block text-base mb-0.5">⭐</span>}
-                        {item.label}
-                      </button>
-                    ))}
+                  <div className="grid grid-cols-2 gap-4 mb-8">
+                    {DONATION_AMOUNTS.map((item) => {
+                      const isHovered = hoveredDonationAmount === item.amount && donatingAmount == null;
+                      const glow = item.gold
+                        ? '0 0 0 3px rgba(234,179,8,0.5), 0 8px 24px rgba(234,179,8,0.25)'
+                        : '0 0 0 3px rgba(124,58,237,0.5), 0 8px 24px rgba(124,58,237,0.25)';
+                      return (
+                        <button
+                          key={item.amount}
+                          type="button"
+                          disabled={donatingAmount != null}
+                          onClick={() => handleDonationAmount(item.amount)}
+                          onMouseEnter={() => setHoveredDonationAmount(item.amount)}
+                          onMouseLeave={() => setHoveredDonationAmount(null)}
+                          className="rounded-xl border-2 py-5 px-4 font-bold text-sm transition-all duration-200 active:scale-[0.98] disabled:opacity-70 disabled:pointer-events-none"
+                          style={{
+                            borderColor: item.gold ? '#eab308' : border,
+                            background: item.gold ? 'rgba(234,179,8,0.15)' : (isDark ? '#1a1a24' : '#f1f5f9'),
+                            color: item.gold ? '#eab308' : text,
+                            transform: isHovered ? 'scale(1.06)' : 'scale(1)',
+                            boxShadow: isHovered ? glow : 'none',
+                          }}
+                        >
+                          {item.gold && <span className="block text-base mb-0.5">⭐</span>}
+                          {item.label}
+                        </button>
+                      );
+                    })}
                   </div>
-                  <p className="text-xs leading-relaxed" style={{ color: textMuted }}>
-                    Los montos donados van directamente a la cuenta de la ASOCIACIÓN CIVIL EDUCATIVA ESCOCESA SAN ANDRÉS, sin intermediarios. Los datos del donante serán registrados junto a los datos de la cuenta de Mercado Pago utilizada para realizar la donación.
+                  <p className="text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: textMuted }}>
+                    Importante
+                  </p>
+                  <p className="text-sm leading-relaxed" style={{ color: textMuted }}>
+                    Los montos donados van directamente a la cuenta de la Asociación Civil Educativa Escocesa San Andrés, sin intermediarios. Los datos del donante serán registrados junto a los datos de la cuenta de Mercado Pago utilizada.
                   </p>
                 </>
               )}
