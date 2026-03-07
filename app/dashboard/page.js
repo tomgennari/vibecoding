@@ -406,25 +406,27 @@ export default function DashboardPage() {
           </section>
 
           {/* Banner separador full width (tercero) */}
-          <div
-            className="flex-shrink-0 rounded-xl py-6 px-4 mb-4 text-center -mx-0 flex flex-col items-center justify-center gap-4"
-            style={{ background: 'linear-gradient(135deg, #7c3aed 0%, #06b6d4 100%)', border: `2px solid ${border}` }}
-          >
-            <p
-              className="text-lg md:text-xl font-black uppercase tracking-wide text-white max-w-2xl mx-auto"
-              style={{ fontFamily: "'Burbank Big', sans-serif", fontWeight: 900 }}
+          {stats.juegos < 3 && (
+            <div
+              className="flex-shrink-0 rounded-xl py-6 px-4 mb-4 text-center -mx-0 flex flex-col items-center justify-center gap-4"
+              style={{ background: 'linear-gradient(135deg, #7c3aed 0%, #06b6d4 100%)', border: `2px solid ${border}` }}
             >
-              ¡Desbloqueá juegos y construyamos el Campus!
-            </p>
-            <div className="flex flex-wrap gap-3 justify-center">
+              <p
+                className="text-lg md:text-xl font-black uppercase tracking-wide text-white max-w-2xl mx-auto"
+                style={{ fontFamily: "'Burbank Big', sans-serif", fontWeight: 900 }}
+              >
+                ¡Desbloqueá juegos y construyamos el Campus!
+              </p>
+              <div className="flex flex-wrap gap-3 justify-center">
 <Link href="/juegos" className="inline-flex items-center justify-center rounded-xl px-5 py-2.5 font-bold text-white bg-white/20 border border-white/40">
-                  Ver juegos
-                </Link>
-              <button type="button" className="inline-flex items-center justify-center rounded-xl px-5 py-2.5 font-bold text-white bg-white/20 border border-white/40">
-                Donar
-              </button>
+                    Ver juegos
+                  </Link>
+                <button type="button" className="inline-flex items-center justify-center rounded-xl px-5 py-2.5 font-bold text-white bg-white/20 border border-white/40">
+                  Donar
+                </button>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Carrusel 1 — Mis juegos desbloqueados (cuarto) */}
           <section className="flex-1 min-h-0 flex flex-col">
@@ -634,27 +636,29 @@ export default function DashboardPage() {
           </section>
 
           {/* Banner CTA — mismo texto y botones que desktop */}
-          <section className="min-w-0 -mx-4">
-            <div
-              className="rounded-none mx-0 py-8 px-4 flex flex-col items-center justify-center text-center gap-4"
-              style={{ background: 'linear-gradient(135deg, #7c3aed 0%, #06b6d4 100%)', borderTop: `2px solid ${border}`, borderBottom: `2px solid ${border}` }}
-            >
-              <p
-                className="text-2xl font-black uppercase tracking-wide text-white"
-                style={{ fontFamily: "'Burbank Big', sans-serif", fontWeight: 900 }}
+          {stats.juegos < 3 && (
+            <section className="min-w-0 -mx-4">
+              <div
+                className="rounded-none mx-0 py-8 px-4 flex flex-col items-center justify-center text-center gap-4"
+                style={{ background: 'linear-gradient(135deg, #7c3aed 0%, #06b6d4 100%)', borderTop: `2px solid ${border}`, borderBottom: `2px solid ${border}` }}
               >
-                ¡Desbloqueá juegos y construyamos el Campus!
-              </p>
-              <div className="flex flex-wrap gap-3 justify-center">
-                <Link href="/juegos" className="inline-flex items-center justify-center rounded-xl px-5 py-2.5 font-bold text-white bg-white/20 border border-white/40">
-                  Ver juegos
-                </Link>
-                <button type="button" className="inline-flex items-center justify-center rounded-xl px-5 py-2.5 font-bold text-white bg-white/20 border border-white/40">
-                  Donar
-                </button>
+                <p
+                  className="text-2xl font-black uppercase tracking-wide text-white"
+                  style={{ fontFamily: "'Burbank Big', sans-serif", fontWeight: 900 }}
+                >
+                  ¡Desbloqueá juegos y construyamos el Campus!
+                </p>
+                <div className="flex flex-wrap gap-3 justify-center">
+                  <Link href="/juegos" className="inline-flex items-center justify-center rounded-xl px-5 py-2.5 font-bold text-white bg-white/20 border border-white/40">
+                    Ver juegos
+                  </Link>
+                  <button type="button" className="inline-flex items-center justify-center rounded-xl px-5 py-2.5 font-bold text-white bg-white/20 border border-white/40">
+                    Donar
+                  </button>
+                </div>
               </div>
-            </div>
-          </section>
+            </section>
+          )}
 
           {/* Juegos para desbloquear — scroll horizontal mismo estilo que Juegos del día */}
           <section className="min-w-0">
