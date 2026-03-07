@@ -262,16 +262,25 @@ export default function JuegosPage() {
 
       <div className="flex-1 min-h-0 overflow-auto px-4 py-6 lg:px-6">
         <header className="mb-6 min-w-0">
-          <h1
-            className="text-3xl sm:text-4xl lg:text-5xl font-black uppercase tracking-tight mb-1"
-            style={{
-              color: text,
-              fontFamily: isDark ? "'Burbank Big', sans-serif" : undefined,
-              fontWeight: 900,
-            }}
-          >
-            🎮 Todos los juegos
-          </h1>
+          <div className="flex justify-between items-center mb-1">
+            <h1
+              className="text-3xl sm:text-4xl lg:text-5xl font-black uppercase tracking-tight"
+              style={{
+                color: text,
+                fontFamily: isDark ? "'Burbank Big', sans-serif" : undefined,
+                fontWeight: 900,
+              }}
+            >
+              🎮 Todos los juegos
+            </h1>
+            <Link
+              href="/juegos/subir"
+              className="rounded-xl px-4 py-2 font-bold text-sm whitespace-nowrap transition-opacity hover:opacity-90"
+              style={{ background: accent, color: '#fff' }}
+            >
+              🕹️ Subir mi juego
+            </Link>
+          </div>
           <p className="text-sm lg:text-base mb-4" style={{ color: textMuted }}>
             {filteredAndSortedGames.length} juego{filteredAndSortedGames.length !== 1 ? 's' : ''} disponible{filteredAndSortedGames.length !== 1 ? 's' : ''}
           </p>
