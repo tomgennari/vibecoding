@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/utils/supabase/client.js';
 import { useDashboardTheme } from '@/lib/use-dashboard-theme.js';
+import { DashboardNavbar } from '@/components/dashboard-navbar.js';
+import { MobileBottomNav } from '@/components/mobile-bottom-nav.js';
 
 const HOUSES = [
   { id: 'william_brown', name: 'William Brown', color: '#3b82f6', image: '/images/houses/house-brown.png' },
@@ -36,28 +38,6 @@ function formatDate(dateStr) {
   } catch {
     return dateStr;
   }
-}
-
-function IconLogout() {
-  return (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-    </svg>
-  );
-}
-function IconSun() {
-  return (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-    </svg>
-  );
-}
-function IconMoon() {
-  return (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-    </svg>
-  );
 }
 
 export default function PerfilPage() {
@@ -97,7 +77,6 @@ export default function PerfilPage() {
   const accent = '#7c3aed';
   const cardBase = 'rounded-xl border min-w-0 overflow-hidden';
   const cardStyle = { borderColor: border, background: cardBg };
-  const navStyle = isDark ? { color: textMuted } : { color: '#64748b' };
 
   const fetchData = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -265,56 +244,15 @@ export default function PerfilPage() {
 
   return (
     <div className="min-h-screen font-sans flex flex-col" style={{ background: bg, color: text }}>
-      {/* Navbar desktop — mismo que dashboard */}
-      <header
-        className="hidden lg:flex flex-shrink-0 items-center gap-4 px-4 h-14 border-b"
-        style={{ background: cardBg, borderColor: border }}
-      >
-        <button type="button" onClick={() => router.push('/dashboard')} className="flex items-center gap-1.5 text-sm font-bold flex-shrink-0 hover:opacity-80" style={{ color: accent }}>
-          ← Volver
-        </button>
-        <Link href="/dashboard" className="flex items-center gap-2 min-w-0 flex-shrink-0">
-          <Image src="/images/logo-sass.png" alt="SASS" width={32} height={32} className="object-contain" />
-          <span className="text-base md:text-lg font-bold truncate" style={{ color: isDark ? text : '#00478E' }}>Campus San Andrés</span>
-        </Link>
-        <div className="flex-1" />
-        <div className="flex items-center gap-3 flex-shrink-0">
-          <Link href="/perfil" className="flex items-center gap-2 px-3 py-1.5 rounded-lg border min-w-0" style={{ borderColor: userHouseMeta.color, background: `${userHouseMeta.color}15` }}>
-            <Image src={userHouseMeta.image} alt={userHouseMeta.name} width={28} height={28} className="flex-shrink-0 object-contain" />
-            <div className="min-w-0 flex flex-col items-start">
-              <span className="text-sm font-bold truncate w-full" style={{ color: text }}>{displayName}</span>
-              <span className="text-xs truncate w-full" style={{ color: userHouseMeta.color }}>{userHouseMeta.name}</span>
-            </div>
-          </Link>
-          <button type="button" onClick={toggleTheme} aria-label={isDark ? 'Modo claro' : 'Modo oscuro'} className="p-2 rounded-lg transition-colors" style={navStyle}>
-            {isDark ? <IconSun /> : <IconMoon />}
-          </button>
-          <button type="button" onClick={handleLogout} className="p-2 rounded-lg transition-colors hover:opacity-80" style={{ color: '#ef4444' }} aria-label="Cerrar sesión">
-            <IconLogout />
-          </button>
-        </div>
-      </header>
+      <DashboardNavbar
+        profile={profile}
+        stats={stats}
+        theme={theme}
+        onToggleTheme={toggleTheme}
+        onLogout={handleLogout}
+      />
 
-      {/* Navbar mobile */}
-      <header
-        className="lg:hidden flex-shrink-0 flex items-center justify-between gap-2 px-3 h-12 border-b"
-        style={{ background: cardBg, borderColor: border }}
-      >
-        <button type="button" onClick={() => router.push('/dashboard')} className="flex items-center gap-1.5 text-sm font-bold min-w-0 flex-shrink-0 hover:opacity-80" style={{ color: accent }}>
-          ← Volver
-        </button>
-        <span className="text-2xl font-black tabular-nums flex-shrink-0" style={{ color: accent }}>{stats.puntos}</span>
-        <div className="flex items-center gap-0 flex-shrink-0">
-          <button type="button" onClick={toggleTheme} aria-label={isDark ? 'Modo claro' : 'Modo oscuro'} className="p-2 rounded-lg" style={navStyle}>
-            {isDark ? <IconSun /> : <IconMoon />}
-          </button>
-          <button type="button" onClick={handleLogout} className="p-2 rounded-lg" style={{ color: '#ef4444' }} aria-label="Cerrar sesión">
-            <IconLogout />
-          </button>
-        </div>
-      </header>
-
-      <div className="flex-1 overflow-auto min-h-0">
+      <div className="flex-1 overflow-auto min-h-0 pb-[60px] lg:pb-0">
         <div className="lg:flex lg:flex-row lg:min-h-full">
           {/* Columna izquierda — card de perfil */}
           <aside className="flex-shrink-0 lg:w-1/3 p-4 lg:p-6">
@@ -614,6 +552,8 @@ export default function PerfilPage() {
           </div>
         </div>
       )}
+
+      <MobileBottomNav theme={theme} activeTabId="perfil" userHouseMeta={userHouseMeta} />
     </div>
   );
 }

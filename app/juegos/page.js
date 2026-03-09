@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/utils/supabase/client.js';
 import { useDashboardTheme } from '@/lib/use-dashboard-theme.js';
 import { DashboardNavbar } from '@/components/dashboard-navbar.js';
+import { MobileBottomNav } from '@/components/mobile-bottom-nav.js';
 
 const HOUSES = [
   { id: 'william_brown', name: 'William Brown', color: '#3b82f6', image: '/images/houses/house-brown.png' },
@@ -61,6 +62,7 @@ export default function JuegosPage() {
   const accent = '#7c3aed';
   const cardBase = 'rounded-xl border min-w-0 overflow-hidden';
   const cardStyle = { borderColor: border, background: cardBg };
+  const userHouseMeta = HOUSES.find((h) => h.id === profile?.house) || HOUSES[0];
 
   useEffect(() => {
     async function init() {
@@ -260,26 +262,18 @@ export default function JuegosPage() {
         }}
       />
 
-      <div className="flex-1 min-h-0 overflow-auto px-4 py-6 lg:px-6">
+      <div className="flex-1 min-h-0 overflow-auto px-4 py-6 lg:px-6 pb-[60px] lg:pb-6">
         <header className="mb-6 min-w-0">
-          <div className="flex justify-between items-center mb-1">
-            <h1
-              className="text-3xl sm:text-4xl lg:text-5xl font-black uppercase tracking-tight"
-              style={{
-                color: text,
-                fontFamily: isDark ? "'Burbank Big', sans-serif" : undefined,
-                fontWeight: 900,
-              }}
-            >
-              🎮 Todos los juegos
-            </h1>
-            <Link
-              href="/juegos/subir"
-              className="vibe-btn-gradient-highlight rounded-xl px-4 py-2 font-bold text-sm text-white whitespace-nowrap"
-            >
-              🕹️ Subir mi juego
-            </Link>
-          </div>
+          <h1
+            className="text-3xl sm:text-4xl lg:text-5xl font-black uppercase tracking-tight mb-1"
+            style={{
+              color: text,
+              fontFamily: isDark ? "'Burbank Big', sans-serif" : undefined,
+              fontWeight: 900,
+            }}
+          >
+            🎮 Todos los juegos
+          </h1>
           <p className="text-sm lg:text-base mb-4" style={{ color: textMuted }}>
             {filteredAndSortedGames.length} juego{filteredAndSortedGames.length !== 1 ? 's' : ''} disponible{filteredAndSortedGames.length !== 1 ? 's' : ''}
           </p>
@@ -542,6 +536,8 @@ export default function JuegosPage() {
           </p>
         )}
       </div>
+
+      <MobileBottomNav theme={theme} activeTabId="juegos-dia" userHouseMeta={userHouseMeta} />
     </div>
   );
 }

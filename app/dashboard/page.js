@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/utils/supabase/client.js';
 import { useDashboardTheme } from '@/lib/use-dashboard-theme.js';
 import { DashboardNavbar } from '@/components/dashboard-navbar.js';
+import { MobileBottomNav } from '@/components/mobile-bottom-nav.js';
 
 const HOUSES = [
   { id: 'william_brown', name: 'William Brown', color: '#3b82f6', image: '/images/houses/house-brown.png' },
@@ -1245,45 +1246,15 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Barra inferior fija — solo mobile, 5 tabs */}
-      <nav
-        className="lg:hidden fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around border-t h-[60px]"
-        style={{ background: cardBg, borderColor: border }}
-      >
-        {[
-          { id: 'juegos-dia', label: 'Juegos', icon: '🎮' },
-          { id: 'ranking-houses', label: 'Ranking', icon: '🏆' },
-          { id: 'crear-juego', label: 'Crear', icon: '🕹️' },
-          { id: 'progreso-campus', label: 'Campus', icon: '🏗' },
-          { id: 'perfil', label: 'Perfil', icon: '👤' },
-        ].map((tab) => {
-          const isActive = mobileTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => {
-                if (tab.id === 'perfil') {
-                  router.push('/perfil');
-                } else if (tab.id === 'crear-juego') {
-                  router.push('/juegos/subir');
-                } else {
-                  setMobileTab(tab.id);
-                  scrollToSection(tab.id);
-                }
-              }}
-              className="flex flex-col items-center justify-center gap-0.5 flex-1 py-2 min-w-0 transition-colors"
-              style={{
-                color: isActive ? userHouseMeta.color : textMuted,
-                fontWeight: isActive ? 700 : 500,
-              }}
-            >
-              <span className="text-lg">{tab.icon}</span>
-              <span className="text-[10px] truncate w-full">{tab.label}</span>
-            </button>
-          );
-        })}
-      </nav>
+      <MobileBottomNav
+        theme={theme}
+        activeTabId={mobileTab}
+        userHouseMeta={userHouseMeta}
+        onTabChange={(id) => {
+          setMobileTab(id);
+          scrollToSection(id);
+        }}
+      />
     </div>
   );
 }
