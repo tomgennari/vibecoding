@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/utils/supabase/client.js';
 import { useDashboardTheme } from '@/lib/use-dashboard-theme.js';
+import { useUser } from '@/lib/user-context.js';
 import { DashboardNavbar } from '@/components/dashboard-navbar.js';
 import { MobileBottomNav } from '@/components/mobile-bottom-nav.js';
 
@@ -50,9 +51,8 @@ function IconChevronDown({ open }) {
 export default function DashboardPage() {
   const router = useRouter();
   const [theme, toggleTheme] = useDashboardTheme();
+  const { profile, stats, userHouseMeta, loading: userLoading } = useUser();
   const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState(null);
-  const [stats, setStats] = useState({ juegos: 0, tiempoSeconds: 0, puntos: 0 });
   const [dailyGames, setDailyGames] = useState([]);
   const [gamesToUnlock, setGamesToUnlock] = useState([]);
   const [unlockedGames, setUnlockedGames] = useState([]);
@@ -94,15 +94,12 @@ export default function DashboardPage() {
       const today = new Date().toISOString().split('T')[0];
 
       const [
-        profileRes,
-        unlocksCountRes,
         sessionsRes,
         sessionsAllRes,
         dailyIdsRes,
         unlocksListRes,
         approvedGamesRes,
         userLikesRes,
-        housePointsRes,
         buildingsRes,
         unlocksAmountRes,
         donationsRes,
@@ -110,15 +107,12 @@ export default function DashboardPage() {
         allSessionsRes,
         allDonationsRes,
       ] = await Promise.all([
-        supabase.from('profiles').select('first_name, last_name, house, user_type').eq('id', uid).single().then((r) => ({ data: r.data, error: r.error })).catch(() => ({ data: null, error: true })),
-        supabase.from('game_unlocks').select('*', { count: 'exact', head: true }).eq('user_id', uid).then((r) => ({ count: r.count ?? 0, error: r.error })).catch(() => ({ count: 0, error: true })),
         supabase.from('game_sessions').select('duration_seconds').eq('user_id', uid).then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('game_sessions').select('game_id, user_id').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('daily_free_games').select('game_id').eq('active_date', today).then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('game_unlocks').select('game_id').eq('user_id', uid).then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('games').select('*').eq('status', 'approved').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('game_likes').select('game_id').eq('user_id', uid).then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
-        supabase.from('house_points').select('*').order('total_points', { ascending: false }).then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('buildings').select('*').order('display_order', { ascending: true }).then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => supabase.from('buildings').select('*').order('name', { ascending: true }).then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true }))),
         supabase.from('game_unlocks').select('game_id, amount_paid').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('donations').select('amount').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
@@ -126,16 +120,6 @@ export default function DashboardPage() {
         supabase.from('game_sessions').select('game_id, duration_seconds').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('donations').select('house, amount').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
       ]);
-
-      const profileData = profileRes.data || { first_name: 'Usuario', last_name: '', house: 'william_brown' };
-      setProfile(profileData);
-      const userHouse = profileData.house || 'william_brown';
-
-      setStats({
-        juegos: unlocksCountRes.count ?? 0,
-        tiempoSeconds: (sessionsRes.data || []).reduce((acc, row) => acc + (Number(row.duration_seconds) || 0), 0),
-        puntos: (housePointsRes.data || []).find((row) => row.house === userHouse)?.total_points ?? 0,
-      });
 
       const uniquePlayersByGame = {};
       (sessionsAllRes.data || []).forEach((s) => {
@@ -277,7 +261,6 @@ export default function DashboardPage() {
   }
 
   const userHouse = profile?.house || 'william_brown';
-  const userHouseMeta = HOUSES.find((h) => h.id === userHouse) || HOUSES[0];
   const displayName = profile ? [profile.first_name, profile.last_name].filter(Boolean).join(' ') || 'Usuario' : 'Usuario';
   const hasUnlockedGames = unlockedGames.length > 0;
 
@@ -433,7 +416,7 @@ export default function DashboardPage() {
     );
   }
 
-  if (loading) {
+  if (userLoading || loading) {
     return (
       <div className="min-h-screen font-sans flex flex-col" style={{ background: bg }}>
         <header className="hidden lg:flex flex-shrink-0 items-center gap-4 px-4 h-14 border-b" style={{ borderColor: skeletonBg, background: cardBg }}>
@@ -492,8 +475,6 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen font-sans flex flex-col" style={{ background: bg, color: text }}>
       <DashboardNavbar
-        profile={profile}
-        stats={stats}
         theme={theme}
         onToggleTheme={toggleTheme}
         onLogout={handleLogout}
@@ -1249,7 +1230,6 @@ export default function DashboardPage() {
       <MobileBottomNav
         theme={theme}
         activeTabId={mobileTab}
-        userHouseMeta={userHouseMeta}
         onTabChange={(id) => {
           setMobileTab(id);
           scrollToSection(id);

@@ -478,7 +478,9 @@ export default function PerfilPage() {
                       ))}
                     </ul>
                   )}
-                  <p className="text-xs mt-4" style={{ color: textMuted }}>Subir nuevo juego (disponible en Fase 2)</p>
+                  <Link href="/juegos/subir" className="vibe-btn-gradient inline-block mt-4 rounded-xl px-4 py-2.5 text-sm font-bold text-white">
+                    🕹️ Subir mi juego
+                  </Link>
                 </div>
               )}
             </div>
