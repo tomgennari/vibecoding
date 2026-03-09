@@ -8,6 +8,7 @@ import { supabase } from '@/utils/supabase/client.js';
 import { useDashboardTheme } from '@/lib/use-dashboard-theme.js';
 import { DashboardNavbar } from '@/components/dashboard-navbar.js';
 import { MobileBottomNav } from '@/components/mobile-bottom-nav.js';
+import { useUser } from '@/lib/user-context.js';
 
 const HOUSES = [
   { id: 'william_brown', name: 'William Brown', color: '#3b82f6', image: '/images/houses/house-brown.png' },
@@ -26,9 +27,8 @@ const SORT_OPTIONS = [
 export default function JuegosPage() {
   const router = useRouter();
   const [theme, toggleTheme] = useDashboardTheme();
+  const { profile, stats, userHouseMeta, loading: userLoading } = useUser();
   const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState(null);
-  const [stats, setStats] = useState({ juegos: 0, tiempoSeconds: 0, puntos: 0 });
   const [games, setGames] = useState([]);
   const [gamesWithMetrics, setGamesWithMetrics] = useState([]);
   const [unlockedIds, setUnlockedIds] = useState(new Set());
@@ -62,51 +62,35 @@ export default function JuegosPage() {
   const accent = '#7c3aed';
   const cardBase = 'rounded-xl border min-w-0 overflow-hidden';
   const cardStyle = { borderColor: border, background: cardBg };
-  const userHouseMeta = HOUSES.find((h) => h.id === profile?.house) || HOUSES[0];
 
   useEffect(() => {
+    if (!userLoading && !profile) router.replace('/login');
+  }, [userLoading, profile, router]);
+
+  useEffect(() => {
+    if (userLoading || !profile) return;
+    let cancelled = false;
     async function init() {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        router.replace('/login');
-        return;
-      }
+      if (!session || cancelled) return;
       const uid = session.user.id;
       const today = new Date().toISOString().split('T')[0];
 
       const [
-        profileRes,
         gamesRes,
         sessionsRes,
         likesRes,
         userLikesRes,
         unlocksRes,
         dailyRes,
-        unlocksCountRes,
-        sessionsUserRes,
-        housePointsRes,
       ] = await Promise.all([
-        supabase.from('profiles').select('first_name, last_name, house').eq('id', uid).single().then((r) => ({ data: r.data, error: r.error })).catch(() => ({ data: null, error: true })),
         supabase.from('games').select('*').eq('status', 'approved').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('game_sessions').select('game_id, user_id').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('game_likes').select('game_id').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('game_likes').select('game_id').eq('user_id', uid).then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('game_unlocks').select('game_id').eq('user_id', uid).then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('daily_free_games').select('game_id').eq('active_date', today).then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
-        supabase.from('game_unlocks').select('*', { count: 'exact', head: true }).eq('user_id', uid).then((r) => ({ count: r.count ?? 0, error: r.error })).catch(() => ({ count: 0, error: true })),
-        supabase.from('game_sessions').select('duration_seconds').eq('user_id', uid).then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
-        supabase.from('house_points').select('*').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
       ]);
-
-      const profileData = profileRes.data || { first_name: 'Usuario', last_name: '', house: 'william_brown' };
-      setProfile(profileData);
-      const userHouse = profileData.house || 'william_brown';
-
-      setStats({
-        juegos: unlocksCountRes.count ?? 0,
-        tiempoSeconds: (sessionsUserRes.data || []).reduce((acc, row) => acc + (Number(row.duration_seconds) || 0), 0),
-        puntos: (housePointsRes.data || []).find((row) => row.house === userHouse)?.total_points ?? 0,
-      });
 
       const gamesList = gamesRes.data || [];
       const uniquePlayersByGame = {};
@@ -133,10 +117,11 @@ export default function JuegosPage() {
       setUnlockedIds(new Set((unlocksRes.data || []).map((r) => r.game_id).filter(Boolean)));
       setDailyIds(new Set((dailyRes.data || []).map((r) => r.game_id).filter(Boolean)));
       setUserLikedIds(new Set((userLikesRes.data || []).map((r) => r.game_id).filter(Boolean)));
-      setLoading(false);
+      if (!cancelled) setLoading(false);
     }
     init();
-  }, [router]);
+    return () => { cancelled = true; };
+  }, [userLoading, profile]);
 
   const filteredAndSortedGames = useMemo(() => {
     let list = gamesWithMetrics;
@@ -238,10 +223,10 @@ export default function JuegosPage() {
     }
   }
 
-  if (loading) {
+  if (userLoading || loading) {
     return (
       <div className="min-h-screen font-sans flex flex-col" style={{ background: bg }}>
-        <DashboardNavbar profile={profile} stats={stats} theme={theme} onToggleTheme={toggleTheme} onLogout={() => {}} />
+        <DashboardNavbar theme={theme} onToggleTheme={toggleTheme} onLogout={() => {}} />
         <div className="flex-1 flex items-center justify-center p-8">
           <p style={{ color: textMuted }}>Cargando juegos...</p>
         </div>
@@ -252,8 +237,6 @@ export default function JuegosPage() {
   return (
     <div className="min-h-screen font-sans flex flex-col" style={{ background: bg, color: text }}>
       <DashboardNavbar
-        profile={profile}
-        stats={stats}
         theme={theme}
         onToggleTheme={toggleTheme}
         onLogout={async () => {
@@ -537,7 +520,7 @@ export default function JuegosPage() {
         )}
       </div>
 
-      <MobileBottomNav theme={theme} activeTabId="juegos-dia" userHouseMeta={userHouseMeta} />
+      <MobileBottomNav theme={theme} activeTabId="juegos-dia" />
     </div>
   );
 }

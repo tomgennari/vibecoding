@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useCreateGameModal } from '@/lib/create-game-context.js';
+import { useUser } from '@/lib/user-context.js';
 
 const HOUSES = [
   { id: 'william_brown', name: 'William Brown', color: '#3b82f6', image: '/images/houses/house-brown.png' },
@@ -46,8 +47,9 @@ function IconMoon() {
     </svg>
   );
 }
-export function DashboardNavbar({ profile, stats, theme, onToggleTheme, onLogout }) {
+export function DashboardNavbar({ theme, onToggleTheme, onLogout }) {
   const { openCreateGameModal } = useCreateGameModal();
+  const { profile, stats, userHouseMeta } = useUser();
   const isDark = theme === 'dark';
   const cardBg = isDark ? '#13131a' : '#f8fafc';
   const border = isDark ? '#2a2a3a' : '#e2e8f0';
@@ -56,8 +58,6 @@ export function DashboardNavbar({ profile, stats, theme, onToggleTheme, onLogout
   const accent = '#7c3aed';
   const navStyle = isDark ? { color: textMuted } : { color: '#64748b' };
 
-  const userHouse = profile?.house || 'william_brown';
-  const userHouseMeta = HOUSES.find((h) => h.id === userHouse) || HOUSES[0];
   const displayName = profile ? [profile.first_name, profile.last_name].filter(Boolean).join(' ') || 'Usuario' : 'Usuario';
 
   const statValues = {

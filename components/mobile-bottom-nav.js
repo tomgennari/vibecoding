@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useCreateGameModal } from '@/lib/create-game-context.js';
+import { useUser } from '@/lib/user-context.js';
 
 const TABS = [
   { id: 'juegos-dia', label: 'Juegos', icon: '🎮', href: '/dashboard' },
@@ -11,9 +12,10 @@ const TABS = [
   { id: 'perfil', label: 'Perfil', icon: '👤', href: '/perfil' },
 ];
 
-export function MobileBottomNav({ theme, activeTabId, userHouseMeta, onTabChange }) {
+export function MobileBottomNav({ theme, activeTabId, onTabChange }) {
   const router = useRouter();
   const { openCreateGameModal } = useCreateGameModal();
+  const { userHouseMeta } = useUser();
   const isDark = theme === 'dark';
   const cardBg = isDark ? '#13131a' : '#f8fafc';
   const border = isDark ? '#2a2a3a' : '#e2e8f0';

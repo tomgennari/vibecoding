@@ -7,13 +7,7 @@ import { supabase } from '@/utils/supabase/client.js';
 import { useDashboardTheme } from '@/lib/use-dashboard-theme.js';
 import { DashboardNavbar } from '@/components/dashboard-navbar.js';
 import { MobileBottomNav } from '@/components/mobile-bottom-nav.js';
-
-const HOUSES = [
-  { id: 'william_brown', name: 'William Brown', color: '#3b82f6', image: '/images/houses/house-brown.png' },
-  { id: 'james_dodds', name: 'James Dodds', color: '#eab308', image: '/images/houses/house-dodds.png' },
-  { id: 'james_fleming', name: 'James Fleming', color: '#ef4444', image: '/images/houses/house-fleming.png' },
-  { id: 'john_monteith', name: 'John Monteith', color: '#22c55e', image: '/images/houses/house-monteith.png' },
-];
+import { useUser } from '@/lib/user-context.js';
 
 const ORIENTATIONS = [
   { value: 'horizontal', label: '🖥️ Horizontal', desc: 'Pantalla ancha' },
@@ -55,9 +49,8 @@ function formatHouseName(house) {
 export default function SubirJuegoPage() {
   const router = useRouter();
   const [theme, toggleTheme] = useDashboardTheme();
-  const [profile, setProfile] = useState(null);
-  const [stats] = useState({ juegos: 0, tiempoSeconds: 0, puntos: 0 });
-  const [loading, setLoading] = useState(true);
+  const { profile, userHouseMeta, loading: userLoading } = useUser();
+  const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
@@ -83,24 +76,9 @@ export default function SubirJuegoPage() {
     borderColor: border,
     color: isDark ? '#f1f5f9' : '#0f172a',
   };
-  const userHouseMeta = HOUSES.find((h) => h.id === profile?.house) || HOUSES[0];
-
   useEffect(() => {
-    async function init() {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { router.replace('/login'); return; }
-
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('first_name, last_name, house')
-        .eq('id', session.user.id)
-        .single();
-
-      setProfile(profileData);
-      setLoading(false);
-    }
-    init();
-  }, [router]);
+    if (!userLoading && !profile) router.replace('/login');
+  }, [userLoading, profile, router]);
 
   function analyzeFile(f) {
     const reader = new FileReader();
@@ -206,10 +184,10 @@ export default function SubirJuegoPage() {
     setSubmittedTitle('');
   }
 
-  if (loading) {
+  if (userLoading) {
     return (
       <div className="min-h-screen font-sans flex flex-col" style={{ background: bg }}>
-        <DashboardNavbar profile={profile} stats={stats} theme={theme} onToggleTheme={toggleTheme} onLogout={() => {}} />
+        <DashboardNavbar theme={theme} onToggleTheme={toggleTheme} onLogout={() => {}} />
         <div className="flex-1 flex items-center justify-center">
           <p style={{ color: textMuted }}>Cargando...</p>
         </div>
@@ -217,12 +195,12 @@ export default function SubirJuegoPage() {
     );
   }
 
+  if (!profile) return null;
+
   if (submitted) {
     return (
       <div className="min-h-screen font-sans flex flex-col" style={{ background: bg }}>
         <DashboardNavbar
-          profile={profile}
-          stats={stats}
           theme={theme}
           onToggleTheme={toggleTheme}
           onLogout={async () => { await supabase.auth.signOut(); router.replace('/login'); }}
@@ -262,8 +240,6 @@ export default function SubirJuegoPage() {
   return (
     <div className="min-h-screen font-sans flex flex-col" style={{ background: bg, color: text }}>
       <DashboardNavbar
-        profile={profile}
-        stats={stats}
         theme={theme}
         onToggleTheme={toggleTheme}
         onLogout={async () => { await supabase.auth.signOut(); router.replace('/login'); }}
@@ -430,7 +406,7 @@ export default function SubirJuegoPage() {
         </div>
       </div>
 
-      <MobileBottomNav theme={theme} activeTabId="crear-juego" userHouseMeta={userHouseMeta} />
+      <MobileBottomNav theme={theme} activeTabId="crear-juego" />
     </div>
   );
 }

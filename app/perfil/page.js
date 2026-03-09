@@ -8,6 +8,7 @@ import { supabase } from '@/utils/supabase/client.js';
 import { useDashboardTheme } from '@/lib/use-dashboard-theme.js';
 import { DashboardNavbar } from '@/components/dashboard-navbar.js';
 import { MobileBottomNav } from '@/components/mobile-bottom-nav.js';
+import { useUser } from '@/lib/user-context.js';
 
 const HOUSES = [
   { id: 'william_brown', name: 'William Brown', color: '#3b82f6', image: '/images/houses/house-brown.png' },
@@ -43,10 +44,9 @@ function formatDate(dateStr) {
 export default function PerfilPage() {
   const router = useRouter();
   const [theme, toggleTheme] = useDashboardTheme();
+  const { profile, stats, userHouseMeta, loading: userLoading, refreshStats } = useUser();
   const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState(null);
   const [email, setEmail] = useState('');
-  const [stats, setStats] = useState({ juegos: 0, tiempoSeconds: 0, puntos: 0 });
   const [unlockedGames, setUnlockedGames] = useState([]);
   const [mySubmittedGames, setMySubmittedGames] = useState([]);
   const [activeTab, setActiveTab] = useState('datos');
@@ -79,6 +79,7 @@ export default function PerfilPage() {
   const cardStyle = { borderColor: border, background: cardBg };
 
   const fetchData = useCallback(async () => {
+    setLoading(true);
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
       router.replace('/login');
@@ -87,29 +88,11 @@ export default function PerfilPage() {
     const uid = session.user.id;
     setEmail(session.user?.email || '');
 
-    const [profileRes, unlocksCountRes, sessionsRes, unlocksListRes, approvedRes, housePointsRes, submittedRes] = await Promise.all([
-      supabase.from('profiles').select('first_name, last_name, house, user_type, created_at').eq('id', uid).single().then((r) => ({ data: r.data, error: r.error })).catch(() => ({ data: null })),
-      supabase.from('game_unlocks').select('*', { count: 'exact', head: true }).eq('user_id', uid).then((r) => ({ count: r.count ?? 0 })).catch(() => ({ count: 0 })),
-      supabase.from('game_sessions').select('duration_seconds').eq('user_id', uid).then((r) => ({ data: r.data ?? [] })).catch(() => ({ data: [] })),
+    const [unlocksListRes, approvedRes, submittedRes] = await Promise.all([
       supabase.from('game_unlocks').select('game_id').eq('user_id', uid).then((r) => ({ data: r.data ?? [] })).catch(() => ({ data: [] })),
       supabase.from('games').select('*').eq('status', 'approved').then((r) => ({ data: r.data ?? [] })).catch(() => ({ data: [] })),
-      supabase.from('house_points').select('*').then((r) => ({ data: r.data ?? [] })).catch(() => ({ data: [] })),
       supabase.from('games').select('*').eq('submitted_by', uid).then((r) => ({ data: r.data ?? [] })).catch(() => ({ data: [] })),
     ]);
-
-    const profileData = profileRes.data || { first_name: 'Usuario', last_name: '', house: 'william_brown', user_type: 'alumno', created_at: null };
-    setProfile(profileData);
-    setEditFirstName(profileData.first_name ?? '');
-    setEditLastName(profileData.last_name ?? '');
-    setEditHouse(profileData.house ?? 'william_brown');
-
-    const userHouse = profileData.house || 'william_brown';
-    const puntos = (housePointsRes.data || []).find((r) => r.house === userHouse)?.total_points ?? 0;
-    setStats({
-      juegos: unlocksCountRes.count ?? 0,
-      tiempoSeconds: (sessionsRes.data || []).reduce((acc, row) => acc + (Number(row.duration_seconds) || 0), 0),
-      puntos,
-    });
 
     const unlockedIds = (unlocksListRes.data || []).map((r) => r.game_id).filter(Boolean);
     const approved = approvedRes.data || [];
@@ -119,8 +102,21 @@ export default function PerfilPage() {
   }, [router]);
 
   useEffect(() => {
+    if (profile) {
+      setEditFirstName(profile.first_name ?? '');
+      setEditLastName(profile.last_name ?? '');
+      setEditHouse(profile.house ?? 'william_brown');
+    }
+  }, [profile]);
+
+  useEffect(() => {
+    if (!userLoading && !profile) router.replace('/login');
+  }, [userLoading, profile, router]);
+
+  useEffect(() => {
+    if (userLoading || !profile) return;
     fetchData();
-  }, [fetchData]);
+  }, [userLoading, profile, fetchData]);
 
   useEffect(() => {
     if (!deleteModalOpen) return;
@@ -152,7 +148,7 @@ export default function PerfilPage() {
       setDatosMessage({ type: 'error', text: 'No se pudieron guardar los cambios. Intentá de nuevo.' });
     } else {
       setDatosMessage({ type: 'success', text: 'Cambios guardados correctamente.' });
-      setProfile((p) => ({ ...p, first_name: editFirstName.trim(), last_name: editLastName.trim(), house: editHouse }));
+      refreshStats();
     }
     setDatosSaving(false);
   }
@@ -224,13 +220,11 @@ export default function PerfilPage() {
     }
   }
 
-  const userHouse = profile?.house || 'william_brown';
-  const userHouseMeta = HOUSES.find((h) => h.id === userHouse) || HOUSES[0];
   const displayName = profile ? [profile.first_name, profile.last_name].filter(Boolean).join(' ') || 'Usuario' : 'Usuario';
   const isAlumno = profile?.user_type === 'alumno';
   const visibleTabs = isAlumno ? TABS : TABS.filter((t) => t.id !== 'subidos');
 
-  if (loading) {
+  if (userLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center font-sans" style={{ background: bg, color: textMuted }}>
         Cargando...
@@ -238,15 +232,11 @@ export default function PerfilPage() {
     );
   }
 
-  if (!profile) {
-    return null;
-  }
+  if (!profile) return null;
 
   return (
     <div className="min-h-screen font-sans flex flex-col" style={{ background: bg, color: text }}>
       <DashboardNavbar
-        profile={profile}
-        stats={stats}
         theme={theme}
         onToggleTheme={toggleTheme}
         onLogout={handleLogout}
@@ -553,7 +543,7 @@ export default function PerfilPage() {
         </div>
       )}
 
-      <MobileBottomNav theme={theme} activeTabId="perfil" userHouseMeta={userHouseMeta} />
+      <MobileBottomNav theme={theme} activeTabId="perfil" />
     </div>
   );
 }
