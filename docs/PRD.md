@@ -496,12 +496,41 @@ Tablas principales (todas con RLS habilitado):
 - [ ] Página `/crear-juego` con interfaz simplificada para padres y alumnos
 - [ ] El usuario describe el juego en lenguaje natural y Claude genera el HTML5 completo
 - [ ] Sistema de límite de tokens por usuario (columnas `tokens_used` y `tokens_limit` en profiles)
-- [ ] Límite sugerido: 3 intentos por usuario — costo estimado ~$0.15 USD máximo por usuario
+- [ ] Límite sugerido: USD 1.00 por usuario — costo estimado ~$0.05 USD por juego generado, ~20 intercambios posibles
+- Límite de tokens por usuario: equivalente a USD 1.00 (~20 intercambios con Claude)
+- El usuario puede recargar tokens generando más juegos: pagando el equivalente a USD 3.00 en ARS, recupera USD 1.00 en tokens (neto USD 2.00 para el campus)
+- Esta mecánica convierte el generador en un incentivo de compra: para seguir creando, primero hay que contribuir al fundraising
+- Columnas en tabla `profiles`: `tokens_used` (DECIMAL, default 0) y `tokens_limit` (DECIMAL, default 1.00) — ambas en USD
+- El panel de admin permite ver consumo por usuario y ajustar límites individualmente
 - [ ] El juego generado va directo al flujo de moderación existente
 - [ ] System prompt optimizado para HTML5 que funcione en iframe sandboxeado
 - [ ] Panel de admin para ver consumo de tokens y ajustar límites
 - [ ] Costo operativo: ~$0.01-0.05 USD por juego generado, sin suscripción mensual
 - [ ] Diferencial clave para el pitch: democratiza la creación para familias sin conocimientos técnicos
+- Interfaz del generador: modal existente "Crea tu juego" con opción "Generar con IA"
+- Layout desktop: chat a la izquierda, iframe con previsualización del juego en vivo a la derecha
+- Layout mobile: iframe arriba, chat abajo
+- El iframe usa el mismo sandbox existente de la plataforma (allow-scripts únicamente)
+- Botón "Enviar a moderación" prominente cuando el alumno está conforme
+- Barra de progreso o indicador de tokens restantes visible en todo momento
+- Entrada por voz: botón de micrófono en la caja de texto usando Web Speech API nativa del navegador (sin servicios externos, sin costo adicional)
+  - Compatible con Chrome y Edge principalmente
+  - El alumno habla → el texto aparece en el input → se envía como texto normal a Claude
+  - Requiere permiso de micrófono del navegador
+  - Ideal para alumnos de primaria que no escriben rápido
+- El historial de la conversación se mantiene durante la sesión para permitir ajustes iterativos ("cambiá el color", "agregá más enemigos")
+- Al cerrar el modal se descarta la conversación — no hay historial entre sesiones
+- Claude responde siempre con dos partes: (1) el HTML completo del juego, (2) una explicación en español amigable para niños de qué hizo y sugerencias de próximos pasos ("¿querés que agregue música? ¿más niveles? ¿un personaje diferente?")
+- Claude hace preguntas antes de generar cuando el prompt es ambiguo, igual que haría un desarrollador: género, personaje principal, objetivo del juego, etc.
+- Claude siempre sugiere dimensiones antes de generar:
+  - Mobile vertical (480x640) — recomendado para celular
+  - Mobile horizontal/landscape (640x480) — recomendado para celular acostado
+  - PC (800x600) — con advertencia explícita: "este juego solo se verá bien en computadora"
+- Moderación en el system prompt — línea clara entre contenido permitido y prohibido:
+  - PERMITIDO: disparos, explosiones, espadas, peleas, zombies, monstruos, sangre leve — contenido normal de videojuegos apto para todas las edades
+  - PROHIBIDO: gore explícito (sangre excesiva, desmembramiento), desnudez o contenido sexual de cualquier tipo, insultos o lenguaje inapropiado, violencia contra personas reales identificables, temáticas religiosas o políticas controversiales
+  - Criterio general: si el juego podría aparecer en una App Store con rating 9+ o E10+, está permitido
+  - En caso de solicitud inapropiada: Claude explica amablemente y sugiere una alternativa divertida
 
 ### Fase 3 — Gamificación (4-6 semanas)
 
