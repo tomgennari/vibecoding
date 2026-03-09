@@ -1,5 +1,5 @@
 # Campus San Andrés — Vibe Coding San Andrés
-## Product Requirements Document (PRD) v3.1
+## Product Requirements Document (PRD) v3.2
 
 **Fecha:** Marzo 2026  
 **Autor:** Tomás Gennari  
@@ -123,12 +123,14 @@ Los usuarios desbloquean juegos mediante pagos en pesos argentinos vía MercadoP
 - Los juegos desbloqueados quedan disponibles permanentemente para ese usuario
 - Todos se ejecutan en iframe sandboxeado
 
-**Subida de juegos (alumnos):**
-- Kinder y Primaria: archivo único `.html` generado con IA (Claude, ChatGPT, Gemini, etc.)
-- Secundaria: pueden además compartir repo público de GitHub embebido como iframe
-- Formulario: título, descripción, House, archivo .html o URL de GitHub
-- Estados: Pendiente → Aprobado / Rechazado
-- El admin revisa y aprueba/rechaza con mensaje explicativo
+**Subida de juegos (alumnos) — ✅ Implementado:**
+- Página `/juegos/subir` accesible desde el navbar y el modal "Crea tu juego"
+- Formulario: título, descripción (opcional), orientación, archivo .html o .zip (máximo 10MB)
+- House detectada automáticamente del perfil del alumno — no se pide manualmente
+- Dimensiones del juego detectadas automáticamente del HTML si es posible
+- Archivo subido al bucket `games` en Supabase Storage
+- Estado inicial: `pending` → flujo de moderación existente del admin
+- El alumno ve confirmación post-envío y puede ver el estado en su perfil
 
 **Moderación — tolerancia cero:**
 - No violencia, racismo, contenido sexual, insultos ni temáticas sensibles
@@ -349,6 +351,8 @@ Estilo gaming tipo Discord + Fortnite. Donde los usuarios pasan la mayor parte d
 | Control versiones | GitHub | Repo: tomgennari/vibecoding, rama master |
 | IDE | Cursor Pro | USD 20/mes, Agent mode habilitado |
 | 3D (Fase 4) | Three.js / Babylon.js | NO Unity — 3D nativo web, sin descarga |
+| React Context API | CreateGameContext, UserContext | Estado global: modal "Crea tu juego" y perfil/stats del usuario |
+| MobileBottomNav | Componente reutilizable | Barra de navegación inferior mobile, presente en todas las páginas excepto /jugar |
 
 ### 7.2 Estructura de Base de Datos
 
@@ -477,8 +481,8 @@ Tablas principales (todas con RLS habilitado):
 
 ### Fase 2 — Comunidad (4-6 semanas)
 
-- [ ] Panel para que alumnos suban juegos HTML5
-- [ ] Panel de moderación para el admin
+- [x] Panel para que alumnos suban juegos HTML5
+- [x] Panel de moderación para el admin
 - [ ] Sistema de likes
 - [ ] Emails automáticos: bienvenida, aprobación/rechazo, notificaciones
 - [ ] Dashboard de recaudación por edificio con barras de progreso
