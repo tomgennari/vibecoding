@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Inter, Geist, Geist_Mono, Bebas_Neue } from "next/font/google";
 import "./globals.css";
+import { CreateGameProvider } from "@/lib/create-game-context.js";
+import { CreateGameModal } from "@/components/create-game-modal.js";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -39,7 +41,10 @@ export default function RootLayout({
         className={`${inter.variable} ${bebasNeue.variable} ${geistSans.variable} ${geistMono.variable} font-sans antialiased`}
         suppressHydrationWarning
       >
-        {children}
+        <CreateGameProvider>
+          {children}
+          <CreateGameModal />
+        </CreateGameProvider>
       </body>
     </html>
   );

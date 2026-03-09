@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useCreateGameModal } from '@/lib/create-game-context.js';
 
 const TABS = [
   { id: 'juegos-dia', label: 'Juegos', icon: '🎮', href: '/dashboard' },
@@ -12,6 +13,7 @@ const TABS = [
 
 export function MobileBottomNav({ theme, activeTabId, userHouseMeta, onTabChange }) {
   const router = useRouter();
+  const { openCreateGameModal } = useCreateGameModal();
   const isDark = theme === 'dark';
   const cardBg = isDark ? '#13131a' : '#f8fafc';
   const border = isDark ? '#2a2a3a' : '#e2e8f0';
@@ -19,7 +21,11 @@ export function MobileBottomNav({ theme, activeTabId, userHouseMeta, onTabChange
   const houseColor = userHouseMeta?.color ?? textMuted;
 
   function handleTabClick(tab) {
-    if (tab.id === 'crear-juego' || tab.id === 'perfil') {
+    if (tab.id === 'crear-juego') {
+      openCreateGameModal();
+      return;
+    }
+    if (tab.id === 'perfil') {
       router.push(tab.href);
       return;
     }
