@@ -103,6 +103,21 @@ body {
   transform: translateY(0);
 }
 
+/* Botón CTA destacado (ej. Subir mi juego) — violeta → fucsia, análogo, destaca sin chocar */
+.vibe-btn-gradient-highlight {
+  background: linear-gradient(135deg, #7c3aed 0%, #c026d3 100%);
+  background-size: 200% 200%;
+  transition: filter 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+}
+.vibe-btn-gradient-highlight:hover:not(:disabled) {
+  filter: brightness(1.1);
+  box-shadow: 0 0 24px rgba(124, 58, 237, 0.4), 0 0 40px rgba(192, 38, 211, 0.25);
+  transform: translateY(-1px);
+}
+.vibe-btn-gradient-highlight:active:not(:disabled) {
+  transform: translateY(0);
+}
+
 /* Card con borde sutil y sensación gaming */
 .vibe-card {
   background: var(--vibe-card);

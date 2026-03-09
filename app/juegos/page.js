@@ -275,8 +275,7 @@ export default function JuegosPage() {
             </h1>
             <Link
               href="/juegos/subir"
-              className="rounded-xl px-4 py-2 font-bold text-sm whitespace-nowrap transition-opacity hover:opacity-90"
-              style={{ background: accent, color: '#fff' }}
+              className="vibe-btn-gradient-highlight rounded-xl px-4 py-2 font-bold text-sm text-white whitespace-nowrap"
             >
               🕹️ Subir mi juego
             </Link>

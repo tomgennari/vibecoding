@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -45,8 +46,16 @@ function IconMoon() {
     </svg>
   );
 }
+function IconClose() {
+  return (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+    </svg>
+  );
+}
 
 export function DashboardNavbar({ profile, stats, theme, onToggleTheme, onLogout }) {
+  const [modalOpen, setModalOpen] = useState(false);
   const isDark = theme === 'dark';
   const cardBg = isDark ? '#13131a' : '#f8fafc';
   const border = isDark ? '#2a2a3a' : '#e2e8f0';
@@ -93,6 +102,14 @@ export function DashboardNavbar({ profile, stats, theme, onToggleTheme, onLogout
           </div>
         </div>
 
+        <button
+          type="button"
+          onClick={() => setModalOpen(true)}
+          className="vibe-btn-gradient rounded-xl px-4 py-1.5 text-sm font-bold text-white whitespace-nowrap"
+        >
+          🎮 Crea tu juego
+        </button>
+
         <div className="flex items-center gap-3 flex-shrink-0">
           <Link href="/perfil" className="flex items-center gap-2 px-3 py-1.5 rounded-lg border min-w-0 transition-opacity hover:opacity-90" style={{ borderColor: userHouseMeta.color, background: `${userHouseMeta.color}15` }}>
             <Image src={userHouseMeta.image} alt={userHouseMeta.name} width={28} height={28} className="flex-shrink-0 object-contain" />
@@ -135,6 +152,63 @@ export function DashboardNavbar({ profile, stats, theme, onToggleTheme, onLogout
           </button>
         </div>
       </header>
+
+      {modalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.6)' }}
+          onClick={() => setModalOpen(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="modal-title"
+        >
+          <div
+            className="relative w-full max-w-md rounded-xl border p-6 shadow-xl"
+            style={{ background: cardBg, borderColor: border }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setModalOpen(false)}
+              aria-label="Cerrar"
+              className="absolute top-4 right-4 p-1.5 rounded-lg transition-opacity hover:opacity-80"
+              style={{ color: textMuted }}
+            >
+              <IconClose />
+            </button>
+            <h2 id="modal-title" className="text-lg font-bold mb-4 pr-8" style={{ color: text }}>
+              Crear tu juego
+            </h2>
+
+            <div className="space-y-4">
+              <div className="rounded-xl border p-4" style={{ borderColor: border, background: isDark ? '#0f0f14' : '#ffffff' }}>
+                <h3 className="font-bold mb-1" style={{ color: text }}>🤖 Crear con IA</h3>
+                <p className="text-sm mb-3" style={{ color: textMuted }}>
+                  Usá IA para diseñar tu juego desde cero. Te damos un template y un prompt para arrancar.
+                </p>
+                <button type="button" disabled className="rounded-xl px-4 py-2 text-sm font-bold opacity-50" style={{ background: textMuted, color: cardBg }}>
+                  Próximamente
+                </button>
+              </div>
+
+              <div className="rounded-xl border p-4" style={{ borderColor: border, background: isDark ? '#0f0f14' : '#ffffff' }}>
+                <h3 className="font-bold mb-1" style={{ color: text }}>🕹️ Subir mi juego</h3>
+                <p className="text-sm mb-3" style={{ color: textMuted }}>
+                  Ya tenés tu juego listo y querés subirlo a la plataforma.
+                </p>
+                <Link
+                  href="/juegos/subir"
+                  onClick={() => setModalOpen(false)}
+                  className="inline-block rounded-xl px-4 py-2 text-sm font-bold text-white"
+                  style={{ background: accent }}
+                >
+                  Subir mi juego
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

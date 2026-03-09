@@ -1245,7 +1245,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Barra inferior fija — solo mobile, 4 tabs */}
+      {/* Barra inferior fija — solo mobile, 5 tabs */}
       <nav
         className="lg:hidden fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around border-t h-[60px]"
         style={{ background: cardBg, borderColor: border }}
@@ -1253,6 +1253,7 @@ export default function DashboardPage() {
         {[
           { id: 'juegos-dia', label: 'Juegos', icon: '🎮' },
           { id: 'ranking-houses', label: 'Ranking', icon: '🏆' },
+          { id: 'crear-juego', label: 'Crear', icon: '🕹️' },
           { id: 'progreso-campus', label: 'Campus', icon: '🏗' },
           { id: 'perfil', label: 'Perfil', icon: '👤' },
         ].map((tab) => {
@@ -1264,6 +1265,8 @@ export default function DashboardPage() {
               onClick={() => {
                 if (tab.id === 'perfil') {
                   router.push('/perfil');
+                } else if (tab.id === 'crear-juego') {
+                  router.push('/juegos/subir');
                 } else {
                   setMobileTab(tab.id);
                   scrollToSection(tab.id);
