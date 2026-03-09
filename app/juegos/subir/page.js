@@ -6,6 +6,14 @@ import Link from 'next/link';
 import { supabase } from '@/utils/supabase/client.js';
 import { useDashboardTheme } from '@/lib/use-dashboard-theme.js';
 import { DashboardNavbar } from '@/components/dashboard-navbar.js';
+import { MobileBottomNav } from '@/components/mobile-bottom-nav.js';
+
+const HOUSES = [
+  { id: 'william_brown', name: 'William Brown', color: '#3b82f6', image: '/images/houses/house-brown.png' },
+  { id: 'james_dodds', name: 'James Dodds', color: '#eab308', image: '/images/houses/house-dodds.png' },
+  { id: 'james_fleming', name: 'James Fleming', color: '#ef4444', image: '/images/houses/house-fleming.png' },
+  { id: 'john_monteith', name: 'John Monteith', color: '#22c55e', image: '/images/houses/house-monteith.png' },
+];
 
 const ORIENTATIONS = [
   { value: 'horizontal', label: '🖥️ Horizontal', desc: 'Pantalla ancha' },
@@ -75,6 +83,7 @@ export default function SubirJuegoPage() {
     borderColor: border,
     color: isDark ? '#f1f5f9' : '#0f172a',
   };
+  const userHouseMeta = HOUSES.find((h) => h.id === profile?.house) || HOUSES[0];
 
   useEffect(() => {
     async function init() {
@@ -260,7 +269,7 @@ export default function SubirJuegoPage() {
         onLogout={async () => { await supabase.auth.signOut(); router.replace('/login'); }}
       />
 
-      <div className="flex-1 overflow-auto px-4 py-6 lg:px-6">
+      <div className="flex-1 overflow-auto px-4 py-6 lg:px-6 pb-[60px] lg:pb-6">
         <div className="max-w-xl mx-auto">
 
           <div className="mb-6">
@@ -420,6 +429,8 @@ export default function SubirJuegoPage() {
           </form>
         </div>
       </div>
+
+      <MobileBottomNav theme={theme} activeTabId="crear-juego" userHouseMeta={userHouseMeta} />
     </div>
   );
 }
