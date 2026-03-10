@@ -42,3 +42,4 @@ next-env.d.ts
 
 # Kenney assets temporales (no subir a GitHub)
 /kenney-temp
+/public/kenney-assets.json
