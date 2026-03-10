@@ -510,7 +510,6 @@ Tablas principales (todas con RLS habilitado):
 - Columnas en tabla `profiles`: `tokens_used` (DECIMAL, default 0) y `tokens_limit` (DECIMAL, default 1.00) — ambas en USD
 - El panel de admin permite ver consumo por usuario y ajustar límites individualmente
 - [ ] El juego generado va directo al flujo de moderación existente
-- [ ] System prompt optimizado para HTML5 que funcione en iframe sandboxeado
 - [ ] Panel de admin para ver consumo de tokens y ajustar límites
 - [ ] Costo operativo: ~$0.01-0.05 USD por juego generado, sin suscripción mensual
 - [ ] Diferencial clave para el pitch: democratiza la creación para familias sin conocimientos técnicos
@@ -553,6 +552,13 @@ Tablas principales (todas con RLS habilitado):
   - Andy tiene un avatar: gaitero escocés con colores del SASS
   - Archivo: /public/images/andy-avatar.png
   - El avatar aparece al lado de cada mensaje de Andy en el chat del Game Lab
+
+**Estado actual de la Fase 2.5 (Mar 2026):**
+
+- ✅ Subida de assets de Kenney a Supabase Storage (46.040 archivos, 153 carpetas, bucket `kenney`)
+- ✅ Generación de `kenney-assets-curated.json` (2.780 archivos curados en `public/`)
+- ✅ System prompt de Andy v2 con assets reales en `docs/andy-system-prompt.md`
+- ✅ Función RPC `list_kenney_objects()` creada en Supabase para listar objetos del bucket `kenney`
 
 ### Fase 3 — Gamificación (4-6 semanas)
 

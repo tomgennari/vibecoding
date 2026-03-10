@@ -18,3 +18,4 @@ Registro de cambios de estructura en la base de datos.
 | Mar 2026 | `games.total_likes` (INTEGER DEFAULT 0) | Ejecutado: `ALTER TABLE games ADD COLUMN IF NOT EXISTS total_likes INTEGER DEFAULT 0;` |
 | Mar 2026 | Edge Function activate-daily-games + cron pg_cron a las 03:00 UTC | Activar automáticamente los juegos programados para el día y completar con auto-selección si hay menos de 3 |
 | Mar 2026 | donations tabla usada para registrar donaciones directas de padres: id, user_id, amount, payment_id, house | Requerida para el sistema de donaciones vía MercadoPago y para el ranking de donaciones por House |
+| Mar 2026 | Función RPC `list_kenney_objects()` en Supabase | `SELECT name FROM storage.objects WHERE bucket_id = 'kenney' ORDER BY name;` Usada por `scripts/generate-kenney-json.js` para listar todos los assets del bucket `kenney`. |
