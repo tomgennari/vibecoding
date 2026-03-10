@@ -493,11 +493,18 @@ Tablas principales (todas con RLS habilitado):
 ### Fase 2.5 — Generador de Juegos con IA (2-3 semanas)
 
 - [ ] Integración con API de Anthropic (Claude) dentro de la plataforma
-- [ ] Página `/crear-juego` con interfaz simplificada para padres y alumnos
+- Espacio dedicado llamado "SASS Vibe Coding — Game Lab"
+- URL: /game-lab
+- Accesible desde el modal "Crea tu juego" existente
+- Es el espacio principal donde los alumnos describen y generan sus juegos con IA
 - [ ] El usuario describe el juego en lenguaje natural y Claude genera el HTML5 completo
 - [ ] Sistema de límite de tokens por usuario (columnas `tokens_used` y `tokens_limit` en profiles)
 - [ ] Límite sugerido: USD 1.00 por usuario — costo estimado ~$0.05 USD por juego generado, ~20 intercambios posibles
 - Límite de tokens por usuario: equivalente a USD 1.00 (~20 intercambios con Claude)
+- Acceso al Game Lab:
+  - Alumnos: reciben USD 1.00 en tokens gratis al registrarse
+  - Padres: no reciben tokens gratis — obtienen USD 1.00 en tokens únicamente al desbloquear (comprar) su primer juego
+  - Administradores: acceso ilimitado sin consumo de tokens
 - El usuario puede recargar tokens generando más juegos: pagando el equivalente a USD 3.00 en ARS, recupera USD 1.00 en tokens (neto USD 2.00 para el campus)
 - Esta mecánica convierte el generador en un incentivo de compra: para seguir creando, primero hay que contribuir al fundraising
 - Columnas en tabla `profiles`: `tokens_used` (DECIMAL, default 0) y `tokens_limit` (DECIMAL, default 1.00) — ambas en USD
@@ -531,6 +538,21 @@ Tablas principales (todas con RLS habilitado):
   - PROHIBIDO: gore explícito (sangre excesiva, desmembramiento), desnudez o contenido sexual de cualquier tipo, insultos o lenguaje inapropiado, violencia contra personas reales identificables, temáticas religiosas o políticas controversiales
   - Criterio general: si el juego podría aparecer en una App Store con rating 9+ o E10+, está permitido
   - En caso de solicitud inapropiada: Claude explica amablemente y sugiere una alternativa divertida
+- Idioma del Game Lab: español únicamente
+  - Claude responde siempre en español, independientemente del idioma en que escriba el alumno
+  - Los comentarios dentro del código HTML generado también van en español
+  - Los mensajes de error, sugerencias y preguntas: siempre en español
+  - Variante: español argentino — usar "vos", "che", tono cercano y entusiasta, vocabulario familiar para chicos argentinos
+- El asistente de IA del Game Lab se llama "Andy"
+  - Nombre inspirado en St. Andrew's Scots School
+  - Se presenta como: "¡Hola! Soy Andy, tu asistente del Game Lab 🎮"
+  - Personalidad: entusiasta, paciente, alentador, usa español argentino
+  - Tono: como un amigo mayor que sabe mucho de juegos y quiere ayudarte
+  - Andy nunca se identifica como Claude ni como una IA de Anthropic
+  - Andy hace preguntas simples y divertidas para entender qué juego quiere crear el alumno antes de generarlo
+  - Andy tiene un avatar: gaitero escocés con colores del SASS
+  - Archivo: /public/images/andy-avatar.png
+  - El avatar aparece al lado de cada mensaje de Andy en el chat del Game Lab
 
 ### Fase 3 — Gamificación (4-6 semanas)
 
