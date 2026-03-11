@@ -29,6 +29,11 @@ export function CreateGameModal() {
     router.push('/juegos/subir');
   }
 
+  function handleGameLabClick() {
+    closeCreateGameModal();
+    router.push('/game-lab');
+  }
+
   if (!isCreateGameModalOpen) return null;
 
   return (
@@ -62,15 +67,14 @@ export function CreateGameModal() {
           <div className="rounded-xl border p-4" style={{ borderColor: border, background: isDark ? '#0f0f14' : '#ffffff' }}>
             <h3 className="font-bold mb-1" style={{ color: text }}>🤖 Crear con IA</h3>
             <p className="text-sm mb-3" style={{ color: textMuted }}>
-              Usá IA para diseñar tu juego desde cero. Te damos un template y un prompt para arrancar.
+              Chateá con Andy y describí tu juego. La IA genera el HTML por vos.
             </p>
             <button
               type="button"
-              disabled
-              className="rounded-xl px-4 py-2 text-sm font-bold opacity-50"
-              style={{ background: textMuted, color: cardBg }}
+              onClick={handleGameLabClick}
+              className="vibe-btn-gradient rounded-xl px-4 py-2 text-sm font-bold text-white"
             >
-              Próximamente
+              Ir al Game Lab
             </button>
           </div>
 

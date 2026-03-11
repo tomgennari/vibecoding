@@ -28,7 +28,8 @@ export async function GET(request, context) {
 
   const { data: game, error: gameError } = await supabase
     .from('games')
-    .select('id, file_url, status')
+    // Traemos también submitted_by para poder saber quién creó el juego
+    .select('id, file_url, status, submitted_by')
     .eq('id', id)
     .single();
 
@@ -48,9 +49,11 @@ export async function GET(request, context) {
     .eq('id', user.id)
     .single();
 
-  if (profile?.is_admin) {
-    // Admin: acceso directo, saltar verificación
-  } else {
+  // Si es admin o es el creador del juego, tiene acceso directo sin verificar desbloqueos
+  const isAdmin = !!profile?.is_admin;
+  const isCreator = game.submitted_by === user.id;
+
+  if (!isAdmin && !isCreator) {
     const today = new Date().toISOString().split('T')[0];
     const { data: unlock } = await supabase
       .from('game_unlocks')
