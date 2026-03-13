@@ -125,6 +125,10 @@ Esto hace que el juego llene toda la pantalla en cualquier dispositivo (iPhone, 
 - ❌ TypeScript
 - ❌ librerias externas que no sean Phaser 3.60
 - ❌ URLs de assets inventadas — solo usar las URLs de Kenney listadas abajo
+- ❌ Usar graphics.generateTexture() para personajes, enemigos, fondos o 
+   items cuando existe un asset de Kenney apropiado. generateTexture() 
+   solo se permite para elementos muy específicos que no están en la lista
+   (ej: un proyectil de 4px, una partícula, un tile custom).
 - ❌ mas de un archivo HTML
 
 ### Si necesitas un sprite que no esta en la lista de Kenney
@@ -485,6 +489,23 @@ URLs completas (ejemplo):
 ---
 
 ## CÓMO USAR ASSETS DE KENNEY — EJEMPLOS DE CÓDIGO
+
+### OBLIGATORIO — Siempre usá assets de Kenney
+
+En CADA juego que generés, SIEMPRE usá al menos 3 assets de Kenney.
+No es opcional. Antes de escribir el código, elegí qué assets usar según 
+el tipo de juego:
+
+- Juego de cocodrilo/animales → animal-pack-redux (penguin, bear, elephant...)
+- Juego de naves → space-shooter-redux o alien-ufo-pack
+- Juego de personas → topdown-shooter o block-pack
+- Juego de plataformas → platformer-pack-redux + platformer-characters-1
+- Juego de carreras → pixel-vehicle-pack
+- Juego de explosiones → SIEMPRE agregar explosion-pack
+- Cualquier juego → agregar un fondo de la carpeta correspondiente
+
+Si no encontrás el asset exacto, usá el más parecido de la lista.
+generateTexture() es el ÚLTIMO recurso, no el primero.
 
 SIEMPRE que el juego pueda usar assets de Kenney, usalos. Son gratis, ya están subidos y hacen que el juego se vea mucho mejor. Solo usá graphics.generateTexture() para cosas muy específicas que no estén en la lista.
 

@@ -442,13 +442,23 @@ export default function GameLabPage() {
       />
 
       {/* Contenedor principal: desktop sin juego = max-w 900px centrado, chat 600px + tarjetas 260px gap 32px; desktop con juego = 100% (40% + 60%); mobile = iframe arriba + chat abajo o chat + carrusel */}
-      <div className="flex-1 flex flex-col-reverse lg:flex-row pt-14 lg:pt-16 pb-20 lg:pb-6 overflow-hidden">
+      <div
+        className={`flex-1 flex flex-col-reverse lg:flex-row pt-14 lg:pt-16 pb-20 lg:pb-6 ${
+          currentHtml ? 'lg:h-screen lg:overflow-hidden' : ''
+        }`}
+      >
         <div
-          className={`flex-1 flex flex-col-reverse lg:flex-row min-h-0 w-full transition-all duration-300 ease-out ${!currentHtml ? 'lg:max-w-[900px] lg:mx-auto lg:px-8 lg:gap-8' : ''}`}
+          className={`flex-1 flex flex-col-reverse lg:flex-row min-h-0 w-full transition-all duration-300 ease-out ${
+            !currentHtml ? 'lg:max-w-[900px] lg:mx-auto lg:px-8 lg:gap-8' : 'lg:h-[calc(100vh-64px)]'
+          }`}
         >
           {/* ——— Chat: desktop sin juego = flex-1 centrado max 600px; con juego = 40%; mobile = full ——— */}
           <section
-            className={`flex flex-col w-full lg:min-h-0 shrink-0 transition-all duration-300 ease-out ${currentHtml ? 'lg:w-[40%] lg:max-w-[480px] lg:border-r' : 'lg:flex-1 lg:min-w-0'}`}
+            className={`flex flex-col w-full lg:min-h-0 shrink-0 transition-all duration-300 ease-out ${
+              currentHtml
+                ? 'lg:w-[40%] lg:max-w-[480px] lg:border-r lg:h-full lg:overflow-y-auto'
+                : 'lg:flex-1 lg:min-w-0'
+            }`}
             style={currentHtml ? { borderColor: border } : undefined}
             aria-label="Chat con Andy"
           >
@@ -626,7 +636,11 @@ export default function GameLabPage() {
 
           {/* ——— Iframe: desktop solo cuando hay juego (60%); mobile siempre en el flujo (arriba por flex-col-reverse) ——— */}
           <section
-            className={`flex-1 flex flex-col min-h-[300px] lg:min-h-0 overflow-hidden transition-all duration-300 ease-out ${currentHtml ? 'lg:flex-[6] lg:opacity-100 lg:visible' : 'lg:flex-[0] lg:min-w-0 lg:opacity-0 lg:invisible'}`}
+            className={`flex-1 flex flex-col min-h-[300px] lg:min-h-0 overflow-hidden transition-all duration-300 ease-out ${
+              currentHtml
+                ? 'lg:flex-[6] lg:opacity-100 lg:visible lg:h-full lg:overflow-hidden'
+                : 'lg:flex-[0] lg:min-w-0 lg:opacity-0 lg:invisible'
+            }`}
             aria-label="Vista previa del juego"
           >
             <div className="flex-1 p-4 lg:p-6 flex flex-col min-h-0" style={{ background: isDark ? '#0f0f14' : '#f1f5f9' }}>
