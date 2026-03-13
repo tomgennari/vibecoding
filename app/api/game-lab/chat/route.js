@@ -3,14 +3,14 @@ import { createClient } from '@supabase/supabase-js';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+export const maxDuration = 300;
+
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
-
 const MODEL = 'claude-sonnet-4-6';
-const MAX_TOKENS = 8192;
+const MAX_TOKENS = 16000;
 
-/** Obtiene el usuario autenticado desde el header Authorization Bearer. */
 function getAuthUser(request) {
   const authHeader = request.headers.get('authorization');
   const token = authHeader?.replace(/^Bearer\s+/i, '');
@@ -21,7 +21,6 @@ function getAuthUser(request) {
   return { token, supabase };
 }
 
-/** Lee el system prompt de Andy desde docs/andy-system-prompt.md */
 function loadAndySystemPrompt() {
   try {
     const path = join(process.cwd(), 'docs', 'andy-system-prompt.md');
@@ -32,44 +31,7 @@ function loadAndySystemPrompt() {
   }
 }
 
-/**
- * Detecta si el texto contiene un documento HTML completo y lo extrae.
- * Busca <!DOCTYPE html> o <html y captura hasta el cierre </html>.
- * @returns { { html: string | null, reply: string } } html extraído (o null) y texto para el chat (sin el bloque HTML)
- */
-function extractHtmlFromResponse(text) {
-  if (!text || typeof text !== 'string') return { html: null, reply: text || '' };
-
-  // 1) Caso principal: bloque de código markdown ```html ... ```
-  const htmlMatch = text.match(/```html\s*([\s\S]*?)```/i);
-  if (htmlMatch) {
-    const html = htmlMatch[1].trim();
-    const reply = text.replace(htmlMatch[0], '').trim();
-    return { html: html || null, reply: reply || 'Listo. Mirá la vista previa.' };
-  }
-
-  // 2) Fallback: buscar <!DOCTYPE html> o <html> directamente en el texto completo
-  const startDoctype = text.indexOf('<!DOCTYPE html>');
-  const startHtml = text.indexOf('<html');
-  let start = -1;
-  if (startDoctype !== -1) start = startDoctype;
-  if (startHtml !== -1 && (start === -1 || startHtml < start)) start = startHtml;
-  if (start === -1) return { html: null, reply: text };
-
-  const endTag = '</html>';
-  const lastClose = text.lastIndexOf(endTag);
-  if (lastClose === -1) return { html: null, reply: text };
-
-  const html = text.slice(start, lastClose + endTag.length).trim();
-  const reply = (text.slice(0, start) + text.slice(lastClose + endTag.length)).trim();
-  return { html: html || null, reply: reply || 'Listo. Mirá la vista previa.' };
-}
-
 export async function POST(request) {
-  // Debug: verificar que la API key esté cargada (no loguear el valor completo)
-  console.log('ANTHROPIC_API_KEY presente:', !!process.env.ANTHROPIC_API_KEY);
-  console.log('Primeros 20 chars:', process.env.ANTHROPIC_API_KEY?.slice(0, 20));
-
   if (!supabaseUrl || !supabaseAnonKey) {
     return NextResponse.json({ error: 'Configuración del servidor incompleta' }, { status: 500 });
   }
@@ -81,6 +43,7 @@ export async function POST(request) {
   if (!supabase || !token) {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
   }
+
   const { data: { user } } = await supabase.auth.getUser(token);
   if (!user) {
     return NextResponse.json({ error: 'Sesión inválida o expirada' }, { status: 401 });
@@ -93,7 +56,6 @@ export async function POST(request) {
     return NextResponse.json({ error: 'Body JSON inválido' }, { status: 400 });
   }
 
-  // El frontend envía el historial ya incluyendo el nuevo mensaje del usuario
   const messages = Array.isArray(body?.messages) ? body.messages : [];
   if (messages.length === 0) {
     return NextResponse.json({ error: 'Faltan mensajes' }, { status: 400 });
@@ -104,68 +66,82 @@ export async function POST(request) {
     return NextResponse.json({ error: 'No se pudo cargar el system prompt de Andy' }, { status: 500 });
   }
 
-  // Formato esperado por Anthropic: messages con role 'user' | 'assistant' y content string
   const anthropicMessages = messages.map((m) => ({
     role: m.role === 'assistant' ? 'assistant' : 'user',
     content: typeof m.content === 'string' ? m.content : String(m.content ?? ''),
   }));
 
-  try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': anthropicApiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        max_tokens: MAX_TOKENS,
-        system: systemPrompt,
-        messages: anthropicMessages,
-      }),
-    });
+  const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': anthropicApiKey,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({
+      model: MODEL,
+      max_tokens: MAX_TOKENS,
+      stream: true,
+      system: systemPrompt,
+      messages: anthropicMessages,
+    }),
+  });
 
-    if (!res.ok) {
-      const errBody = await res.text();
-      console.error('Anthropic API error — status:', res.status, 'body:', errBody);
-      return NextResponse.json(
-        { error: 'Error al hablar con Andy. Intentá de nuevo.' },
-        { status: 502 }
-      );
-    }
-
-    const data = await res.json();
-    const textBlock = data.content?.find((b) => b.type === 'text');
-    const fullText = textBlock?.text ?? '';
-
-    const rawText = fullText;
-    console.log('=== INICIO RESPUESTA ===');
-    console.log(rawText.substring(0, 200));
-    console.log('=== FIN RESPUESTA ===');
-    console.log('=== FINAL RESPUESTA ===');
-    console.log(rawText.substring(Math.max(0, rawText.length - 200)));
-    console.log('=== FIN FINAL ===');
-    console.log('TOTAL CHARS:', rawText.length);
-
-    const { html, reply } = extractHtmlFromResponse(fullText);
-
-    const result = { html, reply };
-    console.log('=== RESULTADO EXTRACT ===');
-    console.log('html encontrado:', !!result.html);
-    console.log('html length:', result.html?.length);
-    console.log('reply:', result.reply?.substring(0, 100));
-    console.log('=== FIN EXTRACT ===');
-
-    return NextResponse.json({
-      reply: reply || 'No pude generar una respuesta.',
-      html: html || undefined,
-    });
-  } catch (err) {
-    console.error('Error en Game Lab chat:', err);
-    return NextResponse.json(
-      { error: 'Error inesperado. Intentá de nuevo.' },
-      { status: 500 }
-    );
+  if (!anthropicRes.ok) {
+    const errBody = await anthropicRes.text();
+    console.error('Anthropic API error:', anthropicRes.status, errBody);
+    return NextResponse.json({ error: 'Error al hablar con Andy. Intentá de nuevo.' }, { status: 502 });
   }
+
+  const encoder = new TextEncoder();
+  const readable = new ReadableStream({
+    async start(controller) {
+      const reader = anthropicRes.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() ?? '';
+
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue;
+            const jsonStr = line.slice(6).trim();
+            if (!jsonStr || jsonStr === '[DONE]') continue;
+
+            try {
+              const parsed = JSON.parse(jsonStr);
+              if (
+                parsed.type === 'content_block_delta' &&
+                parsed.delta?.type === 'text_delta' &&
+                parsed.delta?.text
+              ) {
+                controller.enqueue(
+                  encoder.encode(`data: ${JSON.stringify({ chunk: parsed.delta.text })}\n\n`)
+                );
+              }
+            } catch {
+              // ignorar líneas malformadas
+            }
+          }
+        }
+      } finally {
+        controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(readable, {
+    headers: {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      Connection: 'keep-alive',
+    },
+  });
 }

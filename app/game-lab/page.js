@@ -35,8 +35,8 @@ const IDEAS_JUEGOS = [
   { emoji: '📚', titulo: 'Quiz de historia', descripcion: 'Respondé preguntas de historia argentina', prompt: 'Quiz de historia argentina. Preguntas de múltiple opción con tiempo. Que sume puntos y tenga 3 vidas.' },
   { emoji: '🦊', titulo: 'Zorro y gallinas', descripcion: 'Atrapá las gallinas antes de que escapen', prompt: 'Un zorro tiene que atrapar gallinas que corren por el corral. Las gallinas se mueven y yo las persigo. Para dos jugadores o contra la compu.' },
   { emoji: '🏰', titulo: 'Defender el castillo', descripcion: 'Lanzá proyectiles a los enemigos que escalan', prompt: 'Tengo que defender un castillo. Enemigos escalan la pared y yo les tiro piedras o flechas. Con upgrades.' },
-  { emoji: '🎯', titulo: 'Tiro al blanco', descripcion: 'Apunta y dispará para sumar puntos', prompt: 'Juego de tiro al blanco. Apunto y disparo, cada anillo suma distinto. Que sea para celular con touch.' },
-  { emoji: '🐍', titulo: 'La viborita', descripcion: 'Crecé comiendo y no te chocar con tu cola', prompt: 'La viborita clásica: como cosas y crezco. No puedo chocarme con mi cola ni con las paredes. Con niveles de velocidad.' },
+  { emoji: '🎯', titulo: 'Tiro al blanco', descripcion: 'Apuntá y disparé para sumar puntos', prompt: 'Juego de tiro al blanco. Apunto y disparo, cada anillo suma distinto. Que sea para celular con touch.' },
+  { emoji: '🐍', titulo: 'La viborita', descripcion: 'Crecé comiendo y no te choques con tu cola', prompt: 'La viborita clásica: como cosas y crezco. No puedo chocarme con mi cola ni con las paredes. Con niveles de velocidad.' },
   { emoji: '🌍', titulo: 'Quiz de geografía', descripcion: 'Ubicá países en el mapa del mundo', prompt: 'Quiz de geografía: me muestran un país y tengo que ubicarlo en el mapa. O al revés. Con puntaje y vidas.' },
   { emoji: '🦸', titulo: 'Superhéroe del SASS', descripcion: 'Volá por el campus salvando alumnos', prompt: 'Soy un superhéroe del colegio y tengo que rescatar alumnos atrapados en distintos lugares del campus. Con poder de vuelo.' },
   { emoji: '🍕', titulo: 'Pizzería a domicilio', descripcion: 'Llevá pizzas en moto sin que se caigan', prompt: 'Juego de entregar pizzas en moto. Tengo que llegar a tiempo y que no se caigan. Con obstáculos y clientes en el mapa.' },
@@ -44,6 +44,71 @@ const IDEAS_JUEGOS = [
   { emoji: '🎪', titulo: 'Feria del colegio', descripcion: 'Ganá premios en juegos de la kermesse', prompt: 'Minijuegos de feria del colegio: pesca de peces, tiro al blanco, anillos. Que sume puntos y tenga varios juegos.' },
   { emoji: '🦇', titulo: 'Murciélago en la noche', descripcion: 'Volá entre cuevas y comé insectos', prompt: 'Un murciélago que vuela por cuevas y tiene que comer insectos. Que use el sonar para ver. Con obstáculos y tiempo.' },
   { emoji: '🏴', titulo: 'Bandera escocesa', descripcion: 'Armá el tartán y aprendé sobre Escocia', prompt: 'Juego sobre Escocia y el tartán. Armo patrones o elijo la bandera correcta. Que sea educativo y con colores del SASS.' },
+  { emoji: '🧲', titulo: 'Bolas magnéticas', descripcion: 'Atraé o repelé bolas para resolver puzzles', prompt: 'Juego de física con bolas que se atraen o repelen según su color. Tengo que hacer que lleguen a cierto lugar.' },
+  { emoji: '🌊', titulo: 'Surfista en olas', descripcion: 'Surfeá olas y hacé piruetas para sumar', prompt: 'Un surfista que tiene que esquivar rocas y hacer trucos en las olas. Que tenga físicas de agua y movimiento fluido.' },
+  { emoji: '🔬', titulo: 'Laboratorio de ciencias', descripcion: 'Mezclá elementos y creá reacciones', prompt: 'Juego de laboratorio donde mezclo elementos químicos (simples, sin peligro) y tengo que lograr ciertas reacciones. Educativo y visual.' },
+  { emoji: '🎸', titulo: 'Guitarra rhythm game', descripcion: 'Tocá las notas en tiempo con la música', prompt: 'Un juego de ritmo tipo Guitar Hero donde tocan notas en pantalla y tengo que presionar en el momento justo. Con canciones simples.' },
+  { emoji: '🚂', titulo: 'Tren sin frenos', descripcion: 'Cambiá las vías para que el tren no choque', prompt: 'Un tren va a toda velocidad y tengo que cambiar las vías para que llegue a destino sin chocarse. Con bifurcaciones y tiempo.' },
+  { emoji: '🏹', titulo: 'Arquero medieval', descripcion: 'Ajustá el ángulo y disparás flechas', prompt: 'Juego de arquero medieval. Ajusto ángulo y potencia para darle a blancos móviles. Con viento y distancias variables.' },
+  { emoji: '🌈', titulo: 'Pinball de colores', descripcion: 'Golpeá bolas del mismo color para explotar', prompt: 'Pinball donde las bolas tienen colores y hay que hacer grupos del mismo color chocar entre sí para sumar puntos.' },
+  { emoji: '🐝', titulo: 'Abeja recolectora', descripcion: 'Juntá néctar y evitá las avispas', prompt: 'Una abeja que vuela por el jardín recolectando néctar y tiene que evitar avispas y obstáculos. Con mapa y colmena.' },
+  { emoji: '🧱', titulo: 'Destructor de bloques', descripcion: 'Rompé bloques con la pelota rebotando', prompt: 'Juego tipo Breakout donde una pelota rebota y destruye bloques. Los bloques tienen distintos colores y resistencia.' },
+  { emoji: '🎲', titulo: 'Dados y estrategia', descripcion: 'Tirá los dados y conquistá el tablero', prompt: 'Juego de tablero con dados. Tiro dados y con el número avanzo o ataco territorios. Simple, como un risk chico.' },
+  { emoji: '🌙', titulo: 'Nave lunar', descripcion: 'Aterrizá la nave sin explotar', prompt: 'Simulador de aterrizaje lunar. Tengo que bajar la nave despacio usando los propulsores sin chocarse. Con gravedad y combustible limitado.' },
+  { emoji: '🐠', titulo: 'Acuario mágico', descripcion: 'Cuidá tus peces y decorá el acuario', prompt: 'Juego de cuidar un acuario. Alimento peces, limpio el agua, compro decoraciones. Que los peces tengan estados de ánimo.' },
+  { emoji: '🏋️', titulo: 'Olimpíadas del SASS', descripcion: 'Competí en deportes clásicos con el colegio', prompt: 'Minijuegos olímpicos del SASS: salto en largo, 100 metros, lanzamiento. Con botones para cada deporte.' },
+  { emoji: '🎠', titulo: 'Calesita infinita', descripcion: 'Saltá de calesita en calesita sin caer', prompt: 'Un personaje salta de una calesita giratoria a otra. Tengo que calcular el timing para no caer al vacío.' },
+  { emoji: '🔮', titulo: 'Mago de puzzles', descripcion: 'Usá hechizos para resolver acertijos mágicos', prompt: 'Un mago que tiene diferentes hechizos y tiene que usarlos en el orden correcto para resolver puzzles en cada sala.' },
+  { emoji: '🐊', titulo: 'Cocodrilo saltarín', descripcion: 'Saltá entre troncos flotantes en el río', prompt: 'Un cocodrilo que tiene que cruzar el río saltando entre troncos que se mueven. Si cae al agua pierde.' },
+  { emoji: '🎮', titulo: 'Plataformas clásicas', descripcion: 'Saltá, esquivá y llegá al final del nivel', prompt: 'Plataformer clásico con salto. Tengo que llegar al final del nivel esquivando enemigos y trampas. Con monedas y vidas.' },
+  { emoji: '🌵', titulo: 'Vaquero del desierto', descripcion: 'Disparale a los cactus y evitá serpientes', prompt: 'Un vaquero en el desierto que tiene que disparar a cactus animados y evitar serpientes. Estilo western.' },
+  { emoji: '🐙', titulo: 'Pulpo escurridizo', descripcion: 'Escapá del acuario usando tus tentáculos', prompt: 'Un pulpo que tiene que escapar del acuario extendiendo tentáculos para agarrarse de superficies. Puzzles de física.' },
+  { emoji: '🌺', titulo: 'Jardín zen', descripcion: 'Cuidá plantas y creá un jardín tranquilo', prompt: 'Juego relajante de jardín. Planto flores, riego, podo, y tengo que crear un jardín equilibrado y bello. Sin presión de tiempo.' },
+  { emoji: '🤖', titulo: 'Robot reparador', descripcion: 'Arreglá robots rotos con las piezas correctas', prompt: 'Tengo que reparar robots que llegan rotos. Elijo las piezas correctas para cada robot. Que sea como un puzzle de partes.' },
+  { emoji: '🏄', titulo: 'Wakeboard extremo', descripcion: 'Hacé piruetas agarrado de la lancha', prompt: 'Juego de wakeboard donde voy agarrado de una lancha y tengo que saltar olas y hacer trucos en el aire.' },
+  { emoji: '🌠', titulo: 'Cazador de estrellas', descripcion: 'Juntá constelaciones antes de que amanezca', prompt: 'Tengo que conectar estrellas para formar constelaciones antes de que salga el sol. Con figuras reales del zodíaco.' },
+  { emoji: '🦁', titulo: 'Rey de la selva', descripcion: 'Cazá para alimentar a tu manada', prompt: 'Un león que tiene que cazar animales para alimentar a sus cachorros. Con sigilo, velocidad y estrategia.' },
+  { emoji: '🎪', titulo: 'Malabarista del circo', descripcion: 'Mantenés pelotas en el aire sin que caigan', prompt: 'Un malabarista que tiene que mantener múltiples pelotas en el aire. Cada vez se agregan más. Con ritmo.' },
+  { emoji: '🚁', titulo: 'Helicóptero en la ciudad', descripcion: 'Rescatá personas de edificios en llamas', prompt: 'Piloto un helicóptero y tengo que rescatar personas en distintos puntos de la ciudad. Con física de vuelo y viento.' },
+  { emoji: '🌿', titulo: 'Enredadera trepadora', descripcion: 'Hacé crecer tu planta hasta el sol', prompt: 'Una enredadera que tengo que hacer crecer esquivando obstáculos para llegar a la luz del sol. Que sea un puzzle.' },
+  { emoji: '🐌', titulo: 'Caracol veloz', descripcion: 'Llegá a la meta antes de secarte', prompt: 'Un caracol que tiene que llegar a la meta recolectando agua en el camino para no secarse. Con obstáculos y rutas.' },
+  { emoji: '🎩', titulo: 'Mago y sus trucos', descripcion: 'Hacé aparecer objetos en el orden correcto', prompt: 'Un mago que tiene que hacer aparecer objetos en su galera en el orden que pide el público. Con memoria y velocidad.' },
+  { emoji: '🔑', titulo: 'Ladrones y candados', descripcion: 'Abrí la caja fuerte resolviendo el código', prompt: 'Tengo que descifrar combinaciones de candados para abrir cajas fuertes. Cada caja tiene una pista distinta.' },
+  { emoji: '🌋', titulo: 'Escapar del volcán', descripcion: 'Corré ladera abajo antes de que te alcance la lava', prompt: 'Un personaje tiene que bajar la ladera de un volcán mientras la lava sube. Que haya plataformas y objetos para esquivar.' },
+  { emoji: '🎵', titulo: 'DJ del colegio', descripcion: 'Mezclá ritmos y creá tu canción', prompt: 'Juego de DJ donde tengo que mezclar loops de distintos instrumentos en el momento justo para crear una canción que suene bien.' },
+  { emoji: '🐓', titulo: 'Gallinas locas', descripcion: 'Atrapá gallinas que se escapan del gallinero', prompt: 'Las gallinas se escaparon del gallinero y tengo que atraparlas antes de que se vayan. Corren en distintas direcciones.' },
+  { emoji: '🌊', titulo: 'Tsunami runner', descripcion: 'Corré hacia adelante y no te alcance la ola', prompt: 'Un runner donde una ola gigante me persigue y tengo que correr esquivando obstáculos para que no me alcance.' },
+  { emoji: '🏔️', titulo: 'Escalador de montañas', descripcion: 'Subí la montaña eligiendo la ruta correcta', prompt: 'Un escalador que tiene que subir una montaña eligiendo agarraderos. Si elijo mal me caigo. Con física y stamina.' },
+  { emoji: '🎡', titulo: 'Parque de diversiones', descripcion: 'Construí and manejá tu propio parque', prompt: 'Juego de gestión de parque de diversiones. Construyo atracciones, cobro entradas y tengo que mantener a los visitantes contentos.' },
+  { emoji: '🦋', titulo: 'Mariposa y flores', descripcion: 'Polinizá flores antes de que el invierno llegue', prompt: 'Una mariposa que tiene que ir de flor en flor polinizando antes de que empiece el invierno. Con mapa y tiempo.' },
+  { emoji: '⚡', titulo: 'Tormenta eléctrica', descripcion: 'Conectá los cables antes de que se corte la luz', prompt: 'Tengo que conectar cables en el tablero eléctrico antes de que se acabe el tiempo. Puzzles de circuitos.' },
+  { emoji: '🐺', titulo: 'Lobo y ovejas', descripcion: 'Guiá las ovejas al corral antes de que llegue el lobo', prompt: 'Juego donde tengo que guiar ovejas al corral mientras un lobo las persigue. Puedo poner obstáculos para frenar al lobo.' },
+  { emoji: '🚀', titulo: 'Estación espacial', descripcion: 'Construí y gestioná tu propia estación', prompt: 'Gestión de estación espacial. Construyo módulos, mantengo el oxígeno y la energía, y recibo astronautas.' },
+  { emoji: '🎋', titulo: 'Panda comilón', descripcion: 'Comé bambú y crecé sin caer del árbol', prompt: 'Un panda que come bambú y crece pero el árbol se dobla. Tengo que equilibrar su peso para no caerse.' },
+  { emoji: '🌊', titulo: 'Pesca submarina', descripcion: 'Buceá y atrapá peces con tu red', prompt: 'Un buzo que tiene que atrapar peces con una red. Cada pez tiene un valor distinto. Con oxígeno limitado.' },
+  { emoji: '🎭', titulo: 'Teatro de sombras', descripcion: 'Formá siluetas con tus manos para actuar', prompt: 'Juego de sombras donde tengo que reproducir siluetas moviendo un personaje. Como un teatro de marionetas.' },
+  { emoji: '🦠', titulo: 'Bacterias vs antibióticos', descripcion: 'Sobreviví y multiplicáte evitando los antibióticos', prompt: 'Soy una bacteria que tiene que multiplicarse y sobrevivir a los antibióticos. Que tenga evolución y resistencia.' },
+  { emoji: '🏗️', titulo: 'Constructor de puentes', descripcion: 'Diseñá un puente que aguante el peso', prompt: 'Tengo que construir un puente con piezas limitadas que aguante el peso de un vehículo. Puzzle de física estructural.' },
+  { emoji: '🎰', titulo: 'Máquina del tiempo', descripcion: 'Combiná símbolos para ganar monedas', prompt: 'Una máquina de tiempo donde combino símbolos históricos. Si acierto la época correcta gano puntos de historia.' },
+  { emoji: '🐟', titulo: 'Cardumen sincronizado', descripcion: 'Moví todos los peces en formación sin chocar', prompt: 'Controlo un cardumen de peces y tengo que moverlos todos juntos por laberintos de coral sin que ninguno choque.' },
+  { emoji: '🌪️', titulo: 'Tornado recolector', descripcion: 'Girá y absorbé todo lo que esté en tu camino', prompt: 'Controlo un tornado que crece a medida que absorbe objetos. Tengo que absorber todo lo que encuentro en el mapa.' },
+  { emoji: '🎪', titulo: 'Acróbatas del circo', descripcion: 'Sincronizá los saltos del equipo acrobático', prompt: 'Tengo que coordinar un equipo de acróbatas que se lanzan entre sí. Presiono en el momento justo para que se atrapen.' },
+  { emoji: '🌴', titulo: 'Náufrago en isla', descripcion: 'Sobreviví en la isla y construí una balsa para escapar', prompt: 'Estoy náufrago en una isla y tengo que juntar recursos, construir cosas y sobrevivir hasta poder escapar.' },
+  { emoji: '🦅', titulo: 'Águila cazadora', descripcion: 'Planeá y atrapá presas desde las alturas', prompt: 'Un águila que planea en las alturas y tiene que lanzarse en picada para atrapar presas. Con viento y precisión.' },
+  { emoji: '🔭', titulo: 'Astrónomo curioso', descripcion: 'Descubrí planetas y nombrá constelaciones', prompt: 'Juego de astronomía donde apunto el telescopio al cielo, descubro planetas y tengo que identificar constelaciones.' },
+  { emoji: '🎊', titulo: 'Organizador de fiestas', descripcion: 'Preparás la fiesta perfecta en el menor tiempo', prompt: 'Tengo que organizar una fiesta: comprar comida, decorar, invitar gente. Contra el reloj y con presupuesto limitado.' },
+  { emoji: '🐘', titulo: 'Elefante que no olvida', descripcion: 'Repetí secuencias cada vez más largas', prompt: 'Un juego de memoria donde aparecen objetos en secuencia y tengo que repetir el orden exacto. Como Simon Says visual.' },
+  { emoji: '🌺', titulo: 'Floristería veloz', descripcion: 'Armá ramos de flores según los pedidos', prompt: 'Una floristería donde llegan pedidos y tengo que armar los ramos con las flores correctas en el menor tiempo posible.' },
+  { emoji: '🚒', titulo: 'Bomberos al rescate', descripcion: 'Apagá incendios y rescatá personas', prompt: 'Soy bombero y tengo que apagar incendios en distintos edificios y rescatar personas atrapadas. Con tiempo limitado.' },
+  { emoji: '🎑', titulo: 'Jardín japonés', descripcion: 'Diseñá un jardín zen siguiendo las reglas', prompt: 'Juego de diseño de jardín japonés. Tengo que colocar piedras, agua y plantas siguiendo los principios del wabi-sabi.' },
+  { emoji: '🐜', titulo: 'Colonia de hormigas', descripcion: 'Guiá a tus hormigas a traer comida al hormiguero', prompt: 'Gestiono una colonia de hormigas. Mando hormigas a buscar comida y tengo que proteger la colonia de otros insectos.' },
+  { emoji: '🌊', titulo: 'Corriente marina', descripcion: 'Navegá por las corrientes sin encallarte', prompt: 'Una botella con un mensaje que navega por corrientes marinas. Tengo que usarlas a mi favor para llegar a destino.' },
+  { emoji: '🎯', titulo: 'Billar de colores', descripcion: 'Usá los ángulos para meter todas las bolas', prompt: 'Juego de billar simplificado donde tengo que meter bolas de colores en los agujeros usando los ángulos de rebote.' },
+  { emoji: '🦒', titulo: 'Jirafa curiosa', descripcion: 'Usá el cuello largo para alcanzar hojas altas', prompt: 'Una jirafa que tiene que usar su cuello para alcanzar hojas en distintas alturas. Puzzles de extensión y equilibrio.' },
+  { emoji: '🚜', titulo: 'Granja activa', descripcion: 'Plantá, cosechá y vendé en el mercado', prompt: 'Juego de granja. Planto semillas, riego, cosecho y vendo en el mercado. Cada cultivo tiene su tiempo de crecimiento.' },
+  { emoji: '🔒', titulo: 'Escape room', descripcion: 'Resolvé acertijos para salir de la habitación', prompt: 'Un escape room donde tengo que encontrar pistas y resolver acertijos para abrir la puerta y escapar. Con varios puzzles.' },
+  { emoji: '🌈', titulo: 'Mezclador de colores', descripcion: 'Combiná colores primarios para crear los que piden', prompt: 'Tengo que mezclar colores primarios para crear el color exacto que me piden. Educativo y visual, que enseñe teoría del color.' },
+  { emoji: '🏆', titulo: 'Torneo de houses', descripcion: 'Competí por puntos para tu house del SASS', prompt: 'Juego de competencia entre las 4 Houses del SASS (William Brown, James Dodds, James Fleming, John Monteith). Minijuegos donde gano puntos para mi house.' },
 ];
 
 // Frases que Andy muestra mientras está generando el juego
@@ -78,6 +143,37 @@ function pickRandom(arr, n) {
     [copy[i], copy[j]] = [copy[j], copy[i]];
   }
   return copy.slice(0, n);
+}
+
+/**
+ * Misma lógica que en el API: extrae HTML de la respuesta de Andy.
+ * Busca ```html ... ``` primero; fallback: <!DOCTYPE html> o <html ... </html>.
+ * @returns {{ html: string | null, reply: string }}
+ */
+function extractHtmlFromResponse(text) {
+  if (!text || typeof text !== 'string') return { html: null, reply: text || '' };
+
+  const htmlMatch = text.match(/```html\s*([\s\S]*?)```/i);
+  if (htmlMatch) {
+    const html = htmlMatch[1].trim();
+    const reply = text.replace(htmlMatch[0], '').trim();
+    return { html: html || null, reply: reply || 'Listo. Mirá la vista previa.' };
+  }
+
+  const startDoctype = text.indexOf('<!DOCTYPE html>');
+  const startHtml = text.indexOf('<html');
+  let start = -1;
+  if (startDoctype !== -1) start = startDoctype;
+  if (startHtml !== -1 && (start === -1 || startHtml < start)) start = startHtml;
+  if (start === -1) return { html: null, reply: text };
+
+  const endTag = '</html>';
+  const lastClose = text.lastIndexOf(endTag);
+  if (lastClose === -1) return { html: null, reply: text };
+
+  const html = text.slice(start, lastClose + endTag.length).trim();
+  const reply = (text.slice(0, start) + text.slice(lastClose + endTag.length)).trim();
+  return { html: html || null, reply: reply || 'Listo. Mirá la vista previa.' };
 }
 
 export default function GameLabPage() {
@@ -133,7 +229,7 @@ export default function GameLabPage() {
   // Scroll al último mensaje cuando se agregan mensajes
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, sending]);
 
   // Mientras Andy está respondiendo, rotar frases de estado cada 2 segundos
   useEffect(() => {
@@ -231,16 +327,63 @@ export default function GameLabPage() {
       });
 
       if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
+        const errText = await res.text();
+        let errData = {};
+        try {
+          errData = JSON.parse(errText);
+        } catch {
+          errData = { error: errText || `Error ${res.status}` };
+        }
         throw new Error(errData.error || `Error ${res.status}`);
       }
 
-      const data = await res.json();
-      const andyReply = data.reply || 'No pude generar una respuesta. ¿Probamos de nuevo?';
-      setMessages((prev) => [...prev, { role: 'andy', content: andyReply }]);
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let fullText = '';
+      let buffer = '';
+      let streamDone = false;
 
-      if (data.html && typeof data.html === 'string' && data.html.trim()) {
-        setCurrentHtml(data.html.trim());
+      function processLines(lines) {
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const payload = line.slice(6).trim();
+          if (payload === '[DONE]') return true;
+          try {
+            const data = JSON.parse(payload);
+            if (data.chunk != null && typeof data.chunk === 'string') {
+              fullText += data.chunk;
+              const htmlBlockMatch = fullText.match(/```html\s*([\s\S]*?)```/i);
+              if (htmlBlockMatch) {
+                const html = htmlBlockMatch[1].trim();
+                if (html) setCurrentHtml(html);
+              }
+            }
+          } catch {
+            // ignorar líneas malformadas
+          }
+        }
+        return false;
+      }
+
+      while (!streamDone) {
+        const { done, value } = await reader.read();
+        if (done) {
+          if (buffer.trim()) {
+            streamDone = processLines(buffer.split('\n'));
+          }
+          break;
+        }
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() ?? '';
+        streamDone = processLines(lines);
+      }
+
+      const { html, reply } = extractHtmlFromResponse(fullText);
+      const andyReply = reply || 'No pude generar una respuesta. ¿Probamos de nuevo?';
+      setMessages((prev) => [...prev, { role: 'andy', content: andyReply }]);
+      if (html && html.trim()) {
+        setCurrentHtml(html.trim());
       }
     } catch (err) {
       setError(err?.message || 'Error al enviar. Intentá de nuevo.');
@@ -309,13 +452,13 @@ export default function GameLabPage() {
             style={currentHtml ? { borderColor: border } : undefined}
             aria-label="Chat con Andy"
           >
-            <div className={`w-full ${!currentHtml ? 'lg:max-w-[600px] lg:mx-auto' : ''}`}>
+            <div className={`w-full flex-1 flex flex-col min-h-0 ${!currentHtml ? 'lg:max-w-[600px] lg:mx-auto' : ''}`}>
               {/* Header minimalista: una sola línea, sin avatar */}
               <div className="px-4 py-2.5 border-b shrink-0" style={{ borderColor: border, background: bg }}>
                 <h1 className="text-sm font-bold" style={{ color: institutionalBlue }}>Game Lab</h1>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-[200px]" style={{ background: bg }}>
+              <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4" style={{ background: bg }}>
                 {messages.map((msg, i) => (
                   <div
                     key={i}
@@ -323,10 +466,10 @@ export default function GameLabPage() {
                   >
                     {msg.role === 'andy' && (
                       <div
-                        className="mt-0.5 flex-shrink-0"
+                        className="mt-0.5 flex-shrink-0 self-start"
                         style={{
-                          width: 48,
-                          height: 48,
+                          width: 64,
+                          height: 64,
                           borderRadius: '50%',
                           overflow: 'hidden',
                           backgroundColor: cardBg,
@@ -335,9 +478,9 @@ export default function GameLabPage() {
                         <Image
                           src="/images/andy-avatar.png"
                           alt=""
-                          width={48}
-                          height={48}
-                          style={{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center' }}
+                          width={64}
+                          height={64}
+                          style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                         />
                       </div>
                     )}
@@ -356,10 +499,10 @@ export default function GameLabPage() {
                 {isLoading && (
                   <div className="flex gap-3" ref={loadingRef}>
                     <div
-                      className="flex-shrink-0"
+                      className="flex-shrink-0 self-start"
                       style={{
-                        width: 48,
-                        height: 48,
+                        width: 64,
+                        height: 64,
                         borderRadius: '50%',
                         overflow: 'hidden',
                         backgroundColor: cardBg,
@@ -368,9 +511,9 @@ export default function GameLabPage() {
                       <Image
                         src="/images/andy-avatar.png"
                         alt=""
-                        width={48}
-                        height={48}
-                        style={{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center' }}
+                        width={64}
+                        height={64}
+                        style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                       />
                     </div>
                     <div className="rounded-xl px-4 py-2.5 border" style={{ background: cardBg, borderColor: border }}>
@@ -492,12 +635,14 @@ export default function GameLabPage() {
               </h2>
               <div className="flex-1 rounded-xl border overflow-hidden min-h-0 flex flex-col" style={{ borderColor: border, background: '#fff' }}>
                 {currentHtml ? (
-                  <iframe
-                    title="Vista previa del juego generado"
-                    sandbox="allow-scripts"
-                    srcDoc={currentHtml}
-                    className={`w-full h-full min-h-[320px] flex-1 border-0 transition-all duration-300 ease-out ${iframeRevealed ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-4'}`}
-                  />
+                  <div className="w-full lg:max-w-[480px] mx-auto aspect-[3/4] relative">
+                    <iframe
+                      title="Vista previa del juego generado"
+                      sandbox="allow-scripts"
+                      srcDoc={currentHtml}
+                      className={`absolute top-0 left-0 w-full h-full border-0 transition-all duration-300 ease-out ${iframeRevealed ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-4'}`}
+                    />
+                  </div>
                 ) : (
                   <div
                     className="w-full flex-1 flex items-center justify-center min-h-[320px]"
