@@ -248,6 +248,31 @@ El panel de admin está construido en Next.js en `/app/admin` con las siguientes
 
 ---
 
+## Fase 3 — GitHub Integration (Alumnos Avanzados)
+
+Para alumnos de secundaria que quieran crear juegos más complejos que no entren en un solo archivo HTML.
+
+### Concepto
+Los alumnos publican su proyecto en GitHub Pages y cargan la URL en la plataforma. El iframe apunta a esa URL externa.
+
+### Flujo propuesto
+1. El alumno crea su juego con múltiples archivos (HTML + JS + CSS + assets)
+2. Sube el proyecto a un repositorio público en GitHub
+3. Activa GitHub Pages en el repositorio
+4. En Campus San Andrés, al enviar a moderación, carga la URL de GitHub Pages
+5. El admin valida que la URL funciona y aprueba el juego
+6. El juego queda disponible en la plataforma cargando la URL en el iframe
+
+### Notas técnicas
+- El campo github_url en la tabla games ya existe para esto
+- El iframe necesita sandbox="allow-scripts allow-same-origin" para URLs externas
+- Validar que la URL sea de github.io antes de aceptarla
+
+### Valor pedagógico
+Aprender Git, GitHub y deployment es una habilidad valiosa en sí misma y está alineado con el espíritu de SASS Vibe Coding.
+
+---
+
 ## 6. Identidad Visual — Design Bible
 
 > Esta sección es normativa. Todo componente debe cumplir estas especificaciones.

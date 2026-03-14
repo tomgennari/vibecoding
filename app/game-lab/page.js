@@ -12,6 +12,12 @@ import { MobileBottomNav } from '@/components/mobile-bottom-nav.js';
 // Mensaje inicial de Andy según docs/andy-system-prompt.md
 const ANDY_FIRST_MESSAGE = '¡Hola! Soy Andy, tu asistente del Game Lab 🎮 Contame, ¿qué juego querés crear hoy?';
 
+const SUGGEST_TITLE_PROMPT = 'En base a toda nuestra conversación y el juego que creamos, sugerí un título corto y atractivo, y una descripción de 1-2 oraciones para mostrar en la plataforma. Respondé SOLO con JSON así:\n{"titulo": "...", "descripcion": "..."}';
+
+const CONTINUATION_PROMPT = 'El código HTML que generaste se cortó antes de terminar. Continuá exactamente desde donde quedaste, sin repetir lo que ya escribiste. Empezá desde la última línea de código que mandaste.';
+
+const HTML_INCOMPLETE_WARNING = '⚠️ El juego es muy complejo para generarlo de una vez. Escribime \'generá una versión más compacta\' y lo rehago con código más eficiente.';
+
 // 30 ideas de juegos para inspirar a alumnos de primaria y secundaria (SASS). prompt = texto que se envía al chat al hacer clic.
 const IDEAS_JUEGOS = [
   { emoji: '🚀', titulo: 'Naves espaciales', descripcion: 'Dispará a asteroides y enemigos en el espacio', prompt: 'Quiero un juego de naves espaciales donde tenga que esquivar asteroides y disparar a enemigos. Con power-ups y varios niveles.' },
@@ -191,11 +197,19 @@ export default function GameLabPage() {
   const chatEndRef = useRef(null);
   const inputRef = useRef(null);
   const loadingRef = useRef(null);
+  const firstGameModalShownRef = useRef(false);
   const [isDesktop, setIsDesktop] = useState(false);
   // Para animar la entrada del iframe cuando aparece el juego generado
   const [iframeRevealed, setIframeRevealed] = useState(false);
   // Índice de la frase de carga actual de Andy
   const [loadingPhraseIndex, setLoadingPhraseIndex] = useState(0);
+  const [enviandoModeracion, setEnviandoModeracion] = useState(false);
+  const [enviadoModeracion, setEnviadoModeracion] = useState(false);
+  const [welcomeModalOpen, setWelcomeModalOpen] = useState(false);
+  const [moderacionModalOpen, setModeracionModalOpen] = useState(false);
+  const [tituloModal, setTituloModal] = useState('');
+  const [descripcionModal, setDescripcionModal] = useState('');
+  const [sugiriendoTitulo, setSugiriendoTitulo] = useState(false);
 
   // 6 ideas al azar para la columna desktop; en mobile se usa el mismo set para el carrusel
   const inspirationCards = useMemo(() => pickRandom(IDEAS_JUEGOS, 6), []);
@@ -209,6 +223,7 @@ export default function GameLabPage() {
   const accent = '#7c3aed';
   // PRD §6.2: color institucional SASS — títulos, elementos primarios
   const institutionalBlue = '#00478E';
+  const headerColor = isDark ? text : institutionalBlue;
   const isLoading = sending;
 
   // Protección de ruta: solo usuarios autenticados
@@ -230,6 +245,18 @@ export default function GameLabPage() {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, sending]);
+
+  // Resetear estado de moderación cuando Andy genera un juego nuevo
+  useEffect(() => {
+    setEnviadoModeracion(false);
+  }, [currentHtml]);
+
+  // Modal de bienvenida la primera vez que hay juego generado
+  useEffect(() => {
+    if (!currentHtml || firstGameModalShownRef.current) return;
+    firstGameModalShownRef.current = true;
+    setWelcomeModalOpen(true);
+  }, [currentHtml]);
 
   // Mientras Andy está respondiendo, rotar frases de estado cada 2 segundos
   useEffect(() => {
@@ -381,9 +408,70 @@ export default function GameLabPage() {
 
       const { html, reply } = extractHtmlFromResponse(fullText);
       const andyReply = reply || 'No pude generar una respuesta. ¿Probamos de nuevo?';
-      setMessages((prev) => [...prev, { role: 'andy', content: andyReply }]);
-      if (html && html.trim()) {
-        setCurrentHtml(html.trim());
+      const hasHtmlStart = /```html|<!DOCTYPE\s+html>|<html\b/i.test(fullText);
+      const hasHtmlEnd = fullText.includes('</html>');
+      const htmlIncomplete = hasHtmlStart && !hasHtmlEnd;
+
+      if (htmlIncomplete) {
+        const apiMessagesContinuation = [
+          ...apiMessages,
+          { role: 'user', content: CONTINUATION_PROMPT },
+        ];
+        const res2 = await fetch('/api/game-lab/chat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ messages: apiMessagesContinuation }),
+        });
+        let continuacion = '';
+        if (res2.ok && res2.body) {
+          const reader2 = res2.body.getReader();
+          const decoder2 = new TextDecoder();
+          let buffer2 = '';
+          let streamDone2 = false;
+          function processLines2(lines) {
+            for (const line of lines) {
+              if (!line.startsWith('data: ')) continue;
+              const payload = line.slice(6).trim();
+              if (payload === '[DONE]') return true;
+              try {
+                const data = JSON.parse(payload);
+                if (data.chunk != null && typeof data.chunk === 'string') continuacion += data.chunk;
+              } catch {}
+            }
+            return false;
+          }
+          while (!streamDone2) {
+            const { done, value } = await reader2.read();
+            if (done) {
+              if (buffer2.trim()) streamDone2 = processLines2(buffer2.split('\n'));
+              break;
+            }
+            buffer2 += decoder2.decode(value, { stream: true });
+            const lines = buffer2.split('\n');
+            buffer2 = lines.pop() ?? '';
+            streamDone2 = processLines2(lines);
+          }
+        }
+        const htmlCompleto = fullText + continuacion;
+        if (htmlCompleto.includes('</html>')) {
+          const { html: htmlFinal, reply: replyFinal } = extractHtmlFromResponse(htmlCompleto);
+          if (htmlFinal && htmlFinal.trim()) setCurrentHtml(htmlFinal.trim());
+          setMessages((prev) => [...prev, { role: 'andy', content: replyFinal || andyReply }]);
+        } else {
+          setMessages((prev) => [
+            ...prev,
+            { role: 'andy', content: andyReply },
+            { role: 'andy', content: HTML_INCOMPLETE_WARNING },
+          ]);
+        }
+      } else {
+        setMessages((prev) => [...prev, { role: 'andy', content: andyReply }]);
+        if (html && html.trim()) {
+          setCurrentHtml(html.trim());
+        }
       }
     } catch (err) {
       setError(err?.message || 'Error al enviar. Intentá de nuevo.');
@@ -412,6 +500,104 @@ export default function GameLabPage() {
     sendMessage(prompt);
   }
 
+  async function fetchSugerenciaTitulo() {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    const apiMessages = [...messages, { role: 'user', content: SUGGEST_TITLE_PROMPT }].map((m) => ({
+      role: m.role === 'andy' ? 'assistant' : 'user',
+      content: m.content,
+    }));
+    const res = await fetch('/api/game-lab/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+      body: JSON.stringify({ messages: apiMessages }),
+    });
+    if (!res.ok || !res.body) {
+      setSugiriendoTitulo(false);
+      return;
+    }
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let fullText = '';
+    let buffer = '';
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() ?? '';
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const payload = line.slice(6).trim();
+        if (payload === '[DONE]') break;
+        try {
+          const data = JSON.parse(payload);
+          if (data.chunk != null && typeof data.chunk === 'string') fullText += data.chunk;
+        } catch {}
+      }
+    }
+    const { reply } = extractHtmlFromResponse(fullText);
+    try {
+      const match = reply.match(/\{[\s\S]*\}/);
+      if (match) {
+        const obj = JSON.parse(match[0]);
+        if (obj.titulo != null) setTituloModal(String(obj.titulo).trim());
+        if (obj.descripcion != null) setDescripcionModal(String(obj.descripcion).trim());
+      }
+    } catch {}
+    setSugiriendoTitulo(false);
+  }
+
+  function openModeracionModal() {
+    if (!currentHtml) return;
+    setModeracionModalOpen(true);
+    setTituloModal('');
+    setDescripcionModal('');
+    setError('');
+    setSugiriendoTitulo(true);
+    fetchSugerenciaTitulo();
+  }
+
+  async function confirmarEnviarAModeracion() {
+    if (!currentHtml || enviandoModeracion) return;
+    setEnviandoModeracion(true);
+    setError('');
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setEnviandoModeracion(false);
+        router.replace('/login');
+        return;
+      }
+      const res = await fetch('/api/game-lab/moderar', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          html: currentHtml,
+          title: tituloModal.trim() || 'Juego del Game Lab',
+          description: descripcionModal.trim() || 'Generado con Andy en el Game Lab',
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error || `Error ${res.status}`);
+      }
+      setEnviadoModeracion(true);
+      setModeracionModalOpen(false);
+    } catch (err) {
+      setError(err?.message || 'Error al enviar a moderación. Intentá de nuevo.');
+    } finally {
+      setEnviandoModeracion(false);
+    }
+  }
+
+  function enviarAModeracion() {
+    openModeracionModal();
+  }
+
   function handleKeyDown(e) {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -430,7 +616,7 @@ export default function GameLabPage() {
   }
 
   return (
-    <div className="min-h-screen font-sans flex flex-col" style={{ background: bg }}>
+    <div className="min-h-screen font-sans flex flex-col relative" style={{ background: bg }}>
       <DashboardNavbar
         theme={theme}
         onToggleTheme={toggleTheme}
@@ -443,8 +629,8 @@ export default function GameLabPage() {
 
       {/* Contenedor principal: desktop sin juego = max-w 900px centrado, chat 600px + tarjetas 260px gap 32px; desktop con juego = 100% (40% + 60%); mobile = iframe arriba + chat abajo o chat + carrusel */}
       <div
-        className={`flex-1 flex flex-col-reverse lg:flex-row pt-14 lg:pt-16 pb-20 lg:pb-6 ${
-          currentHtml ? 'lg:h-screen lg:overflow-hidden' : ''
+        className={`flex-1 flex flex-col-reverse lg:flex-row pt-14 pb-20 lg:pb-6 ${
+          currentHtml ? 'lg:fixed lg:top-[64px] lg:left-0 lg:right-0 lg:bottom-0 lg:overflow-hidden lg:pt-0' : 'lg:pt-16'
         }`}
       >
         <div
@@ -456,16 +642,16 @@ export default function GameLabPage() {
           <section
             className={`flex flex-col w-full lg:min-h-0 shrink-0 transition-all duration-300 ease-out ${
               currentHtml
-                ? 'lg:w-[40%] lg:max-w-[480px] lg:border-r lg:h-full lg:overflow-y-auto'
+                ? 'lg:w-[40%] lg:max-w-[480px] lg:border-r lg:h-full lg:overflow-hidden'
                 : 'lg:flex-1 lg:min-w-0'
             }`}
             style={currentHtml ? { borderColor: border } : undefined}
             aria-label="Chat con Andy"
           >
-            <div className={`w-full flex-1 flex flex-col min-h-0 ${!currentHtml ? 'lg:max-w-[600px] lg:mx-auto' : ''}`}>
+            <div className={`w-full flex-1 flex flex-col min-h-0 ${!currentHtml ? 'lg:max-w-[600px] lg:mx-auto' : 'lg:overflow-hidden'}`}>
               {/* Header minimalista: una sola línea, sin avatar */}
               <div className="px-4 py-2.5 border-b shrink-0" style={{ borderColor: border, background: bg }}>
-                <h1 className="text-sm font-bold" style={{ color: institutionalBlue }}>Game Lab</h1>
+                <h1 className="text-sm font-bold" style={{ color: headerColor }}>Game Lab</h1>
               </div>
 
               <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4" style={{ background: bg }}>
@@ -499,7 +685,7 @@ export default function GameLabPage() {
                       style={{
                         background: msg.role === 'user' ? (isDark ? 'rgba(124,58,237,0.25)' : 'rgba(124,58,237,0.12)') : cardBg,
                         borderColor: msg.role === 'user' ? 'transparent' : border,
-                        color: msg.role === 'andy' ? institutionalBlue : text,
+                        color: msg.role === 'andy' ? text : text,
                       }}
                     >
                       <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
@@ -527,7 +713,7 @@ export default function GameLabPage() {
                       />
                     </div>
                     <div className="rounded-xl px-4 py-2.5 border" style={{ background: cardBg, borderColor: border }}>
-                      <p className="text-sm animate-pulse" style={{ color: institutionalBlue }}>
+                      <p className="text-sm animate-pulse" style={{ color: text }}>
                         {LOADING_PHRASES[loadingPhraseIndex]}
                       </p>
                     </div>
@@ -567,6 +753,24 @@ export default function GameLabPage() {
                     Enviar
                   </button>
                 </div>
+                {currentHtml && (
+                  <div className="mt-3">
+                    {enviadoModeracion ? (
+                      <p className="text-sm font-medium text-center py-2" style={{ color: '#22c55e' }}>
+                        ✅ Enviado a moderación
+                      </p>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={enviarAModeracion}
+                        disabled={enviandoModeracion}
+                        className="vibe-btn-gradient w-full rounded-xl px-4 py-3 text-sm font-bold text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        📨 Mi juego está listo. Enviar a moderación
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Mobile: carrusel de ideas debajo del input */}
@@ -643,10 +847,11 @@ export default function GameLabPage() {
             }`}
             aria-label="Vista previa del juego"
           >
-            <div className="flex-1 p-4 lg:p-6 flex flex-col min-h-0" style={{ background: isDark ? '#0f0f14' : '#f1f5f9' }}>
-              <h2 className="text-sm font-bold mb-2" style={{ color: textMuted }}>
-                Vista previa
-              </h2>
+            <div className="flex-1 flex flex-col min-h-0 overflow-hidden" style={{ background: isDark ? '#0f0f14' : '#f1f5f9' }}>
+              <div className="px-4 py-2.5 border-b shrink-0" style={{ borderColor: border, background: bg }}>
+                <h2 className="text-sm font-bold" style={{ color: headerColor }}>Vista previa</h2>
+              </div>
+              <div className="flex-1 p-4 lg:p-6 min-h-0 flex flex-col overflow-hidden">
               <div className="flex-1 rounded-xl border overflow-hidden min-h-0 flex flex-col" style={{ borderColor: border, background: '#fff' }}>
                 {currentHtml ? (
                   <div className="w-full lg:max-w-[480px] mx-auto aspect-[3/4] relative">
@@ -666,10 +871,133 @@ export default function GameLabPage() {
                   </div>
                 )}
               </div>
+              </div>
             </div>
           </section>
         </div>
       </div>
+
+      {/* Modal de bienvenida al primer juego */}
+      {welcomeModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.6)' }}
+          onClick={() => setWelcomeModalOpen(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="welcome-modal-title"
+        >
+          <div
+            className="relative rounded-2xl border shadow-xl max-w-md w-full p-6"
+            style={{ background: cardBg, borderColor: border }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setWelcomeModalOpen(false)}
+              className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-lg text-lg leading-none hover:opacity-80"
+              style={{ color: textMuted }}
+              aria-label="Cerrar"
+            >
+              ×
+            </button>
+            <h2 id="welcome-modal-title" className="text-lg font-bold pr-8 mb-3" style={{ color: headerColor }}>
+              🎮 ¡Tu primer juego está listo!
+            </h2>
+            <p className="text-sm mb-5 leading-relaxed" style={{ color: text }}>
+              Andy es una Inteligencia Artificial que puede cometer errores («Bugs»). El objetivo de SASS Vibe Coding es que aprendas a conversar con la IA: explicá qué salió mal, qué querés cambiar y qué querés mejorar. No hace falta usar lenguaje técnico — hablale de manera completamente natural y descriptiva.
+            </p>
+            <button
+              type="button"
+              onClick={() => setWelcomeModalOpen(false)}
+              className="vibe-btn-gradient w-full rounded-xl px-4 py-3 text-sm font-bold text-white"
+            >
+              ¡Entendido, a jugar! 🕹️
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal título y descripción para enviar a moderación */}
+      {moderacionModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.6)' }}
+          onClick={() => !enviandoModeracion && setModeracionModalOpen(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="moderacion-modal-title"
+        >
+          <div
+            className="relative rounded-2xl border shadow-xl max-w-md w-full p-6"
+            style={{ background: cardBg, borderColor: border }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => !enviandoModeracion && setModeracionModalOpen(false)}
+              className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-lg text-lg leading-none hover:opacity-80 disabled:opacity-50"
+              style={{ color: textMuted }}
+              aria-label="Cerrar"
+              disabled={enviandoModeracion}
+            >
+              ×
+            </button>
+            <h2 id="moderacion-modal-title" className="text-lg font-bold pr-8 mb-4" style={{ color: headerColor }}>
+              Enviar a moderación
+            </h2>
+            {sugiriendoTitulo && (
+              <p className="text-sm mb-3 flex items-center gap-2" style={{ color: textMuted }}>
+                <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden />
+                Andy está sugiriendo título y descripción...
+              </p>
+            )}
+            <label className="block text-sm font-medium mb-1.5" style={{ color: text }}>
+              Título del juego
+            </label>
+            <input
+              type="text"
+              value={tituloModal}
+              onChange={(e) => setTituloModal(e.target.value)}
+              placeholder="Ej: Naves espaciales"
+              className="w-full rounded-xl px-4 py-2.5 text-sm border mb-4 focus:outline-none focus:ring-2 focus:ring-[#7c3aed]"
+              style={{ background: isDark ? '#0a0a0f' : '#fff', borderColor: border, color: text }}
+              disabled={sugiriendoTitulo}
+            />
+            <label className="block text-sm font-medium mb-1.5" style={{ color: text }}>
+              Descripción
+            </label>
+            <textarea
+              value={descripcionModal}
+              onChange={(e) => setDescripcionModal(e.target.value)}
+              placeholder="Breve descripción para la plataforma"
+              rows={3}
+              className="w-full rounded-xl px-4 py-2.5 text-sm border mb-4 resize-none focus:outline-none focus:ring-2 focus:ring-[#7c3aed]"
+              style={{ background: isDark ? '#0a0a0f' : '#fff', borderColor: border, color: text }}
+              disabled={sugiriendoTitulo}
+            />
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => !enviandoModeracion && setModeracionModalOpen(false)}
+                className="flex-1 rounded-xl px-4 py-3 text-sm font-bold border"
+                style={{ borderColor: border, color: text, background: 'transparent' }}
+                disabled={enviandoModeracion}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={confirmarEnviarAModeracion}
+                disabled={enviandoModeracion || sugiriendoTitulo}
+                className="flex-1 vibe-btn-gradient rounded-xl px-4 py-3 text-sm font-bold text-white disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Confirmar y enviar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <MobileBottomNav theme={theme} activeTabId="" onTabChange={() => {}} />
     </div>
