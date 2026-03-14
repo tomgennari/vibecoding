@@ -40,7 +40,5 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# Kenney assets temporales (no subir a GitHub)
+# kenney assets temporales
 /kenney-temp
-/public/kenney-assets.json
-/public/kenney-assets-curated.json

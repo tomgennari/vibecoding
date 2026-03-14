@@ -9,8 +9,13 @@ import { useUser } from '@/lib/user-context.js';
 import { DashboardNavbar } from '@/components/dashboard-navbar.js';
 import { MobileBottomNav } from '@/components/mobile-bottom-nav.js';
 
-// Mensaje inicial de Andy según docs/andy-system-prompt.md
-const ANDY_FIRST_MESSAGE = '¡Hola! Soy Andy, tu asistente del Game Lab 🎮 Contame, ¿qué juego querés crear hoy?';
+const ANDY_FIRST_MESSAGES = [
+  '¡Hola! Soy Andy, tu asistente del Game Lab 🎮 Acá no hay límites para tu imaginación — contame qué juego se te ocurre y lo armamos juntos.',
+  '¡Ey, qué onda! Soy Andy 🎮 Estoy acá para ayudarte a crear el juego que se te ocurra, por más loco que suene. Contame tu idea, cuantos más detalles mejor — y no te preocupes si no sale perfecto, lo vamos puliendo juntos.',
+  '¡Hola! Soy Andy, del Game Lab 🎮 ¿Tenés una idea para un juego? Tirámela como quieras — larga, corta, con errores de tipeo, todo vale. Cuanto más me cuentes, más épico va a quedar.',
+  '¡Buenas! Soy Andy 🎮 Acá podés crear el juego que imagines: de naves, zombies, puzzles, deportes, lo que sea. No hace falta que escribas perfecto ni que sepas de programación — para eso estoy yo. ¡Dale, contame tu idea!',
+  '¡Hola! Soy Andy, tu compañero del Game Lab 🎮 Mi laburo es convertir tus ideas en juegos reales. Podés pedirme lo que quieras, no hay ideas malas. Y si no sabés bien cómo explicarlo, arrancá como puedas que juntos lo resolvemos.',
+];
 
 const SUGGEST_TITLE_PROMPT = 'En base a toda nuestra conversación y el juego que creamos, sugerí un título corto y atractivo, y una descripción de 1-2 oraciones para mostrar en la plataforma. Respondé SOLO con JSON así:\n{"titulo": "...", "descripcion": "..."}';
 
@@ -120,25 +125,25 @@ const IDEAS_JUEGOS = [
 // Frases que Andy muestra mientras está generando el juego
 const LOADING_PHRASES = [
   'Pensando en los niveles...',
-  'Eligiendo assets de Kenney...',
-  'Escribiendo el código Phaser...',
+  'Diseñando el mundo del juego...',
+  'Armando la lógica del gameplay...',
   'Ajustando la dificultad...',
   'Agregando power-ups copados...',
   'Balanceando enemigos y obstáculos...',
-  'Chequeando que funcione en celular...',
   'Preparando la pantalla de inicio...',
-  'Agregando sonidos imaginarios...',
+  'Dibujando los personajes...',
   'Pensando un jefe final épico...',
   'Acomodando las físicas del juego...',
   'Probando que los controles se sientan bien...',
   'Armando la barra de puntaje...',
-  'Buscando un fondo bien fachero...',
+  'Eligiendo los colores del juego...',
   'Afinando la velocidad del personaje...',
   'Revisando que todo sea apto para el SASS...',
   'Imaginando cómo lo vas a mejorar después...',
-  'Ordenando el código para que lo entiendas...',
+  'Haciendo que el game over sea épico...',
   'Agregando un poquito más de diversión...',
   'Cocinando tu juego en la olla gamer...',
+  'Dándole los últimos retoques...',
 ];
 
 /** Elige n elementos al azar de un array sin repetir */
@@ -238,7 +243,8 @@ export default function GameLabPage() {
   // Mensaje inicial de Andy al montar (una sola vez cuando ya hay perfil)
   useEffect(() => {
     if (!profile || messages.length > 0) return;
-    setMessages([{ role: 'andy', content: ANDY_FIRST_MESSAGE }]);
+    const randomMsg = ANDY_FIRST_MESSAGES[Math.floor(Math.random() * ANDY_FIRST_MESSAGES.length)];
+    setMessages([{ role: 'andy', content: randomMsg }]);
   }, [profile, messages.length]);
 
   // Scroll al último mensaje cuando se agregan mensajes

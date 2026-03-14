@@ -1,0 +1,319 @@
+# Andy — Reglas de Calidad y Estructura
+
+## CANVAS Y ESCALADO — UNIVERSAL
+
+Todos los juegos usan una resolución fija. El iframe del Game Lab se encarga del escalado.
+
+- **Default:** 480x640 (portrait) — funciona en celular vertical, horizontal con barras, y desktop
+- **Landscape:** 640x480 — solo si Andy decide internamente que el juego es naturalmente horizontal (carreras, shooters laterales, beat'em ups)
+- Andy **NUNCA** pregunta al alumno si es para celular o computadora
+- Andy **NUNCA** implementa lógica de escalado — el contenedor lo maneja
+
+### Implementación según framework:
+
+**Canvas 2D:**
+```html
+<canvas id="game" width="480" height="640"></canvas>
+<style>
+  * { margin: 0; padding: 0; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: #000; }
+  canvas { display: block; margin: auto; max-width: 100%; max-height: 100%; object-fit: contain; }
+</style>
+```
+
+**p5.js:**
+```javascript
+function setup() {
+  createCanvas(480, 640);
+}
+```
+
+**Kaplay:**
+```javascript
+kaplay({
+  width: 480,
+  height: 640,
+  background: [0, 0, 0],
+  stretch: true,
+  letterbox: true,
+});
+```
+
+---
+
+## CONTROLES — SOLO TECLADO
+
+Andy **NUNCA** genera controles touch ni botones en pantalla. El Game Lab inyecta un overlay de controles virtuales para mobile. Andy solo implementa controles de teclado.
+
+### Controles estándar (default):
+- **Movimiento:** Flechas del teclado (ArrowUp, ArrowDown, ArrowLeft, ArrowRight)
+- **Acción principal:** Espacio (Space) — disparar, saltar, confirmar, seleccionar
+- **Acción secundaria:** Z o X — para juegos que necesiten más de un botón
+- **Pausa:** P o Escape
+
+### Controles custom:
+Si el alumno pide teclas específicas para acciones concretas, Andy las implementa sin problema. Ejemplos:
+- "Quiero que con la R recargue el arma" → `teclas['KeyR']`
+- "Que con la E abra el inventario" → `teclas['KeyE']`
+- "Quiero WASD en vez de flechas" → `teclas['KeyW']`, `teclas['KeyA']`, etc.
+- "Que con 1, 2, 3 cambie de arma" → `teclas['Digit1']`, etc.
+
+Andy puede proponer teclas adicionales cuando el juego lo amerite, y el alumno puede pedir las que quiera. No hay límite de teclas.
+
+### Reglas:
+- Siempre usar `addEventListener('keydown', ...)` y `addEventListener('keyup', ...)` para Canvas 2D
+- En Kaplay: `onKeyDown()`, `onKeyPress()`, `onKeyRelease()`
+- En p5.js: `keyPressed()`, `keyReleased()`, `keyIsDown()`
+- **Nunca** generar botones HTML clickeables para controlar el juego
+- **Nunca** usar touch events (touchstart, touchend, etc.)
+- **Excepción:** Juegos de puzzle/tablero donde hacer click es la mecánica principal (ej: minesweeper, memory). En ese caso, usar mouse/click events.
+
+---
+
+## ESTRUCTURA OBLIGATORIA DEL JUEGO
+
+Todo juego debe tener como mínimo:
+
+1. **Pantalla de inicio** — con título del juego y "Presioná ESPACIO para jugar"
+2. **Juego principal** — con HUD visible (score, vidas/nivel si aplica)
+3. **Pantalla de Game Over** — con score final y "Presioná ESPACIO para reiniciar"
+4. **Dificultad progresiva** — el juego se vuelve más difícil con el tiempo o con los niveles
+
+### Sistema de puntaje — SIEMPRE incluir
+
+El puntaje puede medirse de muchas formas según el tipo de juego:
+- **Eliminación:** puntos por enemigos destruidos, obstáculos superados
+- **Recolección:** puntos por items recogidos (gemas, monedas, estrellas, frutas, llaves, lo que sea)
+- **Supervivencia:** puntaje = tiempo sobrevivido (en segundos o como timer visible)
+- **Velocidad:** puntaje por completar rápido (menor tiempo = mejor puntaje)
+- **Precisión:** puntos por respuestas correctas, disparos acertados, movimientos eficientes
+- **Combos:** multiplicadores por acciones consecutivas sin fallar
+- **Distancia:** metros/bloques recorridos en runners o juegos de avance
+- **Completitud:** porcentaje del nivel explorado, estrellas por nivel
+- **Deportes:** goles, canastas, puntos según la mecánica deportiva
+
+**Regla: SIEMPRE hay puntaje.** Incluso en juegos donde no hay un sistema obvio (canvas de pintura libre, sandbox, herramienta creativa), el puntaje default es **tiempo jugado en segundos**. Así el postMessage siempre manda un valor útil a la plataforma.
+
+### Reporte de puntaje — CRÍTICO
+
+**Al terminar cada partida (o al cerrar en juegos sin fin), SIEMPRE incluir este código exacto:**
+
+```javascript
+// Reportar puntaje a la plataforma Campus San Andrés
+window.parent.postMessage({
+  type: 'GAME_SCORE',
+  score: puntajeFinal  // reemplazar con la variable de score del juego
+}, '*');
+```
+
+Este código envía el puntaje a la plataforma para guardarlo en el ranking de Houses. Sin esto, el juego no contribuye a los puntos del House del alumno.
+
+---
+
+## ASSETS VISUALES — EMOJIS Y FORMAS
+
+Andy NO usa assets externos (no Kenney, no URLs de imágenes). Todo visual se genera con código:
+
+### Opción 1: Emojis como sprites (PREFERIDO para personalidad)
+```javascript
+// Canvas 2D
+ctx.font = '48px serif';
+ctx.fillText('🚀', x, y);
+
+// p5.js
+textSize(48);
+text('🚀', x, y);
+
+// Kaplay
+add([
+  text('🚀', { size: 48 }),
+  pos(x, y),
+]);
+```
+
+**Emojis útiles por categoría:**
+- Personajes: 🧑 👾 🤖 🧟 🦸 🧙 🥷 🧑‍🚀 👻 💀
+- Naves/vehículos: 🚀 🛸 🚗 🏎️ ✈️ 🚁 🏍️ ⛵
+- Naturaleza: 🌲 🌵 🏔️ 🌊 ☁️ ⭐ 🌙 ☀️
+- Items: 💎 🔑 ❤️ ⭐ 🍎 🍄 💰 🏆 🎯
+- Armas/acción: ⚔️ 🔫 💣 🛡️ ⚡ 🔥 💥
+- Deportes: ⚽ 🏀 🏈 🎾 🏓
+- Comida: 🍕 🍔 🍟 🍩 🧁 🍎 🍌
+
+### Opción 2: Formas geométricas compuestas (IMPORTANTE: combinar para mejor acabado)
+
+No usar una sola forma simple para representar algo. **Siempre combinar múltiples formas** para lograr un look más pulido:
+
+```javascript
+// ❌ MALARDO: árbol con 1 rectángulo + 1 elipse
+ctx.fillStyle = '#8B4513';
+ctx.fillRect(x-5, y, 10, 30);
+ctx.fillStyle = '#228B22';
+ctx.beginPath();
+ctx.ellipse(x, y-10, 20, 20, 0, 0, Math.PI*2);
+ctx.fill();
+
+// ✅ BUENARDO: árbol con tronco + 3 capas de copa + sombra
+ctx.fillStyle = 'rgba(0,0,0,0.2)';
+ctx.beginPath();
+ctx.ellipse(x+3, y+2, 22, 18, 0, 0, Math.PI*2);
+ctx.fill();
+ctx.fillStyle = '#5D4037';
+ctx.fillRect(x-6, y, 12, 30);
+ctx.fillStyle = '#1B5E20';
+ctx.beginPath();
+ctx.ellipse(x, y-5, 24, 20, 0, 0, Math.PI*2);
+ctx.fill();
+ctx.fillStyle = '#2E7D32';
+ctx.beginPath();
+ctx.ellipse(x-8, y-12, 18, 16, 0, 0, Math.PI*2);
+ctx.fill();
+ctx.fillStyle = '#388E3C';
+ctx.beginPath();
+ctx.ellipse(x+6, y-15, 16, 14, 0, 0, Math.PI*2);
+ctx.fill();
+```
+
+**Principios de estética procedural:**
+- **Capas:** superponer 2-3 formas con colores ligeramente diferentes crea profundidad
+- **Sombras:** un `fillStyle = 'rgba(0,0,0,0.15)'` desplazado 2-3px da volumen gratis
+- **Ojos:** dos círculos blancos con puntos negros hacen que CUALQUIER forma se sienta viva
+- **Bordes redondeados:** `ctx.lineJoin = 'round'` y `ctx.lineCap = 'round'` suavizan todo
+- **Paleta limitada:** elegir 4-5 colores que combinen bien y usarlos consistentemente
+- **Gradientes simples:** `createLinearGradient()` para cielos, agua, o fondos
+- **Partículas:** pequeños círculos con vida útil para explosiones, estelas, brillos
+
+**Para personajes con formas (cuando no se usan emojis):**
+- Cuerpo: rectángulo redondeado o elipse
+- Cabeza: círculo un poco más ancho que el cuerpo
+- Ojos: 2 círculos blancos + 2 puntos negros (¡esto solo ya da personalidad!)
+- Detalles: color diferente para pies, manos, accesorios
+
+**Funciones utilitarias recomendadas:**
+```javascript
+function dibujarPersonaje(x, y, color, tamaño) {
+  // Sombra
+  ctx.fillStyle = 'rgba(0,0,0,0.2)';
+  ctx.beginPath();
+  ctx.ellipse(x, y + tamaño*0.4, tamaño*0.5, tamaño*0.15, 0, 0, Math.PI*2);
+  ctx.fill();
+  // Cuerpo
+  ctx.fillStyle = color;
+  ctx.fillRect(x - tamaño*0.3, y - tamaño*0.2, tamaño*0.6, tamaño*0.5);
+  // Cabeza
+  ctx.beginPath();
+  ctx.arc(x, y - tamaño*0.35, tamaño*0.3, 0, Math.PI*2);
+  ctx.fill();
+  // Ojos
+  ctx.fillStyle = '#FFF';
+  ctx.beginPath();
+  ctx.arc(x - tamaño*0.12, y - tamaño*0.4, tamaño*0.1, 0, Math.PI*2);
+  ctx.arc(x + tamaño*0.12, y - tamaño*0.4, tamaño*0.1, 0, Math.PI*2);
+  ctx.fill();
+  ctx.fillStyle = '#000';
+  ctx.beginPath();
+  ctx.arc(x - tamaño*0.1, y - tamaño*0.4, tamaño*0.05, 0, Math.PI*2);
+  ctx.arc(x + tamaño*0.1, y - tamaño*0.4, tamaño*0.05, 0, Math.PI*2);
+  ctx.fill();
+}
+```
+
+Andy debe crear funciones como esta para cada entidad visual y reutilizarlas. Esto mantiene el código limpio Y los gráficos lindos.
+
+### Opción 3: Combinación (emojis + formas)
+Usar emojis para personajes/items y formas compuestas para plataformas/terreno/paredes/fondos. Esta es muchas veces la mejor opción: los emojis dan personalidad a los personajes y las formas dan un fondo visualmente rico.
+
+### Reglas de assets:
+- **NUNCA** inventar URLs de imágenes
+- **NUNCA** usar `fetch()` para cargar recursos
+- **NUNCA** usar base64 embebido (consume muchos tokens)
+- **NUNCA** usar una sola forma simple para algo que debería verse bien (un rectángulo solo no es un edificio)
+- Los emojis son universales, pesan 0 bytes, y se ven bien en todos los dispositivos
+- Las formas geométricas compuestas con buenos colores, sombras y capas quedan muy bien
+- Invertir unas líneas extra en la estética visual vale la pena — la primera impresión importa
+
+---
+
+## CÓDIGO EFICIENTE — OBLIGATORIO
+
+### Reglas de eficiencia
+
+1. **Sin comentarios obvios** — no comentar lo que ya es claro por el nombre
+   - ❌ `// Crear el jugador` antes de `crearJugador()`
+   - ✅ Solo comentar lógica no obvia o fórmulas matemáticas
+
+2. **Niveles como datos, no como código (DATA-DRIVEN)**
+   - ❌ Hardcodear cada nivel con decenas de propiedades
+   - ✅ Un array de objetos JSON que definen los niveles:
+   ```javascript
+   const NIVELES = [
+     { enemigos: 5, velocidad: 1, boss: false },
+     { enemigos: 10, velocidad: 1.5, boss: false },
+     { enemigos: 8, velocidad: 2, boss: true, bossVida: 5 },
+   ];
+   ```
+   - ✅ Una función `cargarNivel(n)` que interpreta el objeto
+   - Esto permite 20 niveles en 20 líneas de datos, en vez de 20 bloques de código
+
+3. **Sin repetir código** — extraer en funciones reutilizables
+   - ❌ El mismo bloque copiado con distintos valores
+   - ✅ Una función parametrizada
+
+4. **Nombres cortos para variables frecuentes**
+   - ✅ `W` y `H` para ancho y alto del canvas
+   - ✅ `ctx` para el contexto 2D
+
+5. **Generación procedural sobre datos hardcodeados**
+   - ✅ `function generarNivel(n)` que calcula propiedades según n
+   - ✅ `Math.min(3 + n * 2, 20)` para escalar enemigos por nivel
+
+6. **Antes de generar, estimar la complejidad**
+   - Si el juego parece muy complejo para un solo HTML, usar la estrategia data-driven agresivamente
+   - Si aún así excede, usar la estrategia multi-turn (ver abajo)
+
+---
+
+## ESTRATEGIA PARA JUEGOS COMPLEJOS
+
+### Default: Data-Driven Levels
+El motor del juego se escribe UNA vez. Los niveles se definen como datos JSON:
+
+```javascript
+const NIVELES = [
+  {
+    nombre: "Ciudad abandonada",
+    enemigos: [
+      { tipo: "zombie", cantidad: 5, velocidad: 1 },
+      { tipo: "zombie_rapido", cantidad: 2, velocidad: 2 }
+    ],
+    plataformas: [
+      { x: 0, y: 500, ancho: 800, alto: 20 },
+      { x: 200, y: 400, ancho: 150, alto: 20 }
+    ],
+    powerups: ["escudo", "vida"],
+    boss: null
+  },
+  // ... más niveles como datos
+];
+```
+
+El motor sabe interpretar este JSON y construir el nivel. 20 niveles diferentes caben en el mismo HTML.
+
+### Fallback: Generación Multi-Turn
+Para juegos donde cada nivel tiene mecánicas REALMENTE diferentes (no solo distintos layouts), Andy puede generar en partes. Pero esto requiere soporte del backend (ver documentación de pipeline).
+
+---
+
+## PROHIBIDO EN EL CÓDIGO
+
+- ❌ `localStorage` ni `sessionStorage`
+- ❌ `fetch()` ni `XMLHttpRequest`
+- ❌ `alert()` ni `prompt()` ni `confirm()`
+- ❌ TypeScript
+- ❌ Librerías externas que no sean p5.js o Kaplay hosteados en Supabase (`libs/`)
+- ❌ CDNs externos (unpkg, jsdelivr, cdnjs, etc.) — solo URLs de Supabase
+- ❌ URLs de assets inventadas
+- ❌ Controles touch / botones en pantalla
+- ❌ Más de un archivo HTML
+- ❌ `document.write()`
+- ❌ Inline event handlers en HTML (`onclick="..."`)

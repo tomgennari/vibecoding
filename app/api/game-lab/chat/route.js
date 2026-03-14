@@ -21,14 +21,41 @@ function getAuthUser(request) {
   return { token, supabase };
 }
 
-function loadAndySystemPrompt() {
+function loadAndyDocs() {
+  const basePath = join(process.cwd(), 'docs', 'andy');
+  const templatesPath = join(basePath, 'templates');
+
   try {
-    const path = join(process.cwd(), 'docs', 'andy-system-prompt.md');
-    return readFileSync(path, 'utf-8');
+    return {
+      personality: readFileSync(join(basePath, 'personality.md'), 'utf-8'),
+      pedagogy: readFileSync(join(basePath, 'pedagogy.md'), 'utf-8'),
+      frameworkDecision: readFileSync(join(basePath, 'framework-decision.md'), 'utf-8'),
+      qualityRules: readFileSync(join(basePath, 'quality-rules.md'), 'utf-8'),
+      templates: {
+        canvas2d: readFileSync(join(templatesPath, 'canvas2d.md'), 'utf-8'),
+        p5js: readFileSync(join(templatesPath, 'p5js.md'), 'utf-8'),
+        kaplay: readFileSync(join(templatesPath, 'kaplay.md'), 'utf-8'),
+      },
+    };
   } catch (err) {
-    console.error('Error leyendo system prompt de Andy:', err);
+    console.error('Error cargando docs de Andy:', err);
     return null;
   }
+}
+
+function buildSystemPrompt(docs) {
+  return [
+    docs.personality,
+    docs.pedagogy,
+    docs.frameworkDecision,
+    docs.qualityRules,
+    '---',
+    '# TEMPLATES DE FRAMEWORKS',
+    'Usá el template que corresponda según el framework que elegiste:',
+    docs.templates.canvas2d,
+    docs.templates.p5js,
+    docs.templates.kaplay,
+  ].join('\n\n');
 }
 
 export async function POST(request) {
@@ -61,10 +88,11 @@ export async function POST(request) {
     return NextResponse.json({ error: 'Faltan mensajes' }, { status: 400 });
   }
 
-  const systemPrompt = loadAndySystemPrompt();
-  if (!systemPrompt) {
+  const docs = loadAndyDocs();
+  if (!docs) {
     return NextResponse.json({ error: 'No se pudo cargar el system prompt de Andy' }, { status: 500 });
   }
+  const systemPrompt = buildSystemPrompt(docs);
 
   const anthropicMessages = messages.map((m) => ({
     role: m.role === 'assistant' ? 'assistant' : 'user',
