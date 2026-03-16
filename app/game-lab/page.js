@@ -777,6 +777,9 @@ export default function GameLabPage() {
               </div>
 
               <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4" style={{ background: bg }}>
+                {!isDesktop && currentHtml && (
+                  <div className="shrink-0" style={{ height: '44px' }} aria-hidden="true" />
+                )}
                 {messages.map((msg, i) => (
                   <div
                     key={i}
