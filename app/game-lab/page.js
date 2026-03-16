@@ -706,41 +706,10 @@ export default function GameLabPage() {
         }}
       />
 
-      {/* Tabs mobile: solo visibles en mobile cuando hay juego */}
-      {!isDesktop && currentHtml && (
-        <div
-          className="fixed top-14 left-0 right-0 z-40 flex border-b"
-          style={{ background: bg, borderColor: border }}
-        >
-          <button
-            type="button"
-            onClick={() => setMobileTab('chat')}
-            className="flex-1 py-2.5 text-sm font-bold text-center transition-colors"
-            style={{
-              color: mobileTab === 'chat' ? accent : textMuted,
-              borderBottom: mobileTab === 'chat' ? `2px solid ${accent}` : '2px solid transparent',
-            }}
-          >
-            💬 Chat
-          </button>
-          <button
-            type="button"
-            onClick={() => setMobileTab('juego')}
-            className="flex-1 py-2.5 text-sm font-bold text-center transition-colors"
-            style={{
-              color: mobileTab === 'juego' ? accent : textMuted,
-              borderBottom: mobileTab === 'juego' ? `2px solid ${accent}` : '2px solid transparent',
-            }}
-          >
-            🎮 Juego
-          </button>
-        </div>
-      )}
-
       {/* Contenedor principal */}
       <div
-        className={`flex-1 flex ${!isDesktop && currentHtml ? 'flex-col' : 'flex-col-reverse'} lg:flex-row pb-20 lg:pb-6 ${
-          !isDesktop && currentHtml ? 'pt-[100px]' : 'pt-14'
+        className={`flex-1 flex ${!isDesktop && currentHtml ? 'flex-col' : 'flex-col-reverse'} lg:flex-row pb-20 lg:pb-6 pt-14 ${
+          !isDesktop && currentHtml ? 'min-h-0 overflow-hidden' : ''
         } ${
           currentHtml ? 'lg:fixed lg:top-[64px] lg:left-0 lg:right-0 lg:bottom-0 lg:overflow-hidden lg:pt-0' : 'lg:pt-16'
         }`}
@@ -750,6 +719,36 @@ export default function GameLabPage() {
             !currentHtml ? 'lg:max-w-[900px] lg:mx-auto lg:px-8 lg:gap-8' : 'lg:h-[calc(100vh-64px)]'
           }`}
         >
+          {/* Tabs mobile: en flujo normal, solo visibles cuando hay juego */}
+          {!isDesktop && currentHtml && (
+            <div
+              className="shrink-0 flex border-b"
+              style={{ background: bg, borderColor: border }}
+            >
+              <button
+                type="button"
+                onClick={() => setMobileTab('chat')}
+                className="flex-1 py-2.5 text-sm font-bold text-center transition-colors"
+                style={{
+                  color: mobileTab === 'chat' ? accent : textMuted,
+                  borderBottom: mobileTab === 'chat' ? `2px solid ${accent}` : '2px solid transparent',
+                }}
+              >
+                💬 Chat
+              </button>
+              <button
+                type="button"
+                onClick={() => setMobileTab('juego')}
+                className="flex-1 py-2.5 text-sm font-bold text-center transition-colors"
+                style={{
+                  color: mobileTab === 'juego' ? accent : textMuted,
+                  borderBottom: mobileTab === 'juego' ? `2px solid ${accent}` : '2px solid transparent',
+                }}
+              >
+                🎮 Juego
+              </button>
+            </div>
+          )}
           {/* ——— Chat: desktop sin juego = flex-1 centrado max 600px; con juego = 40%; mobile = tab switching ——— */}
           <section
             className={`flex flex-col w-full lg:min-h-0 shrink-0 transition-all duration-300 ease-out ${
@@ -777,9 +776,6 @@ export default function GameLabPage() {
               </div>
 
               <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4" style={{ background: bg }}>
-                {!isDesktop && currentHtml && (
-                  <div className="shrink-0" style={{ height: '44px' }} aria-hidden="true" />
-                )}
                 {messages.map((msg, i) => (
                   <div
                     key={i}
