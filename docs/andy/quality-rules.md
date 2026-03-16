@@ -70,6 +70,50 @@ Andy puede proponer teclas adicionales cuando el juego lo amerite, y el alumno p
 
 ---
 
+## HUD Y ZONA DE JUEGO — NO SUPERPONER
+
+El HUD (score, vidas, nivel) SIEMPRE va en una barra fija en la parte superior del canvas, con fondo semitransparente. Los elementos del juego NUNCA se dibujan encima del HUD.
+
+**Regla:** reservar los primeros 50px de altura para el HUD. El área de juego empieza en Y=50.
+
+**Canvas 2D:**
+```javascript
+// Zona de juego: desde Y=50 hasta H
+// HUD: barra de 0 a 50 con fondo
+function dibujarHUD() {
+  ctx.fillStyle = 'rgba(0,0,0,0.5)';
+  ctx.fillRect(0, 0, W, 50);
+  ctx.fillStyle = '#FFF';
+  ctx.font = '16px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('Score: ' + score, 10, 32);
+}
+```
+
+**Kaplay:**
+```javascript
+// HUD con fixed() para que no se mueva con la cámara
+add([rect(width(), 50), pos(0, 0), color(0, 0, 0), opacity(0.5), fixed(), z(100)]);
+add([text("Score: 0", { size: 16 }), pos(10, 15), fixed(), z(101)]);
+```
+
+**p5.js:**
+```javascript
+function dibujarHUD() {
+  fill(0, 0, 0, 120);
+  noStroke();
+  rect(0, 0, W, 50);
+  fill(255);
+  textSize(16);
+  textAlign(LEFT, CENTER);
+  text('Score: ' + score, 10, 25);
+}
+```
+
+Las plataformas, enemigos, items y el jugador deben spawnearse en Y >= 50. Nunca poner elementos de juego en la zona Y=0 a Y=50.
+
+---
+
 ## ESTRUCTURA OBLIGATORIA DEL JUEGO
 
 Todo juego debe tener como mínimo:
@@ -231,6 +275,39 @@ Usar emojis para personajes/items y formas compuestas para plataformas/terreno/p
 - Los emojis son universales, pesan 0 bytes, y se ven bien en todos los dispositivos
 - Las formas geométricas compuestas con buenos colores, sombras y capas quedan muy bien
 - Invertir unas líneas extra en la estética visual vale la pena — la primera impresión importa
+
+---
+
+## TIPOGRAFÍAS — USAR GOOGLE FONTS
+
+Andy NUNCA usa las fuentes default del browser (serif, sans-serif, Arial, Times New Roman). Siempre carga una fuente de Google Fonts que combine con el estilo del juego.
+
+**Cómo cargar:** agregar un `<link>` en el `<head>` del HTML:
+```html
+<link href="https://fonts.googleapis.com/css2?family=NOMBRE+DE+FUENTE&display=swap" rel="stylesheet">
+```
+
+**Fuentes recomendadas según el estilo del juego:**
+
+| Estilo | Fuente | Uso |
+|---|---|---|
+| Retro / Arcade | Press Start 2P | Títulos y HUD de juegos pixel art |
+| Infantil / Amigable | Fredoka One | Juegos para chicos, puzzles, simuladores |
+| Impactante / Acción | Bungee | Títulos de juegos de acción, shooters |
+| Limpia / Moderna | Righteous | HUD, menús, juegos de quiz |
+| Cómic / Divertida | Bangers | Juegos casuales, cartas, humor |
+| Futurista / Sci-fi | Russo One | Juegos espaciales, ciencia ficción |
+| Juguetona / Casual | Chewy | Juegos de plataformas, aventura |
+
+**Reglas:**
+- Elegir 1 fuente por juego (máximo 2: una para títulos, otra para HUD)
+- Siempre incluir `display=swap` para que el juego no se trabe esperando la fuente
+- La fuente se usa en CSS: `font-family: 'Press Start 2P', cursive;`
+- En Canvas 2D: `ctx.font = '18px "Fredoka One"';`
+- En p5.js: `textFont('Bangers'); textSize(24);`
+- En Kaplay: `text("Hola", { size: 24, font: "Righteous" })` (requiere cargar con `loadFont()` primero)
+- Google Fonts es la ÚNICA excepción a la regla de "no CDNs externos" — es ultra confiable y si falla, el browser usa el fallback sin romper el juego
+- Rotar entre fuentes — no usar siempre la misma para todos los juegos
 
 ---
 

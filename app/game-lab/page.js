@@ -951,7 +951,7 @@ export default function GameLabPage() {
               ×
             </button>
             <h2 id="welcome-modal-title" className="text-lg font-bold pr-8 mb-3" style={{ color: headerColor }}>
-              🎮 ¡Tu primer juego está listo!
+              🎮 ¡Tu juego está listo!
             </h2>
             <p className="text-sm mb-5 leading-relaxed" style={{ color: text }}>
               Andy es una Inteligencia Artificial que puede cometer errores («Bugs»). El objetivo de SASS Vibe Coding es que aprendas a conversar con la IA: explicá qué salió mal, qué querés cambiar y qué querés mejorar. No hace falta usar lenguaje técnico — hablale de manera completamente natural y descriptiva.
