@@ -962,7 +962,15 @@ export default function GameLabPage() {
                 )}
               </div>
               {!isDesktop && currentHtml && (
-                <div className="px-4 py-3 border-t shrink-0" style={{ borderColor: border, background: bg }}>
+                <div className="px-4 py-3 border-t shrink-0 flex flex-col gap-2" style={{ borderColor: border, background: bg }}>
+                  <button
+                    type="button"
+                    onClick={() => { setMobileTab('chat'); setTimeout(() => inputRef.current?.focus(), 100); }}
+                    className="w-full rounded-xl px-4 py-3 text-sm font-bold border transition-colors"
+                    style={{ color: accent, borderColor: accent, background: 'transparent' }}
+                  >
+                    ✏️ Pedirle cambios a Andy
+                  </button>
                   {enviadoModeracion ? (
                     <p className="text-sm font-medium text-center py-2" style={{ color: '#22c55e' }}>
                       ✅ Enviado a moderación
