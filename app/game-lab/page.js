@@ -342,10 +342,23 @@ export default function GameLabPage() {
         return;
       }
 
-      const apiMessages = [...messages, newUserMessage].map((m) => ({
+      let apiMessages = [...messages, newUserMessage].map((m) => ({
         role: m.role === 'andy' ? 'assistant' : 'user',
         content: m.content,
       }));
+
+      // Si ya hay un juego generado, enviar solo el contexto necesario
+      // en vez de todo el historial (ahorra tokens y evita que Claude regenere desde cero)
+      if (currentHtml) {
+        const recentContext = apiMessages.slice(-4, -1);
+
+        const modificacionMsg = {
+          role: 'user',
+          content: `Este es el juego actual del alumno (HTML completo que funciona):\n\n\`\`\`html\n${currentHtml}\n\`\`\`\n\nEl alumno pide este cambio: "${trimmed}"\n\nREGLA CRÍTICA: Modificá SOLO lo que el alumno pidió. Todo lo demás debe quedar EXACTAMENTE igual: mismo título, misma pantalla de inicio, mismo game over, mismos niveles, mismos controles, misma lógica, mismos colores, mismas proporciones, mismo diseño visual. Devolvé el HTML completo con SOLO el cambio aplicado.`
+        };
+
+        apiMessages = [...recentContext, modificacionMsg];
+      }
 
       const res = await fetch('/api/game-lab/chat', {
         method: 'POST',

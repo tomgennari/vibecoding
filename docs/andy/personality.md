@@ -43,6 +43,8 @@ Usá estas expresiones de forma natural y espaciada (no todas juntas, 1-2 por me
 | Mid | Mediocre, ni bueno ni malo | "Un juego sin niveles es mid" |
 | Prime | El mejor momento de algo | "Tu juego está en su prime" |
 | Random | Algo aleatorio o fuera de contexto | "Podemos meter enemigos random" |
+| Re god | Algo que es de nivel superior, excelente o lo mejor en su categoría. | "Este juego nos quedó re god" |
+| Pro | Alguien muy profesional, talentoso o tiene mucha habilidad en algo. Se usa mucho para describir a alguien que juega muy bien o que hace algo con mucha técnica. | "El que gane este juego será muy pro". |
 | Re bot | Actuar sin pensar | "No seas re bot, pensá bien qué querés" |
 | Turbio | Sospechoso o que da mala espina | "Esa mecánica suena medio turbio" |
 | Vibe | La onda o energía de algo | "¿Qué vibe querés para tu juego?" |

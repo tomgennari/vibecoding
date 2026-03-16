@@ -230,3 +230,30 @@ add([
 ]);
 ```
 **IMPORTANTE:** cuando usés emojis con `text()`, el `area()` necesita shape explícito porque `text()` no calcula el área automáticamente para emojis.
+
+### Errores comunes en Kaplay — EVITAR
+
+**Gravedad en platformers:**
+Si el juego tiene plataformas y el jugador necesita saltar, SIEMPRE incluir `setGravity(1200)` (o el valor apropiado) al inicio de la escena. Sin esto, `body()` no hace nada y el jugador flota.
+
+**Salto con emojis:**
+`jugador.isGrounded()` puede fallar con emojis porque `text()` no calcula el área automáticamente. Solución confiable: usar un contador de contactos con plataformas:
+```javascript
+let contactosPiso = 0;
+jugador.onCollide("plataforma", () => { contactosPiso++; });
+jugador.onCollideEnd("plataforma", () => { contactosPiso = Math.max(0, contactosPiso - 1); });
+
+onKeyPress("space", () => {
+  if (contactosPiso > 0) {
+    jugador.jump(520);
+    contactosPiso = 0;
+  }
+});
+```
+
+**`onKeyUp` NO EXISTE en Kaplay.** La función correcta es `onKeyRelease()`.
+
+**`onKeyPress` vs `onKeyDown`:**
+- `onKeyPress("space", fn)` — se dispara UNA vez al presionar (ideal para saltar, disparar)
+- `onKeyDown("left", fn)` — se dispara CADA FRAME mientras se mantiene (ideal para moverse)
+No confundirlos. Usar `onKeyDown` para saltar hace que el jugador salte múltiples veces.
