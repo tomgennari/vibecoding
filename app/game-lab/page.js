@@ -240,12 +240,35 @@ export default function GameLabPage() {
     }
   }, [userLoading, profile, router]);
 
-  // Mensaje inicial de Andy al montar (una sola vez cuando ya hay perfil)
+  // Mensaje inicial de Andy al montar, o restaurar sesión anterior
   useEffect(() => {
-    if (!profile || messages.length > 0) return;
+    if (!profile) return;
+    if (messages.length > 0) return;
+
+    const savedMessages = sessionStorage.getItem('gamelab_messages');
+    const savedHtml = sessionStorage.getItem('gamelab_html');
+
+    if (savedMessages) {
+      try {
+        const parsed = JSON.parse(savedMessages);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setMessages(parsed);
+          if (savedHtml) setCurrentHtml(savedHtml);
+          return;
+        }
+      } catch {}
+    }
+
     const randomMsg = ANDY_FIRST_MESSAGES[Math.floor(Math.random() * ANDY_FIRST_MESSAGES.length)];
     setMessages([{ role: 'andy', content: randomMsg }]);
   }, [profile, messages.length]);
+
+  // Persistir mensajes en sessionStorage
+  useEffect(() => {
+    if (messages.length > 0) {
+      sessionStorage.setItem('gamelab_messages', JSON.stringify(messages));
+    }
+  }, [messages]);
 
   // Scroll al último mensaje cuando se agregan mensajes
   useEffect(() => {
@@ -255,6 +278,13 @@ export default function GameLabPage() {
   // Resetear estado de moderación cuando Andy genera un juego nuevo
   useEffect(() => {
     setEnviadoModeracion(false);
+  }, [currentHtml]);
+
+  // Persistir HTML del juego en sessionStorage
+  useEffect(() => {
+    if (currentHtml) {
+      sessionStorage.setItem('gamelab_html', currentHtml);
+    }
   }, [currentHtml]);
 
   // Modal de bienvenida la primera vez que hay juego generado
