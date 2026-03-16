@@ -204,6 +204,7 @@ export default function GameLabPage() {
   const loadingRef = useRef(null);
   const firstGameModalShownRef = useRef(false);
   const [isDesktop, setIsDesktop] = useState(false);
+  const [mobileTab, setMobileTab] = useState('chat');
   // Para animar la entrada del iframe cuando aparece el juego generado
   const [iframeRevealed, setIframeRevealed] = useState(false);
   // Índice de la frase de carga actual de Andy
@@ -286,6 +287,13 @@ export default function GameLabPage() {
       sessionStorage.setItem('gamelab_html', currentHtml);
     }
   }, [currentHtml]);
+
+  // Auto-switch a tab de juego en mobile cuando Andy genera un juego
+  useEffect(() => {
+    if (currentHtml && !isDesktop) {
+      setMobileTab('juego');
+    }
+  }, [currentHtml, isDesktop]);
 
   // Modal de bienvenida la primera vez que hay juego generado
   useEffect(() => {
@@ -676,9 +684,42 @@ export default function GameLabPage() {
         }}
       />
 
-      {/* Contenedor principal: desktop sin juego = max-w 900px centrado, chat 600px + tarjetas 260px gap 32px; desktop con juego = 100% (40% + 60%); mobile = iframe arriba + chat abajo o chat + carrusel */}
+      {/* Tabs mobile: solo visibles en mobile cuando hay juego */}
+      {!isDesktop && currentHtml && (
+        <div
+          className="fixed top-14 left-0 right-0 z-40 flex border-b"
+          style={{ background: bg, borderColor: border }}
+        >
+          <button
+            type="button"
+            onClick={() => setMobileTab('chat')}
+            className="flex-1 py-2.5 text-sm font-bold text-center transition-colors"
+            style={{
+              color: mobileTab === 'chat' ? accent : textMuted,
+              borderBottom: mobileTab === 'chat' ? `2px solid ${accent}` : '2px solid transparent',
+            }}
+          >
+            💬 Chat
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileTab('juego')}
+            className="flex-1 py-2.5 text-sm font-bold text-center transition-colors"
+            style={{
+              color: mobileTab === 'juego' ? accent : textMuted,
+              borderBottom: mobileTab === 'juego' ? `2px solid ${accent}` : '2px solid transparent',
+            }}
+          >
+            🎮 Juego
+          </button>
+        </div>
+      )}
+
+      {/* Contenedor principal */}
       <div
-        className={`flex-1 flex flex-col-reverse lg:flex-row pt-14 pb-20 lg:pb-6 ${
+        className={`flex-1 flex flex-col-reverse lg:flex-row pb-20 lg:pb-6 ${
+          !isDesktop && currentHtml ? 'pt-[100px]' : 'pt-14'
+        } ${
           currentHtml ? 'lg:fixed lg:top-[64px] lg:left-0 lg:right-0 lg:bottom-0 lg:overflow-hidden lg:pt-0' : 'lg:pt-16'
         }`}
       >
@@ -687,13 +728,13 @@ export default function GameLabPage() {
             !currentHtml ? 'lg:max-w-[900px] lg:mx-auto lg:px-8 lg:gap-8' : 'lg:h-[calc(100vh-64px)]'
           }`}
         >
-          {/* ——— Chat: desktop sin juego = flex-1 centrado max 600px; con juego = 40%; mobile = full ——— */}
+          {/* ——— Chat: desktop sin juego = flex-1 centrado max 600px; con juego = 40%; mobile = tab switching ——— */}
           <section
             className={`flex flex-col w-full lg:min-h-0 shrink-0 transition-all duration-300 ease-out ${
               currentHtml
                 ? 'lg:w-[40%] lg:max-w-[480px] lg:border-r lg:h-full lg:overflow-hidden'
                 : 'lg:flex-1 lg:min-w-0'
-            }`}
+            } ${!isDesktop && currentHtml && mobileTab !== 'chat' ? 'hidden' : ''}`}
             style={currentHtml ? { borderColor: border } : undefined}
             aria-label="Chat con Andy"
           >
@@ -802,7 +843,7 @@ export default function GameLabPage() {
                     Enviar
                   </button>
                 </div>
-                {currentHtml && (
+                {isDesktop && currentHtml && (
                   <div className="mt-3">
                     {enviadoModeracion ? (
                       <p className="text-sm font-medium text-center py-2" style={{ color: '#22c55e' }}>
@@ -887,13 +928,13 @@ export default function GameLabPage() {
             </aside>
           )}
 
-          {/* ——— Iframe: desktop solo cuando hay juego (60%); mobile siempre en el flujo (arriba por flex-col-reverse) ——— */}
+          {/* ——— Iframe: desktop solo cuando hay juego (60%); mobile = tab switching ——— */}
           <section
             className={`flex-1 flex flex-col min-h-[300px] lg:min-h-0 overflow-hidden transition-all duration-300 ease-out ${
               currentHtml
                 ? 'lg:flex-[6] lg:opacity-100 lg:visible lg:h-full lg:overflow-hidden'
                 : 'lg:flex-[0] lg:min-w-0 lg:opacity-0 lg:invisible'
-            }`}
+            } ${!isDesktop && mobileTab !== 'juego' ? 'hidden' : ''}`}
             aria-label="Vista previa del juego"
           >
             <div className="flex-1 flex flex-col min-h-0 overflow-hidden" style={{ background: isDark ? '#0f0f14' : '#f1f5f9' }}>
@@ -920,6 +961,24 @@ export default function GameLabPage() {
                   </div>
                 )}
               </div>
+              {!isDesktop && currentHtml && (
+                <div className="px-4 py-3 border-t shrink-0" style={{ borderColor: border, background: bg }}>
+                  {enviadoModeracion ? (
+                    <p className="text-sm font-medium text-center py-2" style={{ color: '#22c55e' }}>
+                      ✅ Enviado a moderación
+                    </p>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={enviarAModeracion}
+                      disabled={enviandoModeracion}
+                      className="vibe-btn-gradient w-full rounded-xl px-4 py-3 text-sm font-bold text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      📨 Mi juego está listo. Enviar a moderación
+                    </button>
+                  )}
+                </div>
+              )}
               </div>
             </div>
           </section>
