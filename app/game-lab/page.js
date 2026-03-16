@@ -204,7 +204,7 @@ export default function GameLabPage() {
   const loadingRef = useRef(null);
   const firstGameModalShownRef = useRef(false);
   const [isDesktop, setIsDesktop] = useState(false);
-  const [mobileTab, setMobileTab] = useState('chat');
+  const [mobileGameOpen, setMobileGameOpen] = useState(false);
   const iframeContainerRef = useRef(null);
   // Para animar la entrada del iframe cuando aparece el juego generado
   const [iframeRevealed, setIframeRevealed] = useState(false);
@@ -289,10 +289,10 @@ export default function GameLabPage() {
     }
   }, [currentHtml]);
 
-  // Auto-switch a tab de juego en mobile cuando Andy genera un juego
+  // Abrir fullscreen del juego en mobile cuando Andy genera
   useEffect(() => {
     if (currentHtml && !isDesktop) {
-      setMobileTab('juego');
+      setMobileGameOpen(true);
     }
   }, [currentHtml, isDesktop]);
 
@@ -674,7 +674,7 @@ export default function GameLabPage() {
     setError('');
     const randomMsg = ANDY_FIRST_MESSAGES[Math.floor(Math.random() * ANDY_FIRST_MESSAGES.length)];
     setMessages([{ role: 'andy', content: randomMsg }]);
-    if (!isDesktop) setMobileTab('chat');
+    if (!isDesktop) setMobileGameOpen(false);
   }
 
   function handleKeyDown(e) {
@@ -708,54 +708,22 @@ export default function GameLabPage() {
 
       {/* Contenedor principal */}
       <div
-        className={`flex-1 flex ${!isDesktop && currentHtml ? 'flex-col' : 'flex-col-reverse'} lg:flex-row pb-20 lg:pb-6 pt-14 ${
-          !isDesktop && currentHtml ? 'min-h-0 overflow-hidden' : ''
-        } ${
+        className={`flex-1 flex flex-col-reverse lg:flex-row pb-20 lg:pb-6 pt-14 ${
           currentHtml ? 'lg:fixed lg:top-[64px] lg:left-0 lg:right-0 lg:bottom-0 lg:overflow-hidden lg:pt-0' : 'lg:pt-16'
         }`}
       >
         <div
-          className={`flex-1 flex ${!isDesktop && currentHtml ? 'flex-col' : 'flex-col-reverse'} lg:flex-row min-h-0 w-full transition-all duration-300 ease-out ${
+          className={`flex-1 flex flex-col-reverse lg:flex-row min-h-0 w-full transition-all duration-300 ease-out ${
             !currentHtml ? 'lg:max-w-[900px] lg:mx-auto lg:px-8 lg:gap-8' : 'lg:h-[calc(100vh-64px)]'
           }`}
         >
-          {/* Tabs mobile: en flujo normal, solo visibles cuando hay juego */}
-          {!isDesktop && currentHtml && (
-            <div
-              className="shrink-0 flex border-b"
-              style={{ background: bg, borderColor: border }}
-            >
-              <button
-                type="button"
-                onClick={() => setMobileTab('chat')}
-                className="flex-1 py-2.5 text-sm font-bold text-center transition-colors"
-                style={{
-                  color: mobileTab === 'chat' ? accent : textMuted,
-                  borderBottom: mobileTab === 'chat' ? `2px solid ${accent}` : '2px solid transparent',
-                }}
-              >
-                💬 Chat
-              </button>
-              <button
-                type="button"
-                onClick={() => setMobileTab('juego')}
-                className="flex-1 py-2.5 text-sm font-bold text-center transition-colors"
-                style={{
-                  color: mobileTab === 'juego' ? accent : textMuted,
-                  borderBottom: mobileTab === 'juego' ? `2px solid ${accent}` : '2px solid transparent',
-                }}
-              >
-                🎮 Juego
-              </button>
-            </div>
-          )}
-          {/* ——— Chat: desktop sin juego = flex-1 centrado max 600px; con juego = 40%; mobile = tab switching ——— */}
+          {/* ——— Chat: desktop sin juego = flex-1 centrado max 600px; con juego = 40%; mobile = siempre visible ——— */}
           <section
             className={`flex flex-col w-full lg:min-h-0 shrink-0 transition-all duration-300 ease-out ${
               currentHtml
                 ? 'lg:w-[40%] lg:max-w-[480px] lg:border-r lg:h-full lg:overflow-hidden'
                 : 'lg:flex-1 lg:min-w-0'
-            } ${!isDesktop && currentHtml && mobileTab !== 'chat' ? 'hidden' : ''} ${!isDesktop && currentHtml && mobileTab === 'chat' ? 'flex-1 min-h-0' : ''}`}
+            }`}
             style={currentHtml ? { borderColor: border } : undefined}
             aria-label="Chat con Andy"
           >
@@ -841,6 +809,18 @@ export default function GameLabPage() {
                   </div>
                 )}
                 <div ref={chatEndRef} />
+                {!isDesktop && currentHtml && !sending && (
+                  <div className="flex flex-col gap-2 mt-2 mb-2">
+                    <button
+                      type="button"
+                      onClick={() => setMobileGameOpen(true)}
+                      className="w-full rounded-xl px-4 py-4 text-sm font-bold text-white text-center"
+                      style={{ background: accent }}
+                    >
+                      🎮 Jugá tu juego
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Input: borde accent en focus; botón vibe-btn-gradient */}
@@ -890,6 +870,32 @@ export default function GameLabPage() {
                         📨 Mi juego está listo. Enviar a moderación
                       </button>
                     )}
+                  </div>
+                )}
+                {!isDesktop && currentHtml && (
+                  <div className="flex flex-col gap-2 mt-3">
+                    {enviadoModeracion ? (
+                      <p className="text-sm font-medium text-center py-2" style={{ color: '#22c55e' }}>
+                        ✅ Enviado a moderación
+                      </p>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={enviarAModeracion}
+                        disabled={enviandoModeracion}
+                        className="vibe-btn-gradient w-full rounded-xl px-4 py-3 text-sm font-bold text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        📨 Mi juego está listo. Enviar a moderación
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={handleNuevoJuego}
+                      className="w-full rounded-xl px-4 py-3 text-sm font-bold border transition-colors"
+                      style={{ borderColor: border, color: textMuted, background: 'transparent' }}
+                    >
+                      🎮 Crear otro juego
+                    </button>
                   </div>
                 )}
               </div>
@@ -959,13 +965,13 @@ export default function GameLabPage() {
             </aside>
           )}
 
-          {/* ——— Iframe: desktop solo cuando hay juego (60%); mobile = tab switching ——— */}
+          {/* ——— Iframe: solo desktop, oculto en mobile (en mobile se usa el fullscreen overlay) ——— */}
           <section
             className={`flex-1 flex flex-col min-h-[300px] lg:min-h-0 overflow-hidden transition-all duration-300 ease-out ${
               currentHtml
                 ? 'lg:flex-[6] lg:opacity-100 lg:visible lg:h-full lg:overflow-hidden'
                 : 'lg:flex-[0] lg:min-w-0 lg:opacity-0 lg:invisible'
-            } ${!isDesktop && mobileTab !== 'juego' ? 'hidden' : ''}`}
+            } ${!isDesktop ? 'hidden' : ''}`}
             aria-label="Vista previa del juego"
           >
             <div className="flex-1 flex flex-col min-h-0 overflow-hidden" style={{ background: isDark ? '#0f0f14' : '#f1f5f9' }}>
@@ -975,7 +981,7 @@ export default function GameLabPage() {
               <div className="flex-1 p-4 lg:p-6 min-h-0 flex flex-col overflow-hidden">
               <div className="flex-1 rounded-xl border overflow-hidden min-h-0 flex flex-col" style={{ borderColor: border, background: '#fff' }}>
                 {currentHtml ? (
-                  <div ref={iframeContainerRef} className="w-full lg:max-w-[480px] mx-auto aspect-[3/4] relative overflow-hidden" style={{ touchAction: 'manipulation' }}>
+                  <div className="w-full lg:max-w-[480px] mx-auto aspect-[3/4] relative overflow-hidden" style={{ touchAction: 'manipulation' }}>
                     <iframe
                       title="Vista previa del juego generado"
                       sandbox="allow-scripts allow-same-origin"
@@ -993,45 +999,36 @@ export default function GameLabPage() {
                   </div>
                 )}
               </div>
-              {!isDesktop && currentHtml && (
-                <div className="px-4 py-3 border-t shrink-0 flex flex-col gap-2" style={{ borderColor: border, background: bg }}>
-                  <button
-                    type="button"
-                    onClick={() => { setMobileTab('chat'); setTimeout(() => inputRef.current?.focus(), 100); }}
-                    className="w-full rounded-xl px-4 py-3 text-sm font-bold border transition-colors"
-                    style={{ color: accent, borderColor: accent, background: 'transparent' }}
-                  >
-                    ✏️ Pedirle cambios a Andy
-                  </button>
-                  {enviadoModeracion ? (
-                    <p className="text-sm font-medium text-center py-2" style={{ color: '#22c55e' }}>
-                      ✅ Enviado a moderación
-                    </p>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={enviarAModeracion}
-                      disabled={enviandoModeracion}
-                      className="vibe-btn-gradient w-full rounded-xl px-4 py-3 text-sm font-bold text-white disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      📨 Mi juego está listo. Enviar a moderación
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={handleNuevoJuego}
-                    className="w-full rounded-xl px-4 py-3 text-sm font-bold border transition-colors"
-                    style={{ borderColor: border, color: textMuted, background: 'transparent' }}
-                  >
-                    🎮 Crear otro juego
-                  </button>
-                </div>
-              )}
               </div>
             </div>
           </section>
         </div>
       </div>
+
+      {/* Fullscreen del juego en mobile */}
+      {!isDesktop && mobileGameOpen && currentHtml && (
+        <div className="fixed inset-0 z-50 flex flex-col" style={{ background: '#000' }}>
+          <div className="shrink-0 flex items-center justify-between px-4 py-2" style={{ background: 'rgba(0,0,0,0.9)' }}>
+            <span className="text-white text-sm font-bold">🎮 Tu juego</span>
+            <button
+              type="button"
+              onClick={() => setMobileGameOpen(false)}
+              className="text-red-400 text-sm font-bold px-3 py-1 rounded-lg border border-red-400/50 hover:bg-red-400/10"
+            >
+              ✕ Salir del juego
+            </button>
+          </div>
+          <div className="flex-1 min-h-0 overflow-hidden" style={{ touchAction: 'none' }} ref={iframeContainerRef}>
+            <iframe
+              title="Juego en pantalla completa"
+              sandbox="allow-scripts allow-same-origin"
+              srcDoc={currentHtml}
+              className="w-full h-full border-0"
+              style={{ touchAction: 'auto' }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Modal de bienvenida al primer juego */}
       {welcomeModalOpen && (
