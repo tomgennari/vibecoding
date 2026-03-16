@@ -205,6 +205,7 @@ export default function GameLabPage() {
   const firstGameModalShownRef = useRef(false);
   const [isDesktop, setIsDesktop] = useState(false);
   const [mobileTab, setMobileTab] = useState('chat');
+  const iframeContainerRef = useRef(null);
   // Para animar la entrada del iframe cuando aparece el juego generado
   const [iframeRevealed, setIframeRevealed] = useState(false);
   // Índice de la frase de carga actual de Andy
@@ -294,6 +295,15 @@ export default function GameLabPage() {
       setMobileTab('juego');
     }
   }, [currentHtml, isDesktop]);
+
+  // Prevenir scroll de la página cuando se toca el iframe
+  useEffect(() => {
+    const el = iframeContainerRef.current;
+    if (!el) return;
+    const prevent = (e) => e.preventDefault();
+    el.addEventListener('touchmove', prevent, { passive: false });
+    return () => el.removeEventListener('touchmove', prevent);
+  }, [currentHtml]);
 
   // Modal de bienvenida la primera vez que hay juego generado
   useEffect(() => {
@@ -729,14 +739,14 @@ export default function GameLabPage() {
 
       {/* Contenedor principal */}
       <div
-        className={`flex-1 flex flex-col-reverse lg:flex-row pb-20 lg:pb-6 ${
+        className={`flex-1 flex ${!isDesktop && currentHtml ? 'flex-col' : 'flex-col-reverse'} lg:flex-row pb-20 lg:pb-6 ${
           !isDesktop && currentHtml ? 'pt-[100px]' : 'pt-14'
         } ${
           currentHtml ? 'lg:fixed lg:top-[64px] lg:left-0 lg:right-0 lg:bottom-0 lg:overflow-hidden lg:pt-0' : 'lg:pt-16'
         }`}
       >
         <div
-          className={`flex-1 flex flex-col-reverse lg:flex-row min-h-0 w-full transition-all duration-300 ease-out ${
+          className={`flex-1 flex ${!isDesktop && currentHtml ? 'flex-col' : 'flex-col-reverse'} lg:flex-row min-h-0 w-full transition-all duration-300 ease-out ${
             !currentHtml ? 'lg:max-w-[900px] lg:mx-auto lg:px-8 lg:gap-8' : 'lg:h-[calc(100vh-64px)]'
           }`}
         >
@@ -966,13 +976,13 @@ export default function GameLabPage() {
               <div className="flex-1 p-4 lg:p-6 min-h-0 flex flex-col overflow-hidden">
               <div className="flex-1 rounded-xl border overflow-hidden min-h-0 flex flex-col" style={{ borderColor: border, background: '#fff' }}>
                 {currentHtml ? (
-                  <div className="w-full lg:max-w-[480px] mx-auto aspect-[3/4] relative overflow-hidden" style={{ touchAction: 'none' }}>
+                  <div ref={iframeContainerRef} className="w-full lg:max-w-[480px] mx-auto aspect-[3/4] relative overflow-hidden" style={{ touchAction: 'manipulation' }}>
                     <iframe
                       title="Vista previa del juego generado"
-                      sandbox="allow-scripts"
+                      sandbox="allow-scripts allow-same-origin"
                       srcDoc={currentHtml}
                       className={`absolute top-0 left-0 w-full h-full border-0 transition-all duration-300 ease-out ${iframeRevealed ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-4'}`}
-                      style={{ touchAction: 'none' }}
+                      style={{ touchAction: 'auto' }}
                     />
                   </div>
                 ) : (
