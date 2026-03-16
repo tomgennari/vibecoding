@@ -655,6 +655,18 @@ export default function GameLabPage() {
     openModeracionModal();
   }
 
+  function handleNuevoJuego() {
+    if (!confirm('¿Seguro querés empezar un juego nuevo? El juego actual se va a perder.')) return;
+    sessionStorage.removeItem('gamelab_html');
+    sessionStorage.removeItem('gamelab_messages');
+    setCurrentHtml('');
+    setEnviadoModeracion(false);
+    setError('');
+    const randomMsg = ANDY_FIRST_MESSAGES[Math.floor(Math.random() * ANDY_FIRST_MESSAGES.length)];
+    setMessages([{ role: 'andy', content: randomMsg }]);
+    if (!isDesktop) setMobileTab('chat');
+  }
+
   function handleKeyDown(e) {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -739,9 +751,19 @@ export default function GameLabPage() {
             aria-label="Chat con Andy"
           >
             <div className={`w-full flex-1 flex flex-col min-h-0 ${!currentHtml ? 'lg:max-w-[600px] lg:mx-auto' : 'lg:overflow-hidden'}`}>
-              {/* Header minimalista: una sola línea, sin avatar */}
-              <div className="px-4 py-2.5 border-b shrink-0" style={{ borderColor: border, background: bg }}>
+              {/* Header minimalista */}
+              <div className="px-4 py-2.5 border-b shrink-0 flex items-center justify-between" style={{ borderColor: border, background: bg }}>
                 <h1 className="text-sm font-bold" style={{ color: headerColor }}>Game Lab</h1>
+                {currentHtml && (
+                  <button
+                    type="button"
+                    onClick={handleNuevoJuego}
+                    className="text-xs font-medium px-3 py-1 rounded-lg border transition-colors hover:opacity-80"
+                    style={{ borderColor: border, color: textMuted }}
+                  >
+                    🎮 Nuevo juego
+                  </button>
+                )}
               </div>
 
               <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4" style={{ background: bg }}>
@@ -986,6 +1008,14 @@ export default function GameLabPage() {
                       📨 Mi juego está listo. Enviar a moderación
                     </button>
                   )}
+                  <button
+                    type="button"
+                    onClick={handleNuevoJuego}
+                    className="w-full rounded-xl px-4 py-3 text-sm font-bold border transition-colors"
+                    style={{ borderColor: border, color: textMuted, background: 'transparent' }}
+                  >
+                    🎮 Crear otro juego
+                  </button>
                 </div>
               )}
               </div>
