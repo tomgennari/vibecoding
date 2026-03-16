@@ -734,7 +734,7 @@ export default function GameLabPage() {
               currentHtml
                 ? 'lg:w-[40%] lg:max-w-[480px] lg:border-r lg:h-full lg:overflow-hidden'
                 : 'lg:flex-1 lg:min-w-0'
-            } ${!isDesktop && currentHtml && mobileTab !== 'chat' ? 'hidden' : ''}`}
+            } ${!isDesktop && currentHtml && mobileTab !== 'chat' ? 'hidden' : ''} ${!isDesktop && currentHtml && mobileTab === 'chat' ? 'flex-1 min-h-0' : ''}`}
             style={currentHtml ? { borderColor: border } : undefined}
             aria-label="Chat con Andy"
           >
@@ -944,12 +944,13 @@ export default function GameLabPage() {
               <div className="flex-1 p-4 lg:p-6 min-h-0 flex flex-col overflow-hidden">
               <div className="flex-1 rounded-xl border overflow-hidden min-h-0 flex flex-col" style={{ borderColor: border, background: '#fff' }}>
                 {currentHtml ? (
-                  <div className="w-full lg:max-w-[480px] mx-auto aspect-[3/4] relative">
+                  <div className="w-full lg:max-w-[480px] mx-auto aspect-[3/4] relative overflow-hidden" style={{ touchAction: 'none' }}>
                     <iframe
                       title="Vista previa del juego generado"
                       sandbox="allow-scripts"
                       srcDoc={currentHtml}
                       className={`absolute top-0 left-0 w-full h-full border-0 transition-all duration-300 ease-out ${iframeRevealed ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-4'}`}
+                      style={{ touchAction: 'none' }}
                     />
                   </div>
                 ) : (
