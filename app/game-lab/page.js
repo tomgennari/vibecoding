@@ -296,6 +296,16 @@ export default function GameLabPage() {
     }
   }, [currentHtml, isDesktop]);
 
+  // Bloquear scroll del body cuando el overlay fullscreen está abierto
+  useEffect(() => {
+    if (mobileGameOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [mobileGameOpen]);
+
   // Prevenir scroll de la página cuando se toca el iframe
   useEffect(() => {
     const el = iframeContainerRef.current;
@@ -731,16 +741,6 @@ export default function GameLabPage() {
               {/* Header minimalista */}
               <div className="px-4 py-2.5 border-b shrink-0 flex items-center justify-between" style={{ borderColor: border, background: bg }}>
                 <h1 className="text-sm font-bold" style={{ color: headerColor }}>Game Lab</h1>
-                {currentHtml && (
-                  <button
-                    type="button"
-                    onClick={handleNuevoJuego}
-                    className="text-xs font-medium px-3 py-1 rounded-lg border transition-colors hover:opacity-80"
-                    style={{ borderColor: border, color: textMuted }}
-                  >
-                    🎮 Nuevo juego
-                  </button>
-                )}
               </div>
 
               <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4" style={{ background: bg }}>
@@ -809,18 +809,6 @@ export default function GameLabPage() {
                   </div>
                 )}
                 <div ref={chatEndRef} />
-                {!isDesktop && currentHtml && !sending && (
-                  <div className="flex flex-col gap-2 mt-2 mb-2">
-                    <button
-                      type="button"
-                      onClick={() => setMobileGameOpen(true)}
-                      className="w-full rounded-xl px-4 py-4 text-sm font-bold text-white text-center"
-                      style={{ background: accent }}
-                    >
-                      🎮 Jugá tu juego
-                    </button>
-                  </div>
-                )}
               </div>
 
               {/* Input: borde accent en focus; botón vibe-btn-gradient */}
@@ -834,7 +822,7 @@ export default function GameLabPage() {
                     value={inputValue}
                     onChange={handleInputChange}
                     onKeyDown={handleKeyDown}
-                    placeholder="Escribí tu idea de juego..."
+                    placeholder={currentHtml ? "¿Qué le querés cambiar al juego?" : "Escribí tu idea de juego..."}
                     rows={1}
                     className="flex-1 rounded-xl px-4 py-3 text-sm border focus:outline-none focus:ring-2 focus:ring-offset-0 focus:border-[#7c3aed] focus:ring-[#7c3aed] transition-colors resize-none"
                     style={{
@@ -854,26 +842,17 @@ export default function GameLabPage() {
                     Enviar
                   </button>
                 </div>
-                {isDesktop && currentHtml && (
-                  <div className="mt-3">
-                    {enviadoModeracion ? (
-                      <p className="text-sm font-medium text-center py-2" style={{ color: '#22c55e' }}>
-                        ✅ Enviado a moderación
-                      </p>
-                    ) : (
+                {currentHtml && (
+                  <div className="flex flex-col gap-2 mt-3">
+                    {!isDesktop && (
                       <button
                         type="button"
-                        onClick={enviarAModeracion}
-                        disabled={enviandoModeracion}
-                        className="vibe-btn-gradient w-full rounded-xl px-4 py-3 text-sm font-bold text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                        onClick={() => setMobileGameOpen(true)}
+                        className="vibe-btn-gradient w-full rounded-xl px-4 py-3 text-sm font-bold text-white"
                       >
-                        📨 Mi juego está listo. Enviar a moderación
+                        🎮 Jugá tu juego
                       </button>
                     )}
-                  </div>
-                )}
-                {!isDesktop && currentHtml && (
-                  <div className="flex flex-col gap-2 mt-3">
                     {enviadoModeracion ? (
                       <p className="text-sm font-medium text-center py-2" style={{ color: '#22c55e' }}>
                         ✅ Enviado a moderación
@@ -883,9 +862,10 @@ export default function GameLabPage() {
                         type="button"
                         onClick={enviarAModeracion}
                         disabled={enviandoModeracion}
-                        className="vibe-btn-gradient w-full rounded-xl px-4 py-3 text-sm font-bold text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full rounded-xl px-4 py-3 text-sm font-bold border disabled:opacity-50 disabled:cursor-not-allowed"
+                        style={{ borderColor: accent, color: accent, background: 'transparent' }}
                       >
-                        📨 Mi juego está listo. Enviar a moderación
+                        📨 Enviar a moderación
                       </button>
                     )}
                     <button
