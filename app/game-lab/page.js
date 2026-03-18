@@ -1223,7 +1223,11 @@ export default function GameLabPage() {
                     title={isListening ? 'Parar de escuchar' : 'Hablar con Andy'}
                     aria-label={isListening ? 'Parar de escuchar' : 'Hablar con Andy'}
                   >
-                    🎤
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="9" y="2" width="6" height="11" rx="3" />
+                      <path d="M5 10a7 7 0 0 0 14 0" />
+                      <line x1="12" y1="19" x2="12" y2="22" />
+                    </svg>
                   </button>
                   <button
                     type="button"
