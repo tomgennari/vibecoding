@@ -30,8 +30,8 @@ export function CreateGameModal() {
   }
 
   function handleGameLabClick() {
-    router.push('/game-lab');
-    setTimeout(() => closeCreateGameModal(), 100);
+    closeCreateGameModal();
+    window.location.href = '/game-lab';
   }
 
   if (!isCreateGameModalOpen) return null;
