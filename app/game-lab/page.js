@@ -1261,7 +1261,7 @@ export default function GameLabPage() {
                 <h2 className="text-sm font-bold" style={{ color: headerColor }}>Vista previa</h2>
               </div>
               <div className="flex-1 p-4 lg:p-6 min-h-0 flex flex-col overflow-hidden">
-              <div className="flex-1 rounded-xl border overflow-hidden min-h-0 flex flex-col" style={{ borderColor: border, background: '#fff' }}>
+              <div className="flex-1 rounded-xl border overflow-hidden min-h-0 flex flex-col" style={{ borderColor: border, background: isDark ? '#0a0a0f' : '#fff' }}>
                 {currentHtml ? (
                   <div className="w-full lg:max-w-[480px] mx-auto aspect-[3/4] relative overflow-hidden" style={{ touchAction: 'manipulation' }}>
                     <iframe
