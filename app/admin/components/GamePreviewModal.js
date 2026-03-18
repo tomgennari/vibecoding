@@ -1,12 +1,34 @@
 'use client';
 
-import { X } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { X, Loader2 } from 'lucide-react';
 import { ADMIN_THEME } from '../constants.js';
 
 export default function GamePreviewModal({ game, authorName, onApprove, onReject, onClose }) {
+  const [htmlContent, setHtmlContent] = useState(null);
+  const [loadError, setLoadError] = useState(false);
+
+  useEffect(() => {
+    if (!game?.file_url) return;
+    let cancelled = false;
+    setHtmlContent(null);
+    setLoadError(false);
+
+    fetch(game.file_url)
+      .then((res) => {
+        if (!res.ok) throw new Error(res.statusText);
+        return res.text();
+      })
+      .then((html) => { if (!cancelled) setHtmlContent(html); })
+      .catch(() => { if (!cancelled) setLoadError(true); });
+
+    return () => { cancelled = true; };
+  }, [game?.file_url]);
+
   if (!game) return null;
 
   const isPending = game.status === 'pending';
+  const loading = game.file_url && htmlContent === null && !loadError;
 
   return (
     <div
@@ -44,19 +66,29 @@ export default function GamePreviewModal({ game, authorName, onApprove, onReject
             background: ADMIN_THEME.bg,
           }}
         >
-          {game.file_url ? (
+          {loading && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+              <Loader2 size={28} className="animate-spin" style={{ color: ADMIN_THEME.accent }} />
+              <p className="text-sm" style={{ color: ADMIN_THEME.textMuted }}>Cargando juego…</p>
+            </div>
+          )}
+          {loadError && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <p className="text-sm" style={{ color: '#ef4444' }}>Error al cargar el juego</p>
+            </div>
+          )}
+          {htmlContent && (
             <iframe
-              src={game.file_url}
+              srcDoc={htmlContent}
               sandbox="allow-scripts allow-same-origin"
               title={game.title || 'Vista previa del juego'}
               className="absolute inset-0 w-full h-full"
               style={{ border: 'none' }}
             />
-          ) : (
+          )}
+          {!game.file_url && (
             <div className="absolute inset-0 flex items-center justify-center">
-              <p className="text-sm" style={{ color: ADMIN_THEME.textMuted }}>
-                Sin archivo disponible
-              </p>
+              <p className="text-sm" style={{ color: ADMIN_THEME.textMuted }}>Sin archivo disponible</p>
             </div>
           )}
         </div>
