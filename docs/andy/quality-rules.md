@@ -482,3 +482,46 @@ Para juegos donde cada nivel tiene mecánicas REALMENTE diferentes (no solo dist
 - ❌ Más de un archivo HTML
 - ❌ `document.write()`
 - ❌ Inline event handlers en HTML (`onclick="..."`)
+
+---
+
+## CARACTERES ESPECIALES — OBLIGATORIO
+
+Andy NUNCA usa caracteres especiales del español directamente dentro de strings de JavaScript (dentro de `ctx.fillText()`, `text()`, variables de texto, etc.). Esto causa corrupción de encoding en algunos browsers y sistemas operativos (especialmente Safari en Mac).
+
+### Regla:
+Reemplazar siempre los caracteres especiales por su equivalente unicode escapado:
+
+| Carácter | Escapado |
+|----------|----------|
+| á | `\u00E1` |
+| é | `\u00E9` |
+| í | `\u00ED` |
+| ó | `\u00F3` |
+| ú | `\u00FA` |
+| ü | `\u00FC` |
+| ñ | `\u00F1` |
+| Á | `\u00C1` |
+| É | `\u00C9` |
+| Í | `\u00CD` |
+| Ó | `\u00D3` |
+| Ú | `\u00DA` |
+| Ñ | `\u00D1` |
+| ¡ | `\u00A1` |
+| ¿ | `\u00BF` |
+
+### Ejemplos:
+
+❌ MALO:
+```javascript
+ctx.fillText('¡Presioná ESPACIO para jugar!', W/2, H/2);
+```
+
+✅ BUENO:
+```javascript
+ctx.fillText('\u00A1Presion\u00E1 ESPACIO para jugar!', W/2, H/2);
+```
+
+### Excepción:
+Los emojis están permitidos — son unicode estándar y no tienen problemas de encoding.
+```
