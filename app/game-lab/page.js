@@ -892,19 +892,20 @@ export default function GameLabPage() {
     recognition.continuous = true;
     recognition.interimResults = true;
 
-    let finalTranscript = inputValue;
-
     recognition.onresult = (event) => {
+      let final = '';
       let interim = '';
-      for (let i = event.resultIndex; i < event.results.length; i++) {
+      for (let i = 0; i < event.results.length; i++) {
         if (event.results[i].isFinal) {
-          finalTranscript += event.results[i][0].transcript + ' ';
-          setInputValue(finalTranscript);
+          final += event.results[i][0].transcript;
         } else {
           interim += event.results[i][0].transcript;
         }
       }
-      setInputValue(finalTranscript + interim);
+      const baseText = inputValue.substring(0, inputValue.length - (recognitionRef.current._lastInterim || '').length);
+      const newValue = baseText + final + interim;
+      setInputValue(newValue);
+      recognitionRef.current._lastInterim = interim;
       if (inputRef.current) {
         inputRef.current.style.height = 'auto';
         inputRef.current.style.height = Math.min(inputRef.current.scrollHeight, 96) + 'px';
@@ -927,6 +928,7 @@ export default function GameLabPage() {
 
     recognitionRef.current = recognition;
     recognition.start();
+    recognition._lastInterim = '';
     setIsListening(true);
   }
 
