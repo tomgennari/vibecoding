@@ -190,6 +190,13 @@ function extractHtmlFromResponse(text) {
   return { html: html || null, reply: reply || 'Listo. Mirá la vista previa.' };
 }
 
+function detectFramework(html) {
+  if (!html) return null;
+  if (html.includes('kaplay(') || html.includes('kaplay.js')) return 'kaplay';
+  if (html.includes('p5.min.js') || html.includes('createCanvas')) return 'p5js';
+  return 'canvas2d';
+}
+
 /**
  * Valida el HTML de un juego antes de cargarlo en el iframe.
  * Retorna { valid: true } o { valid: false, errors: string[] }
@@ -503,6 +510,10 @@ export default function GameLabPage() {
         body: JSON.stringify({
           messages: apiMessages,
           newMessage: trimmed,
+          context: {
+            hasGame: !!currentHtml,
+            framework: currentHtml ? detectFramework(currentHtml) : null,
+          },
         }),
       });
 
@@ -576,7 +587,13 @@ export default function GameLabPage() {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${session.access_token}`,
           },
-          body: JSON.stringify({ messages: apiMessagesContinuation }),
+          body: JSON.stringify({
+            messages: apiMessagesContinuation,
+            context: {
+              hasGame: !!currentHtml,
+              framework: currentHtml ? detectFramework(currentHtml) : null,
+            },
+          }),
         });
         let continuacion = '';
         if (res2.ok && res2.body) {
@@ -640,7 +657,13 @@ export default function GameLabPage() {
                 'Content-Type': 'application/json',
                 Authorization: `Bearer ${session.access_token}`,
               },
-              body: JSON.stringify({ messages: compactMessages }),
+              body: JSON.stringify({
+                messages: compactMessages,
+                context: {
+                  hasGame: !!currentHtml,
+                  framework: currentHtml ? detectFramework(currentHtml) : null,
+                },
+              }),
             });
             if (retryRes.ok && retryRes.body) {
               let retryText = '';
