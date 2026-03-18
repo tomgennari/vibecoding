@@ -889,7 +889,7 @@ export default function GameLabPage() {
 
     const recognition = new SpeechRecognition();
     recognition.lang = 'es-AR';
-    recognition.continuous = false;
+    recognition.continuous = true;
     recognition.interimResults = false;
 
     recognition.onresult = (event) => {
@@ -905,17 +905,8 @@ export default function GameLabPage() {
     };
 
     recognition.onend = () => {
-      if (isListening && recognitionRef.current) {
-        try {
-          recognitionRef.current.start();
-        } catch {
-          setIsListening(false);
-          recognitionRef.current = null;
-        }
-      } else {
-        setIsListening(false);
-        recognitionRef.current = null;
-      }
+      setIsListening(false);
+      recognitionRef.current = null;
     };
 
     recognition.onerror = (event) => {
