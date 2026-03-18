@@ -264,6 +264,7 @@ export default function GameLabPage() {
   const [loadingPhraseIndex, setLoadingPhraseIndex] = useState(0);
   const [loadingSeconds, setLoadingSeconds] = useState(0);
   const [loadingProgress, setLoadingProgress] = useState(0);
+  const [codeLineCount, setCodeLineCount] = useState(0);
   const [enviandoModeracion, setEnviandoModeracion] = useState(false);
   const [enviadoModeracion, setEnviadoModeracion] = useState(false);
   const [welcomeModalOpen, setWelcomeModalOpen] = useState(false);
@@ -544,19 +545,26 @@ export default function GameLabPage() {
             if (data.chunk != null && typeof data.chunk === 'string') {
               fullText += data.chunk;
               const textoVisible = fullText.replace(/```html[\s\S]*?(```|$)/gi, '').replace(/<!DOCTYPE html>[\s\S]*?(<\/html>|$)/gi, '').trim();
-              if (textoVisible) {
-                setMessages((prev) => {
-                  const updated = [...prev];
-                  if (updated.length > 0 && updated[updated.length - 1].role === 'andy') {
-                    updated[updated.length - 1] = { role: 'andy', content: textoVisible };
-                  }
-                  return updated;
-                });
-              }
               const htmlBlockMatch = fullText.match(/```html\s*([\s\S]*?)```/i);
               if (htmlBlockMatch) {
                 const html = htmlBlockMatch[1].trim();
                 if (html) setCurrentHtml(html);
+              }
+              const htmlInProgress = fullText.match(/```html\s*([\s\S]*)/i);
+              if (htmlInProgress) {
+                const lines = htmlInProgress[1].split('\n').length;
+                setCodeLineCount(lines);
+              }
+              const codigoIndicador = codeLineCount > 0 ? `\n\n⌨️ _Escribiendo código... (${codeLineCount} líneas)_` : '';
+              const textoConIndicador = (textoVisible || '') + codigoIndicador;
+              if (textoConIndicador.trim()) {
+                setMessages((prev) => {
+                  const updated = [...prev];
+                  if (updated.length > 0 && updated[updated.length - 1].role === 'andy') {
+                    updated[updated.length - 1] = { role: 'andy', content: textoConIndicador.trim() };
+                  }
+                  return updated;
+                });
               }
             }
           } catch {
@@ -567,6 +575,7 @@ export default function GameLabPage() {
       }
 
       setMessages((prev) => [...prev, { role: 'andy', content: '' }]);
+      setCodeLineCount(0);
 
       while (!streamDone) {
         const { done, value } = await reader.read();
@@ -840,6 +849,13 @@ export default function GameLabPage() {
     sendMessage(inputValue);
   }
 
+  function handleKeyDown(e) {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      handleSend();
+    }
+  }
+
   function handleInputChange(e) {
     setInputValue(e.target.value);
     autoResizeTextarea(e.target);
@@ -1106,6 +1122,7 @@ export default function GameLabPage() {
                     ref={inputRef}
                     value={inputValue}
                     onChange={handleInputChange}
+                    onKeyDown={handleKeyDown}
                     placeholder={currentHtml ? "¿Qué le querés cambiar al juego?" : "Escribí tu idea de juego..."}
                     rows={1}
                     className="flex-1 rounded-xl px-4 py-3 text-sm border focus:outline-none focus:ring-2 focus:ring-offset-0 focus:border-[#7c3aed] focus:ring-[#7c3aed] transition-colors resize-none"
