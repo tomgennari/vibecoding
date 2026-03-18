@@ -8,6 +8,7 @@ import { useDashboardTheme } from '@/lib/use-dashboard-theme.js';
 import { useUser } from '@/lib/user-context.js';
 import { DashboardNavbar } from '@/components/dashboard-navbar.js';
 import { MobileBottomNav } from '@/components/mobile-bottom-nav.js';
+import ReactMarkdown from 'react-markdown';
 
 const ANDY_FIRST_MESSAGES = [
   '¡Hola! Soy Andy, tu asistente del Game Lab 🎮 Acá no hay límites para tu imaginación — contame qué juego se te ocurre y lo armamos juntos.',
@@ -687,12 +688,6 @@ export default function GameLabPage() {
     if (!isDesktop) setMobileGameOpen(false);
   }
 
-  function handleKeyDown(e) {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  }
 
   if (userLoading || !profile) {
     return (
@@ -777,7 +772,13 @@ export default function GameLabPage() {
                         color: msg.role === 'andy' ? text : text,
                       }}
                     >
-                      <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                      {msg.role === 'andy' ? (
+                        <div className={`text-sm prose prose-sm max-w-none ${isDark ? 'prose-invert' : ''} [&>p]:mb-2 [&>ul]:mb-2 [&>ol]:mb-2 [&>h1]:text-base [&>h2]:text-sm [&>h3]:text-sm`}>
+                          <ReactMarkdown>{msg.content}</ReactMarkdown>
+                        </div>
+                      ) : (
+                        <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -821,7 +822,6 @@ export default function GameLabPage() {
                     ref={inputRef}
                     value={inputValue}
                     onChange={handleInputChange}
-                    onKeyDown={handleKeyDown}
                     placeholder={currentHtml ? "¿Qué le querés cambiar al juego?" : "Escribí tu idea de juego..."}
                     rows={1}
                     className="flex-1 rounded-xl px-4 py-3 text-sm border focus:outline-none focus:ring-2 focus:ring-offset-0 focus:border-[#7c3aed] focus:ring-[#7c3aed] transition-colors resize-none"
