@@ -890,13 +890,23 @@ export default function GameLabPage() {
     const recognition = new SpeechRecognition();
     recognition.lang = 'es-AR';
     recognition.continuous = true;
-    recognition.interimResults = false;
+    recognition.interimResults = isDesktop;
 
     recognition.onresult = (event) => {
-      const transcript = event.results[0][0].transcript;
+      let final = '';
+      let interim = '';
+      for (let i = 0; i < event.results.length; i++) {
+        if (event.results[i].isFinal) {
+          final += event.results[i][0].transcript;
+        } else {
+          interim += event.results[i][0].transcript;
+        }
+      }
       setInputValue((prev) => {
-        const separator = prev.trim() ? ' ' : '';
-        return prev + separator + transcript;
+        const base = prev.substring(0, prev.length - (recognitionRef.current._lastInterimLen || 0));
+        const newValue = base + final + interim;
+        recognitionRef.current._lastInterimLen = interim.length;
+        return newValue;
       });
       if (inputRef.current) {
         inputRef.current.style.height = 'auto';
@@ -920,6 +930,7 @@ export default function GameLabPage() {
 
     recognitionRef.current = recognition;
     recognition.start();
+    recognition._lastInterimLen = 0;
     setIsListening(true);
   }
 
