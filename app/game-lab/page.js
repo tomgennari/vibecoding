@@ -543,6 +543,16 @@ export default function GameLabPage() {
             const data = JSON.parse(payload);
             if (data.chunk != null && typeof data.chunk === 'string') {
               fullText += data.chunk;
+              const textoVisible = fullText.replace(/```html[\s\S]*?(```|$)/gi, '').replace(/<!DOCTYPE html>[\s\S]*?(<\/html>|$)/gi, '').trim();
+              if (textoVisible) {
+                setMessages((prev) => {
+                  const updated = [...prev];
+                  if (updated.length > 0 && updated[updated.length - 1].role === 'andy') {
+                    updated[updated.length - 1] = { role: 'andy', content: textoVisible };
+                  }
+                  return updated;
+                });
+              }
               const htmlBlockMatch = fullText.match(/```html\s*([\s\S]*?)```/i);
               if (htmlBlockMatch) {
                 const html = htmlBlockMatch[1].trim();
@@ -555,6 +565,8 @@ export default function GameLabPage() {
         }
         return false;
       }
+
+      setMessages((prev) => [...prev, { role: 'andy', content: '' }]);
 
       while (!streamDone) {
         const { done, value } = await reader.read();
@@ -637,7 +649,15 @@ export default function GameLabPage() {
               setMessages((prev) => [...prev, { role: 'andy', content: '⚠️ El juego puede tener algunos errores. Contame si algo no funciona y lo arreglo.' }]);
             }
           }
-          setMessages((prev) => [...prev, { role: 'andy', content: replyFinal || andyReply }]);
+          setMessages((prev) => {
+            const updated = [...prev];
+            if (updated.length > 0 && updated[updated.length - 1].role === 'andy') {
+              updated[updated.length - 1] = { role: 'andy', content: replyFinal || andyReply };
+            } else {
+              updated.push({ role: 'andy', content: replyFinal || andyReply });
+            }
+            return updated;
+          });
         } else {
           console.warn('HTML truncado, reintentando con versión compacta');
 
@@ -718,7 +738,15 @@ export default function GameLabPage() {
           }
         }
       } else {
-        setMessages((prev) => [...prev, { role: 'andy', content: andyReply }]);
+        setMessages((prev) => {
+          const updated = [...prev];
+          if (updated.length > 0 && updated[updated.length - 1].role === 'andy') {
+            updated[updated.length - 1] = { role: 'andy', content: andyReply };
+          } else {
+            updated.push({ role: 'andy', content: andyReply });
+          }
+          return updated;
+        });
         if (html && html.trim()) {
           const validation = validateGameHtml(html.trim());
           if (validation.valid) {
