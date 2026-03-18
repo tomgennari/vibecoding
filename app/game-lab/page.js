@@ -265,6 +265,8 @@ export default function GameLabPage() {
   const [loadingSeconds, setLoadingSeconds] = useState(0);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [codeLineCount, setCodeLineCount] = useState(0);
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef(null);
   const [enviandoModeracion, setEnviandoModeracion] = useState(false);
   const [enviadoModeracion, setEnviadoModeracion] = useState(false);
   const [welcomeModalOpen, setWelcomeModalOpen] = useState(false);
@@ -287,6 +289,15 @@ export default function GameLabPage() {
   const institutionalBlue = '#00478E';
   const headerColor = isDark ? text : institutionalBlue;
   const isLoading = sending;
+
+  // Limpiar reconocimiento de voz al desmontar
+  useEffect(() => {
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+    };
+  }, []);
 
   // Protección de ruta: solo usuarios autenticados
   useEffect(() => {
@@ -469,6 +480,11 @@ export default function GameLabPage() {
     if (!(textToSend && typeof textToSend === 'string') || sending) return;
     const trimmed = textToSend.trim();
     if (!trimmed) return;
+
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+    }
 
     setInputValue('');
     setError('');
@@ -857,6 +873,63 @@ export default function GameLabPage() {
     }
   }
 
+  function toggleVoice() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setError('Tu navegador no soporta entrada por voz. Probá con Chrome.');
+      return;
+    }
+
+    if (isListening) {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'es-AR';
+    recognition.continuous = true;
+    recognition.interimResults = true;
+
+    let finalTranscript = inputValue;
+
+    recognition.onresult = (event) => {
+      let interim = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        if (event.results[i].isFinal) {
+          finalTranscript += event.results[i][0].transcript + ' ';
+          setInputValue(finalTranscript);
+        } else {
+          interim += event.results[i][0].transcript;
+        }
+      }
+      setInputValue(finalTranscript + interim);
+      if (inputRef.current) {
+        inputRef.current.style.height = 'auto';
+        inputRef.current.style.height = Math.min(inputRef.current.scrollHeight, 96) + 'px';
+      }
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+      recognitionRef.current = null;
+    };
+
+    recognition.onerror = (event) => {
+      console.error('Speech recognition error:', event.error);
+      setIsListening(false);
+      recognitionRef.current = null;
+      if (event.error === 'not-allowed') {
+        setError('Permiso de micrófono denegado. Habilitalo en la configuración del navegador.');
+      }
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+    setIsListening(true);
+  }
+
   function handleInputChange(e) {
     setInputValue(e.target.value);
     autoResizeTextarea(e.target);
@@ -1135,6 +1208,21 @@ export default function GameLabPage() {
                     disabled={sending}
                     aria-label="Mensaje para Andy"
                   />
+                  <button
+                    type="button"
+                    onClick={toggleVoice}
+                    disabled={sending}
+                    className={`rounded-xl px-3 py-3 text-lg transition-colors ${isListening ? 'animate-pulse' : ''}`}
+                    style={{
+                      background: isListening ? '#ef4444' : 'transparent',
+                      color: isListening ? '#fff' : textMuted,
+                      border: isListening ? 'none' : `1px solid ${border}`,
+                    }}
+                    title={isListening ? 'Parar de escuchar' : 'Hablar con Andy'}
+                    aria-label={isListening ? 'Parar de escuchar' : 'Hablar con Andy'}
+                  >
+                    🎤
+                  </button>
                   <button
                     type="button"
                     onClick={handleSend}
