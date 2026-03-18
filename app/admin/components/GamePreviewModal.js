@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Loader2 } from 'lucide-react';
+import { X, Loader2, Code, Gamepad2 } from 'lucide-react';
 import { ADMIN_THEME } from '../constants.js';
 
 export default function GamePreviewModal({ game, authorName, onApprove, onReject, onClose }) {
   const [htmlContent, setHtmlContent] = useState(null);
   const [loadError, setLoadError] = useState(false);
+  const [verCodigo, setVerCodigo] = useState(false);
 
   useEffect(() => {
     if (!game?.file_url) return;
@@ -54,9 +55,21 @@ export default function GamePreviewModal({ game, authorName, onApprove, onReject
         <h3 className="text-lg font-bold pr-8 mb-1 truncate" style={{ color: ADMIN_THEME.text }}>
           {game.title || 'Sin título'}
         </h3>
-        <p className="text-sm mb-4 truncate" style={{ color: ADMIN_THEME.textMuted }}>
-          por {authorName || 'Desconocido'}
-        </p>
+        <div className="flex items-center justify-between gap-2 mb-4">
+          <p className="text-sm truncate" style={{ color: ADMIN_THEME.textMuted }}>
+            por {authorName || 'Desconocido'}
+          </p>
+          {htmlContent && (
+            <button
+              type="button"
+              onClick={() => setVerCodigo((v) => !v)}
+              className="vibe-btn-secondary flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium inline-flex items-center gap-1.5"
+              style={{ color: ADMIN_THEME.accent, border: `1px solid ${ADMIN_THEME.accent}` }}
+            >
+              {verCodigo ? <><Gamepad2 size={14} /> Ver juego</> : <><Code size={14} /> Ver código</>}
+            </button>
+          )}
+        </div>
 
         <div
           className="relative w-full rounded-lg overflow-hidden border flex-shrink-0"
@@ -77,7 +90,7 @@ export default function GamePreviewModal({ game, authorName, onApprove, onReject
               <p className="text-sm" style={{ color: '#ef4444' }}>Error al cargar el juego</p>
             </div>
           )}
-          {htmlContent && (
+          {htmlContent && !verCodigo && (
             <iframe
               srcDoc={htmlContent}
               sandbox="allow-scripts allow-same-origin"
@@ -85,6 +98,20 @@ export default function GamePreviewModal({ game, authorName, onApprove, onReject
               className="absolute inset-0 w-full h-full"
               style={{ border: 'none' }}
             />
+          )}
+          {htmlContent && verCodigo && (
+            <pre
+              className="absolute inset-0 w-full h-full overflow-auto m-0"
+              style={{
+                background: '#0a0a0f',
+                color: '#f1f5f9',
+                fontFamily: 'monospace',
+                fontSize: '12px',
+                padding: '16px',
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-word',
+              }}
+            >{htmlContent}</pre>
           )}
           {!game.file_url && (
             <div className="absolute inset-0 flex items-center justify-center">
