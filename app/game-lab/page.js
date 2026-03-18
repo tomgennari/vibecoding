@@ -255,6 +255,8 @@ export default function GameLabPage() {
   const [iframeRevealed, setIframeRevealed] = useState(false);
   // Índice de la frase de carga actual de Andy
   const [loadingPhraseIndex, setLoadingPhraseIndex] = useState(0);
+  const [loadingSeconds, setLoadingSeconds] = useState(0);
+  const [loadingProgress, setLoadingProgress] = useState(0);
   const [enviandoModeracion, setEnviandoModeracion] = useState(false);
   const [enviadoModeracion, setEnviadoModeracion] = useState(false);
   const [welcomeModalOpen, setWelcomeModalOpen] = useState(false);
@@ -384,6 +386,35 @@ export default function GameLabPage() {
         return next;
       });
     }, 2000);
+    return () => clearInterval(interval);
+  }, [isLoading]);
+
+  // Timer y barra de progreso mientras Andy genera
+  useEffect(() => {
+    if (!isLoading) {
+      if (loadingProgress > 0) {
+        setLoadingProgress(100);
+        setTimeout(() => {
+          setLoadingSeconds(0);
+          setLoadingProgress(0);
+        }, 500);
+      }
+      return;
+    }
+    setLoadingSeconds(0);
+    setLoadingProgress(0);
+    const interval = setInterval(() => {
+      setLoadingSeconds(prev => {
+        const s = prev + 1;
+        let progress;
+        if (s <= 10) progress = s * 6;
+        else if (s <= 30) progress = 60 + (s - 10) * 1.25;
+        else if (s <= 60) progress = 85 + (s - 30) * 0.33;
+        else progress = 95 + Math.sin(s * 0.1) * 2;
+        setLoadingProgress(Math.min(progress, 98));
+        return s;
+      });
+    }, 1000);
     return () => clearInterval(interval);
   }, [isLoading]);
 
@@ -920,9 +951,21 @@ export default function GameLabPage() {
                         style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                       />
                     </div>
-                    <div className="rounded-xl px-4 py-2.5 border" style={{ background: cardBg, borderColor: border }}>
+                    <div className="rounded-xl px-4 py-2.5 border flex-1 max-w-[85%]" style={{ background: cardBg, borderColor: border }}>
                       <p className="text-sm animate-pulse" style={{ color: text }}>
                         {LOADING_PHRASES[loadingPhraseIndex]}
+                      </p>
+                      <div className="mt-2 w-full rounded-full h-2 overflow-hidden" style={{ background: isDark ? '#1a1a2a' : '#e2e8f0' }}>
+                        <div
+                          className="h-full rounded-full transition-all duration-1000 ease-out"
+                          style={{
+                            width: loadingProgress + '%',
+                            background: 'linear-gradient(90deg, #7c3aed, #06b6d4)',
+                          }}
+                        />
+                      </div>
+                      <p className="text-xs mt-1.5" style={{ color: textMuted }}>
+                        {loadingSeconds < 10 ? 'Recién arrancamos...' : loadingSeconds < 30 ? `${loadingSeconds}s — ya casi...` : `${loadingSeconds}s — este juego es complejo, paciencia...`}
                       </p>
                     </div>
                   </div>
