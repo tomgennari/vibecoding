@@ -25,13 +25,13 @@ export function CreateGameModal() {
   const accent = '#7c3aed';
 
   function handleSubirClick() {
-    closeCreateGameModal();
     router.push('/juegos/subir');
+    setTimeout(() => closeCreateGameModal(), 100);
   }
 
   function handleGameLabClick() {
-    closeCreateGameModal();
     router.push('/game-lab');
+    setTimeout(() => closeCreateGameModal(), 100);
   }
 
   if (!isCreateGameModalOpen) return null;
