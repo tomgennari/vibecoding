@@ -24,6 +24,8 @@ const CONTINUATION_PROMPT = 'El código HTML que generaste se cortó antes de te
 
 const HTML_INCOMPLETE_WARNING = '⚠️ El juego es muy complejo para generarlo de una vez. Escribime \'generá una versión más compacta\' y lo rehago con código más eficiente.';
 
+const AUTOFIX_PROMPT = 'El juego que generaste tiene errores y no funciona. Estos son los errores detectados:\n\n{ERRORS}\n\nCorregí estos errores y devolvé el HTML completo y funcional. No cambies nada más del juego, solo arreglá los errores.';
+
 // 30 ideas de juegos para inspirar a alumnos de primaria y secundaria (SASS). prompt = texto que se envía al chat al hacer clic.
 const IDEAS_JUEGOS = [
   { emoji: '🚀', titulo: 'Naves espaciales', descripcion: 'Dispará a asteroides y enemigos en el espacio', prompt: 'Quiero un juego de naves espaciales donde tenga que esquivar asteroides y disparar a enemigos. Con power-ups y varios niveles.' },
@@ -186,6 +188,48 @@ function extractHtmlFromResponse(text) {
   const html = text.slice(start, lastClose + endTag.length).trim();
   const reply = (text.slice(0, start) + text.slice(lastClose + endTag.length)).trim();
   return { html: html || null, reply: reply || 'Listo. Mirá la vista previa.' };
+}
+
+/**
+ * Valida el HTML de un juego antes de cargarlo en el iframe.
+ * Retorna { valid: true } o { valid: false, errors: string[] }
+ */
+function validateGameHtml(html) {
+  const errors = [];
+
+  if (!html || typeof html !== 'string') {
+    return { valid: false, errors: ['HTML vacío o inválido'] };
+  }
+
+  if (!html.includes('</html>')) {
+    errors.push('HTML truncado: falta </html>');
+  }
+  if (!html.includes('</script>')) {
+    errors.push('HTML truncado: falta </script>');
+  }
+  if (!html.includes('<canvas') && !html.includes('kaplay(') && !html.includes('createCanvas')) {
+    errors.push('No se detectó canvas, kaplay ni p5.js');
+  }
+
+  const scriptMatches = html.match(/<script(?![^>]*src)[^>]*>([\s\S]*?)<\/script>/gi);
+  if (scriptMatches) {
+    scriptMatches.forEach((block, i) => {
+      const jsCode = block.replace(/<script[^>]*>/i, '').replace(/<\/script>/i, '');
+      if (jsCode.trim()) {
+        try {
+          new Function(jsCode);
+        } catch (e) {
+          errors.push(`Error de JavaScript: ${e.message}`);
+        }
+      }
+    });
+  }
+
+  if (html.includes('localStorage') || html.includes('sessionStorage')) {
+    errors.push('Usa localStorage/sessionStorage (prohibido)');
+  }
+
+  return { valid: errors.length === 0, errors };
 }
 
 export default function GameLabPage() {
@@ -536,7 +580,15 @@ export default function GameLabPage() {
         const htmlCompleto = fullText + continuacion;
         if (htmlCompleto.includes('</html>')) {
           const { html: htmlFinal, reply: replyFinal } = extractHtmlFromResponse(htmlCompleto);
-          if (htmlFinal && htmlFinal.trim()) setCurrentHtml(htmlFinal.trim());
+          if (htmlFinal && htmlFinal.trim()) {
+            const validation = validateGameHtml(htmlFinal.trim());
+            if (validation.valid) {
+              setCurrentHtml(htmlFinal.trim());
+            } else {
+              setCurrentHtml(htmlFinal.trim());
+              setMessages((prev) => [...prev, { role: 'andy', content: '⚠️ El juego puede tener algunos errores. Contame si algo no funciona y lo arreglo.' }]);
+            }
+          }
           setMessages((prev) => [...prev, { role: 'andy', content: replyFinal || andyReply }]);
         } else {
           setMessages((prev) => [
@@ -548,7 +600,73 @@ export default function GameLabPage() {
       } else {
         setMessages((prev) => [...prev, { role: 'andy', content: andyReply }]);
         if (html && html.trim()) {
-          setCurrentHtml(html.trim());
+          const validation = validateGameHtml(html.trim());
+          if (validation.valid) {
+            setCurrentHtml(html.trim());
+          } else {
+            console.warn('Juego con errores, intentando auto-fix:', validation.errors);
+            const fixPrompt = AUTOFIX_PROMPT.replace('{ERRORS}', validation.errors.join('\n'));
+            const fixMessages = [
+              { role: 'assistant', content: '```html\n' + html.trim() + '\n```' },
+              { role: 'user', content: fixPrompt },
+            ];
+            try {
+              const fixRes = await fetch('/api/game-lab/chat', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${session.access_token}`,
+                },
+                body: JSON.stringify({ messages: fixMessages }),
+              });
+              if (fixRes.ok && fixRes.body) {
+                let fixText = '';
+                const fixReader = fixRes.body.getReader();
+                const fixDecoder = new TextDecoder();
+                let fixBuffer = '';
+                let fixDone = false;
+                function processFixLines(lines) {
+                  for (const line of lines) {
+                    if (!line.startsWith('data: ')) continue;
+                    const payload = line.slice(6).trim();
+                    if (payload === '[DONE]') return true;
+                    try {
+                      const data = JSON.parse(payload);
+                      if (data.chunk != null) fixText += data.chunk;
+                    } catch {}
+                  }
+                  return false;
+                }
+                while (!fixDone) {
+                  const { done, value } = await fixReader.read();
+                  if (done) {
+                    if (fixBuffer.trim()) fixDone = processFixLines(fixBuffer.split('\n'));
+                    break;
+                  }
+                  fixBuffer += fixDecoder.decode(value, { stream: true });
+                  const lines = fixBuffer.split('\n');
+                  fixBuffer = lines.pop() ?? '';
+                  fixDone = processFixLines(lines);
+                }
+                const { html: fixedHtml } = extractHtmlFromResponse(fixText);
+                if (fixedHtml && fixedHtml.trim()) {
+                  const revalidation = validateGameHtml(fixedHtml.trim());
+                  if (revalidation.valid) {
+                    setCurrentHtml(fixedHtml.trim());
+                  } else {
+                    setCurrentHtml(html.trim());
+                    setMessages((prev) => [...prev, { role: 'andy', content: '⚠️ El juego puede tener algunos errores. Contame si algo no funciona y lo arreglo.' }]);
+                  }
+                } else {
+                  setCurrentHtml(html.trim());
+                }
+              } else {
+                setCurrentHtml(html.trim());
+              }
+            } catch {
+              setCurrentHtml(html.trim());
+            }
+          }
         }
       }
     } catch (err) {
