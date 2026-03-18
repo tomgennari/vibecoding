@@ -2,15 +2,9 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+import { Gamepad2, Sun, Moon, LogOut } from 'lucide-react';
 import { useCreateGameModal } from '@/lib/create-game-context.js';
 import { useUser } from '@/lib/user-context.js';
-
-const HOUSES = [
-  { id: 'william_brown', name: 'William Brown', color: '#3b82f6', image: '/images/houses/house-brown.png' },
-  { id: 'james_dodds', name: 'James Dodds', color: '#eab308', image: '/images/houses/house-dodds.png' },
-  { id: 'james_fleming', name: 'James Fleming', color: '#ef4444', image: '/images/houses/house-fleming.png' },
-  { id: 'john_monteith', name: 'John Monteith', color: '#22c55e', image: '/images/houses/house-monteith.png' },
-];
 
 const STATS_KEYS = [
   { key: 'juegos', label: 'Juegos desbloqueados' },
@@ -26,13 +20,6 @@ function formatDuration(totalSeconds) {
   return `${minutes} min`;
 }
 
-function IconLogout() {
-  return (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-    </svg>
-  );
-}
 function IconSun() {
   return (
     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -44,6 +31,13 @@ function IconMoon() {
   return (
     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+    </svg>
+  );
+}
+function IconLogout() {
+  return (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
     </svg>
   );
 }
@@ -94,27 +88,45 @@ export function DashboardNavbar({ theme, onToggleTheme, onLogout }) {
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={openCreateGameModal}
-          className="vibe-btn-gradient rounded-xl px-4 py-1.5 text-sm font-bold text-white whitespace-nowrap"
-        >
-          🎮 Crea tu juego
-        </button>
-
-        <div className="flex items-center gap-3 flex-shrink-0">
-          <Link href="/perfil" className="flex items-center gap-2 px-3 py-1.5 rounded-lg border min-w-0 transition-opacity hover:opacity-90" style={{ borderColor: userHouseMeta.color, background: `${userHouseMeta.color}15` }}>
-            <Image src={userHouseMeta.image} alt={userHouseMeta.name} width={28} height={28} className="flex-shrink-0 object-contain" />
-            <div className="min-w-0 flex flex-col items-start">
-              <span className="text-sm font-bold truncate w-full" style={{ color: text }}>{displayName}</span>
-              <span className="text-xs truncate w-full" style={{ color: userHouseMeta.color }}>{userHouseMeta.name}</span>
-            </div>
-          </Link>
-          <button type="button" onClick={onToggleTheme} aria-label={isDark ? 'Modo claro' : 'Modo oscuro'} className="p-2 rounded-lg transition-colors" style={navStyle}>
-            {isDark ? <IconSun /> : <IconMoon />}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <button
+            type="button"
+            onClick={openCreateGameModal}
+            className="vibe-btn-gradient h-10 rounded-full px-4 text-sm font-bold text-white whitespace-nowrap inline-flex items-center gap-1.5"
+          >
+            <Gamepad2 size={16} /> Crea tu juego
           </button>
-          <button type="button" onClick={onLogout} className="p-2 rounded-lg transition-colors hover:opacity-80" style={{ color: '#ef4444' }} aria-label="Cerrar sesión">
-            <IconLogout />
+
+          <Link
+            href="/perfil"
+            className="h-10 rounded-full px-4 flex items-center gap-2 border min-w-0 transition-colors"
+            style={{ borderColor: border, background: cardBg }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = userHouseMeta.color; }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = border; }}
+          >
+            <Image src={userHouseMeta.image} alt={userHouseMeta.name} width={22} height={22} className="flex-shrink-0 object-contain" />
+            <span className="text-sm font-bold truncate" style={{ color: text }}>{displayName}</span>
+            <span className="text-xs font-medium truncate" style={{ color: userHouseMeta.color }}>{userHouseMeta.name}</span>
+          </Link>
+
+          <button
+            type="button"
+            onClick={onToggleTheme}
+            aria-label={isDark ? 'Modo claro' : 'Modo oscuro'}
+            className="h-10 w-10 rounded-full flex items-center justify-center border transition-colors"
+            style={{ borderColor: border, background: cardBg, color: textMuted }}
+          >
+            {isDark ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
+
+          <button
+            type="button"
+            onClick={onLogout}
+            aria-label="Cerrar sesión"
+            className="h-10 w-10 rounded-full flex items-center justify-center border transition-colors"
+            style={{ borderColor: border, background: cardBg, color: '#ef4444' }}
+          >
+            <LogOut size={18} />
           </button>
         </div>
       </header>
