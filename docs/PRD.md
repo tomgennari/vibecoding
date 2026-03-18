@@ -593,14 +593,22 @@ Tablas principales (todas con RLS habilitado):
 - ✅ HUD estandarizado: zona reservada de 50px superiores
 - ✅ Mensajes iniciales rotativos de Andy (5 variantes)
 - ✅ Placeholder dinámico del input según estado
+- ✅ Pipeline de validación HTML: verifica estructura, sintaxis JS con `new Function()`, y auto-fix enviando errores a Andy
+- ✅ Auto-retry automático cuando HTML se trunca: reintenta con versión compacta sin intervención del alumno
+- ✅ Optimización de tokens: en modificaciones se manda solo personality + qualityRules + template del framework usado (~50% menos tokens)
+- ✅ Streaming visual: texto de Andy aparece en tiempo real mientras genera, con contador de líneas de código
+- ✅ Barra de progreso y timer visible mientras Andy genera juegos
+- ✅ Input por voz: Web Speech API nativa (es-AR), con interim results en PC y sin interim en mobile
+- ✅ ReactMarkdown para parsear mensajes de Andy (negritas, listas, etc.)
+- ✅ Ctrl+Enter envía mensaje en PC, Enter agrega nueva línea
+- ✅ Tap/click para iniciar y reiniciar juegos obligatorio en todos los frameworks
+- ✅ Emojis solo cuando quedan bien, formas procedurales para protagonistas y entidades dinámicas
+- ✅ Bottom nav oculto durante fullscreen del juego en mobile
+- ✅ Limpieza completa de Supabase: bucket kenney y RPC list_kenney_objects() eliminados
 - ❌ Descartado: Phaser.js (juegos se truncaban, código demasiado largo)
 - ❌ Descartado: Excalibur.js (requiere TypeScript y bundler)
 - ❌ Descartado: Assets de Kenney (Andy no los usaba, consumían tokens innecesarios)
 - 🔲 Pendiente: Sistema de tokens (`tokens_used` / `tokens_limit` en profiles)
-- 🔲 Pendiente: Pipeline de validación HTML (DOMParser + Acorn)
-- 🔲 Pendiente: Streaming visual del texto de Andy en el chat
-- 🔲 Pendiente: Input por voz (micrófono) para alumnos chicos
-- 🔲 Pendiente: Limpieza de bucket `kenney` y RPC `list_kenney_objects()` en Supabase
 
 ### Fase 3 — Gamificación (4-6 semanas)
 
