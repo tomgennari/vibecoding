@@ -622,11 +622,77 @@ export default function GameLabPage() {
           }
           setMessages((prev) => [...prev, { role: 'andy', content: replyFinal || andyReply }]);
         } else {
-          setMessages((prev) => [
-            ...prev,
-            { role: 'andy', content: andyReply },
-            { role: 'andy', content: HTML_INCOMPLETE_WARNING },
-          ]);
+          console.warn('HTML truncado, reintentando con versión compacta');
+
+          setMessages((prev) => [...prev, { role: 'andy', content: '🔧 El juego era muy complejo y se cortó. Estoy armando una versión más compacta, esperá unos segundos más...' }]);
+
+          setLoadingSeconds(0);
+          setLoadingProgress(0);
+
+          const compactMessages = [
+            ...apiMessages.slice(0, -1),
+            { role: 'user', content: apiMessages[apiMessages.length - 1].content + '\n\nIMPORTANTE: El juego anterior se cortó porque era muy largo. Generá una versión más compacta y eficiente: menos líneas de código, niveles como datos JSON, funciones reutilizables, sin comentarios innecesarios. El juego debe ser completo y funcional.' },
+          ];
+          try {
+            const retryRes = await fetch('/api/game-lab/chat', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${session.access_token}`,
+              },
+              body: JSON.stringify({ messages: compactMessages }),
+            });
+            if (retryRes.ok && retryRes.body) {
+              let retryText = '';
+              const retryReader = retryRes.body.getReader();
+              const retryDecoder = new TextDecoder();
+              let retryBuffer = '';
+              let retryDone = false;
+              function processRetryLines(lines) {
+                for (const line of lines) {
+                  if (!line.startsWith('data: ')) continue;
+                  const payload = line.slice(6).trim();
+                  if (payload === '[DONE]') return true;
+                  try {
+                    const data = JSON.parse(payload);
+                    if (data.chunk != null) retryText += data.chunk;
+                  } catch {}
+                }
+                return false;
+              }
+              while (!retryDone) {
+                const { done, value } = await retryReader.read();
+                if (done) {
+                  if (retryBuffer.trim()) retryDone = processRetryLines(retryBuffer.split('\n'));
+                  break;
+                }
+                retryBuffer += retryDecoder.decode(value, { stream: true });
+                const lines = retryBuffer.split('\n');
+                retryBuffer = lines.pop() ?? '';
+                retryDone = processRetryLines(lines);
+              }
+              const { html: retryHtml, reply: retryReply } = extractHtmlFromResponse(retryText);
+              if (retryHtml && retryHtml.includes('</html>')) {
+                setCurrentHtml(retryHtml.trim());
+                setMessages((prev) => [...prev, { role: 'andy', content: retryReply || andyReply }]);
+              } else {
+                setMessages((prev) => [
+                  ...prev,
+                  { role: 'andy', content: '⚠️ El juego es muy complejo para generarlo completo. Probá pedirme algo un poco más simple o con menos niveles, y lo armamos épico igual.' },
+                ]);
+              }
+            } else {
+              setMessages((prev) => [
+                ...prev,
+                { role: 'andy', content: '⚠️ El juego es muy complejo para generarlo completo. Probá pedirme algo un poco más simple o con menos niveles, y lo armamos épico igual.' },
+              ]);
+            }
+          } catch {
+            setMessages((prev) => [
+              ...prev,
+              { role: 'andy', content: '⚠️ El juego es muy complejo para generarlo completo. Probá pedirme algo un poco más simple o con menos niveles, y lo armamos épico igual.' },
+            ]);
+          }
         }
       } else {
         setMessages((prev) => [...prev, { role: 'andy', content: andyReply }]);
