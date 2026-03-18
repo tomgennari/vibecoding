@@ -43,7 +43,26 @@ function loadAndyDocs() {
   }
 }
 
-function buildSystemPrompt(docs) {
+function buildSystemPrompt(docs, context = {}) {
+  const { hasGame, framework } = context;
+
+  if (hasGame) {
+    const parts = [
+      docs.personality,
+      docs.qualityRules,
+    ];
+
+    if (framework === 'kaplay') {
+      parts.push(docs.templates.kaplay);
+    } else if (framework === 'p5js') {
+      parts.push(docs.templates.p5js);
+    } else {
+      parts.push(docs.templates.canvas2d);
+    }
+
+    return parts.join('\n\n');
+  }
+
   return [
     docs.personality,
     docs.pedagogy,
@@ -84,6 +103,7 @@ export async function POST(request) {
   }
 
   const messages = Array.isArray(body?.messages) ? body.messages : [];
+  const context = body?.context || {};
   if (messages.length === 0) {
     return NextResponse.json({ error: 'Faltan mensajes' }, { status: 400 });
   }
@@ -92,7 +112,7 @@ export async function POST(request) {
   if (!docs) {
     return NextResponse.json({ error: 'No se pudo cargar el system prompt de Andy' }, { status: 500 });
   }
-  const systemPrompt = buildSystemPrompt(docs);
+  const systemPrompt = buildSystemPrompt(docs, context);
 
   const anthropicMessages = messages.map((m) => ({
     role: m.role === 'assistant' ? 'assistant' : 'user',

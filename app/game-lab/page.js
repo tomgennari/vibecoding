@@ -737,7 +737,13 @@ export default function GameLabPage() {
                   'Content-Type': 'application/json',
                   Authorization: `Bearer ${session.access_token}`,
                 },
-                body: JSON.stringify({ messages: fixMessages }),
+                body: JSON.stringify({
+                  messages: fixMessages,
+                  context: {
+                    hasGame: true,
+                    framework: detectFramework(html.trim()),
+                  },
+                }),
               });
               if (fixRes.ok && fixRes.body) {
                 let fixText = '';
