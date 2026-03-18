@@ -550,12 +550,13 @@ export default function GameLabPage() {
                 const html = htmlBlockMatch[1].trim();
                 if (html) setCurrentHtml(html);
               }
+              let currentCodeLines = 0;
               const htmlInProgress = fullText.match(/```html\s*([\s\S]*)/i);
               if (htmlInProgress) {
-                const lines = htmlInProgress[1].split('\n').length;
-                setCodeLineCount(lines);
+                currentCodeLines = htmlInProgress[1].split('\n').length;
+                setCodeLineCount(currentCodeLines);
               }
-              const codigoIndicador = codeLineCount > 0 ? `\n\n⌨️ _Escribiendo código... (${codeLineCount} líneas)_` : '';
+              const codigoIndicador = currentCodeLines > 0 ? `\n\n⌨️ _Escribiendo código... (${currentCodeLines} líneas)_` : '';
               const textoConIndicador = (textoVisible || '') + codigoIndicador;
               if (textoConIndicador.trim()) {
                 setMessages((prev) => {
