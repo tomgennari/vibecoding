@@ -377,6 +377,8 @@ Estilo gaming tipo Discord + Fortnite. Donde los usuarios pasan la mayor parte d
 | IDE | Cursor Pro | USD 20/mes, Agent mode habilitado |
 | 3D (Fase 4) | Three.js / Babylon.js | NO Unity — 3D nativo web, sin descarga |
 | React Context API | CreateGameContext, UserContext | Estado global: modal "Crea tu juego" y perfil/stats del usuario |
+| Game Lab — IA | Claude Sonnet 4.6 via Anthropic API | Streaming SSE, max 16K tokens, system prompt modular en `docs/andy/` |
+| Game Lab — Frameworks | Canvas 2D, p5.js, Kaplay | Librerías hosteadas en Supabase Storage (`libs/` bucket) |
 | MobileBottomNav | Componente reutilizable | Barra de navegación inferior mobile, presente en todas las páginas excepto /jugar |
 
 ### 7.2 Estructura de Base de Datos
@@ -540,8 +542,8 @@ Tablas principales (todas con RLS habilitado):
 - [ ] Diferencial clave para el pitch: democratiza la creación para familias sin conocimientos técnicos
 - Interfaz del generador: modal existente "Crea tu juego" con opción "Generar con IA"
 - Layout desktop: chat a la izquierda, iframe con previsualización del juego en vivo a la derecha
-- Layout mobile: iframe arriba, chat abajo
-- El iframe usa el mismo sandbox existente de la plataforma (allow-scripts únicamente)
+- Layout mobile: chat con fullscreen overlay para juegos. Cuando Andy genera un juego, se abre automáticamente en pantalla completa con botón "Salir del juego". Botones de acción unificados debajo del input: "Jugá tu juego", "Enviar a moderación", "Crear otro juego".
+- El iframe usa sandbox="allow-scripts allow-same-origin" para permitir touch events en mobile
 - Botón "Enviar a moderación" prominente cuando el alumno está conforme
 - Barra de progreso o indicador de tokens restantes visible en todo momento
 - Entrada por voz: botón de micrófono en la caja de texto usando Web Speech API nativa del navegador (sin servicios externos, sin costo adicional)
@@ -550,13 +552,10 @@ Tablas principales (todas con RLS habilitado):
   - Requiere permiso de micrófono del navegador
   - Ideal para alumnos de primaria que no escriben rápido
 - El historial de la conversación se mantiene durante la sesión para permitir ajustes iterativos ("cambiá el color", "agregá más enemigos")
-- Al cerrar el modal se descarta la conversación — no hay historial entre sesiones
+- El juego y la conversación se persisten en sessionStorage del browser. Sobreviven refresh pero se limpian al cerrar la pestaña. El alumno puede iniciar un juego nuevo con el botón "Crear otro juego".
 - Claude responde siempre con dos partes: (1) el HTML completo del juego, (2) una explicación en español amigable para niños de qué hizo y sugerencias de próximos pasos ("¿querés que agregue música? ¿más niveles? ¿un personaje diferente?")
 - Claude hace preguntas antes de generar cuando el prompt es ambiguo, igual que haría un desarrollador: género, personaje principal, objetivo del juego, etc.
-- Claude siempre sugiere dimensiones antes de generar:
-  - Mobile vertical (480x640) — recomendado para celular
-  - Mobile horizontal/landscape (640x480) — recomendado para celular acostado
-  - PC (800x600) — con advertencia explícita: "este juego solo se verá bien en computadora"
+- Canvas fijo 480x640 (portrait) por default, 640x480 (landscape) si Andy decide internamente que el juego lo amerita. Andy NUNCA pregunta al alumno si es para celular o computadora — el iframe del Game Lab se encarga del escalado.
 - Moderación en el system prompt — línea clara entre contenido permitido y prohibido:
   - PERMITIDO: disparos, explosiones, espadas, peleas, zombies, monstruos, sangre leve — contenido normal de videojuegos apto para todas las edades
   - PROHIBIDO: gore explícito (sangre excesiva, desmembramiento), desnudez o contenido sexual de cualquier tipo, insultos o lenguaje inapropiado, violencia contra personas reales identificables, temáticas religiosas o políticas controversiales
@@ -580,10 +579,28 @@ Tablas principales (todas con RLS habilitado):
 
 **Estado actual de la Fase 2.5 (Mar 2026):**
 
-- ✅ Subida de assets de Kenney a Supabase Storage (46.040 archivos, 153 carpetas, bucket `kenney`)
-- ✅ Generación de `kenney-assets-curated.json` (2.780 archivos curados en `public/`)
-- ✅ System prompt de Andy v2 con assets reales en `docs/andy-system-prompt.md`
-- ✅ Función RPC `list_kenney_objects()` creada en Supabase para listar objetos del bucket `kenney`
+- ✅ Arquitectura modular de Andy: 7 archivos de docs en `docs/andy/` (personality, pedagogy, framework-decision, quality-rules, templates x3)
+- ✅ Backend dinámico: `loadAndyDocs()` + `buildSystemPrompt()` en `app/api/game-lab/chat/route.js`
+- ✅ Multi-framework: Andy elige internamente entre Canvas 2D, p5.js y Kaplay según el tipo de juego
+- ✅ Librerías hosteadas en Supabase Storage (bucket `libs/`): p5.min.js, kaplay.js, gamepad-overlay.js
+- ✅ Assets visuales: emojis + formas geométricas procedurales (Kenney descartado)
+- ✅ Flujo pedagógico: Andy guía al alumno a dar instrucciones detalladas antes de generar
+- ✅ Preservación de juegos al iterar: contexto reducido + HTML actual para evitar regeneración
+- ✅ Persistencia de sesión: sessionStorage para juego y chat (sobrevive refresh)
+- ✅ Mobile: fullscreen overlay para juegos + botones unificados (Jugá tu juego, Enviar a moderación, Crear otro juego)
+- ✅ Mobile: gamepad-overlay.js con layouts configurables (dpad-1btn, dpad-2btn, dpad-only, lr-only, none)
+- ✅ Google Fonts para tipografías en juegos
+- ✅ HUD estandarizado: zona reservada de 50px superiores
+- ✅ Mensajes iniciales rotativos de Andy (5 variantes)
+- ✅ Placeholder dinámico del input según estado
+- ❌ Descartado: Phaser.js (juegos se truncaban, código demasiado largo)
+- ❌ Descartado: Excalibur.js (requiere TypeScript y bundler)
+- ❌ Descartado: Assets de Kenney (Andy no los usaba, consumían tokens innecesarios)
+- 🔲 Pendiente: Sistema de tokens (`tokens_used` / `tokens_limit` en profiles)
+- 🔲 Pendiente: Pipeline de validación HTML (DOMParser + Acorn)
+- 🔲 Pendiente: Streaming visual del texto de Andy en el chat
+- 🔲 Pendiente: Input por voz (micrófono) para alumnos chicos
+- 🔲 Pendiente: Limpieza de bucket `kenney` y RPC `list_kenney_objects()` en Supabase
 
 ### Fase 3 — Gamificación (4-6 semanas)
 
