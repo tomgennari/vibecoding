@@ -2,11 +2,13 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
+import { Eye } from 'lucide-react';
 import { supabase } from '@/utils/supabase/client.js';
 import { HOUSES, GAME_STATUS, ADMIN_THEME } from '../constants.js';
 import RejectGameModal from './RejectGameModal.js';
 import LoadGameModal from './LoadGameModal.js';
 import DeleteGameModal from './DeleteGameModal.js';
+import GamePreviewModal from './GamePreviewModal.js';
 
 const STATUS_FILTERS = [
   { value: '', label: 'Todos' },
@@ -33,6 +35,7 @@ export default function AdminGamesSection() {
   const [loadModalOpen, setLoadModalOpen] = useState(false);
   const [editGame, setEditGame] = useState(null);
   const [deleteGame, setDeleteGame] = useState(null);
+  const [previewGame, setPreviewGame] = useState(null);
 
   const fetchGames = useCallback(async () => {
     setLoading(true);
@@ -224,6 +227,7 @@ export default function AdminGamesSection() {
                             <button type="button" onClick={() => setRejectModal({ id: game.id, title: game.title })} className="px-2 py-1 rounded text-xs font-medium text-white" style={{ background: '#ef4444' }}>Rechazar</button>
                           </>
                         )}
+                        <button type="button" onClick={() => setPreviewGame(game)} className="vibe-btn-secondary px-2 py-1 rounded text-xs font-medium inline-flex items-center gap-1" style={{ color: ADMIN_THEME.accent, border: `1px solid ${ADMIN_THEME.accent}` }}><Eye size={13} /> Ver</button>
                         <button type="button" onClick={() => setEditGame(game)} className="px-2 py-1 rounded text-xs font-medium" style={{ color: ADMIN_THEME.accent, border: `1px solid ${ADMIN_THEME.accent}` }}>Editar</button>
                         <button type="button" onClick={() => setDeleteGame({ id: game.id, title: game.title })} className="px-2 py-1 rounded text-xs font-medium text-white" style={{ background: '#ef4444' }}>Eliminar</button>
                       </span>
@@ -258,6 +262,15 @@ export default function AdminGamesSection() {
           gameTitle={deleteGame.title}
           onConfirm={handleDeleteGame}
           onClose={() => setDeleteGame(null)}
+        />
+      )}
+      {previewGame && (
+        <GamePreviewModal
+          game={previewGame}
+          authorName={authors[previewGame.submitted_by]}
+          onApprove={(id) => { handleApprove(id); setPreviewGame(null); }}
+          onReject={(data) => { setPreviewGame(null); setRejectModal(data); }}
+          onClose={() => setPreviewGame(null)}
         />
       )}
     </div>
