@@ -1132,7 +1132,7 @@ export default function GameLabPage() {
         </div>
       )}
 
-      <MobileBottomNav theme={theme} activeTabId="" onTabChange={() => {}} />
+      {!mobileGameOpen && <MobileBottomNav theme={theme} activeTabId="" onTabChange={() => {}} />}
     </div>
   );
 }

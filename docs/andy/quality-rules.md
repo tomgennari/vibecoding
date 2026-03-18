@@ -142,10 +142,28 @@ Las plataformas, enemigos, items y el jugador deben spawnearse en Y >= 50. Nunca
 
 Todo juego debe tener como mínimo:
 
-1. **Pantalla de inicio** — con título del juego y "Presioná ESPACIO para jugar"
+1. **Pantalla de inicio** — con título del juego y "Tocá la pantalla o presioná ESPACIO para jugar". SIEMPRE aceptar TANTO click/tap COMO Space para iniciar y reiniciar. Esto es crítico para mobile.
 2. **Juego principal** — con HUD visible (score, vidas/nivel si aplica)
 3. **Pantalla de Game Over** — con score final y "Presioná ESPACIO para reiniciar"
 4. **Dificultad progresiva** — el juego se vuelve más difícil con el tiempo o con los niveles
+
+**Click/tap para iniciar y reiniciar — OBLIGATORIO en todos los frameworks:**
+```javascript
+// Canvas 2D — agregar junto con el listener de Space:
+canvas.addEventListener('click', () => {
+  if (estado === ESTADO.MENU) iniciarJuego();
+  else if (estado === ESTADO.GAMEOVER) reiniciar();
+});
+
+// p5.js — agregar función:
+function mousePressed() {
+  if (estado === ESTADO.MENU) iniciarJuego();
+  else if (estado === ESTADO.GAMEOVER) reiniciar();
+}
+
+// Kaplay — agregar en la escena de menú y gameover:
+onClick(() => go("juego", { nivel: 0, score: 0 }));
+```
 
 ### Sistema de puntaje — SIEMPRE incluir
 
@@ -182,7 +200,7 @@ Este código envía el puntaje a la plataforma para guardarlo en el ranking de H
 
 Andy NO usa assets externos (no Kenney, no URLs de imágenes). Todo visual se genera con código:
 
-### Opción 1: Emojis como sprites (PREFERIDO para personalidad)
+### Opción 1: Emojis como sprites (solo cuando quedan bien)
 ```javascript
 // Canvas 2D
 ctx.font = '48px serif';
@@ -207,6 +225,52 @@ add([
 - Armas/acción: ⚔️ 🔫 💣 🛡️ ⚡ 🔥 💥
 - Deportes: ⚽ 🏀 🏈 🎾 🏓
 - Comida: 🍕 🍔 🍟 🍩 🧁 🍎 🍌
+
+**Cuándo SÍ usar emojis:**
+- Items y coleccionables: 💎 🔑 ❤️ ⭐ 🍎 (se ven bien estáticos)
+- Enemigos simples o cómicos: 👾 🧟 👻 🦀 (personalidad instantánea)
+- Elementos de UI y HUD: ❤️ para vidas, ⭐ para score
+- Juegos con estética casual o infantil
+
+**Cuándo NO usar emojis (usar formas procedurales en su lugar):**
+- Protagonistas que se mueven mucho (naves, autos, personajes de acción) — los emojis son estáticos y no rotan bien
+- Proyectiles y balas — se ven mal a tamaño chico
+- Cualquier entidad que necesite rotación, animación de movimiento, o dirección visual
+- Juegos con estética seria, espacial, o de acción intensa
+
+**Para protagonistas y vehículos, SIEMPRE usar formas procedurales:**
+```javascript
+// ✅ Nave espacial con formas — se ve bien, rota bien, tiene dirección
+function dibujarNave(x, y, angulo) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(angulo);
+  ctx.fillStyle = '#4488FF';
+  ctx.beginPath();
+  ctx.moveTo(0, -20);
+  ctx.lineTo(-14, 16);
+  ctx.lineTo(0, 10);
+  ctx.lineTo(14, 16);
+  ctx.closePath();
+  ctx.fill();
+  // Detalle: cabina
+  ctx.fillStyle = '#88CCFF';
+  ctx.beginPath();
+  ctx.arc(0, -4, 5, 0, Math.PI * 2);
+  ctx.fill();
+  // Detalle: propulsión
+  ctx.fillStyle = '#FF6622';
+  ctx.beginPath();
+  ctx.moveTo(-6, 14);
+  ctx.lineTo(0, 22);
+  ctx.lineTo(6, 14);
+  ctx.fill();
+  ctx.restore();
+}
+
+// ❌ Nave con emoji — no rota, no tiene dirección, se ve estático
+ctx.fillText('✈️', x, y);
+```
 
 ### Opción 2: Formas geométricas compuestas (IMPORTANTE: combinar para mejor acabado)
 
@@ -329,7 +393,7 @@ Andy NUNCA usa las fuentes default del browser (serif, sans-serif, Arial, Times 
 - La fuente se usa en CSS: `font-family: 'Press Start 2P', cursive;`
 - En Canvas 2D: `ctx.font = '18px "Fredoka One"';`
 - En p5.js: `textFont('Bangers'); textSize(24);`
-- En Kaplay: `text("Hola", { size: 24, font: "Righteous" })` (requiere cargar con `loadFont()` primero)
+- En Kaplay: NO usar el parámetro font de text(). En cambio, aplicar la fuente via CSS en el style del HTML: `canvas { font-family: 'Righteous', sans-serif; }`. Kaplay hereda la fuente del CSS. NUNCA usar loadFont() con Google Fonts — causa errores.
 - Google Fonts es la ÚNICA excepción a la regla de "no CDNs externos" — es ultra confiable y si falla, el browser usa el fallback sin romper el juego
 - Rotar entre fuentes — no usar siempre la misma para todos los juegos
 
