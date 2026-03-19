@@ -67,6 +67,7 @@ export default function PerfilPage() {
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState('');
+  const [credits, setCredits] = useState(null);
 
   const isDark = theme === 'dark';
   const bg = isDark ? '#0a0a0f' : '#ffffff';
@@ -117,6 +118,25 @@ export default function PerfilPage() {
     if (userLoading || !profile) return;
     fetchData();
   }, [userLoading, profile, fetchData]);
+
+  useEffect(() => {
+    if (!profile) return;
+    async function loadCredits() {
+      try {
+        const { data } = await supabase
+          .from('profiles')
+          .select('tokens_used, tokens_limit')
+          .eq('id', profile.id)
+          .single();
+        if (data) {
+          const used = data.tokens_used || 0;
+          const limit = data.tokens_limit || 1.0;
+          setCredits({ used, limit, remaining: Math.max(0, limit - used) });
+        }
+      } catch {}
+    }
+    loadCredits();
+  }, [profile]);
 
   useEffect(() => {
     if (!deleteModalOpen) return;
@@ -274,6 +294,25 @@ export default function PerfilPage() {
                   <span className="text-sm" style={{ color: textMuted }}>⭐ Puntos</span>
                   <span className="text-lg font-black tabular-nums" style={{ color: accent }}>{stats.puntos}</span>
                 </div>
+                {credits && (
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm" style={{ color: textMuted }}>⚡ Créditos de Andy</span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-16 rounded-full h-1.5 overflow-hidden" style={{ background: isDark ? '#1a1a2a' : '#e2e8f0' }}>
+                        <div
+                          className="h-full rounded-full"
+                          style={{
+                            width: Math.max(2, (credits.remaining / credits.limit) * 100) + '%',
+                            background: credits.remaining > 0.3 ? '#7c3aed' : credits.remaining > 0.1 ? '#eab308' : '#ef4444',
+                          }}
+                        />
+                      </div>
+                      <span className="text-lg font-black tabular-nums" style={{ color: credits.remaining > 0.3 ? accent : credits.remaining > 0.1 ? '#eab308' : '#ef4444' }}>
+                        ${credits.remaining.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
               {/* Zona de peligro */}
               <hr className="my-4" style={{ borderColor: 'rgba(239, 68, 68, 0.4)' }} />

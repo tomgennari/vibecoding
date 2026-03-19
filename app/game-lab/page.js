@@ -1115,7 +1115,7 @@ export default function GameLabPage() {
       {/* Contenedor principal */}
       <div
         className={`flex-1 flex flex-col-reverse lg:flex-row pb-20 lg:pb-6 pt-14 ${
-          currentHtml ? 'lg:fixed lg:top-[56px] lg:left-0 lg:right-0 lg:bottom-0 lg:overflow-hidden lg:pt-0' : 'lg:pt-16'
+          currentHtml ? 'lg:h-[calc(100vh-56px)] lg:overflow-hidden lg:pt-0' : 'lg:pt-16'
         }`}
       >
         <div
