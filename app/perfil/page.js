@@ -68,6 +68,7 @@ export default function PerfilPage() {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState('');
   const [credits, setCredits] = useState(null);
+  const [showCreditsInfo, setShowCreditsInfo] = useState(false);
 
   const isDark = theme === 'dark';
   const bg = isDark ? '#0a0a0f' : '#ffffff';
@@ -297,22 +298,48 @@ export default function PerfilPage() {
                   <span className="text-lg font-black tabular-nums" style={{ color: accent }}>{stats.puntos}</span>
                 </div>
                 {credits && (
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm" style={{ color: textMuted }}>⚡ Créditos de Andy</span>
-                    <div className="flex items-center gap-2">
-                      <div className="w-16 rounded-full h-1.5 overflow-hidden" style={{ background: isDark ? '#1a1a2a' : '#e2e8f0' }}>
-                        <div
-                          className="h-full rounded-full"
-                          style={{
-                            width: Math.max(2, (credits.remaining / credits.limit) * 100) + '%',
-                            background: credits.remaining > 0.3 ? '#7c3aed' : credits.remaining > 0.1 ? '#eab308' : '#ef4444',
-                          }}
-                        />
+                  <div>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-sm" style={{ color: textMuted }}>⚡ Créditos de Andy</span>
+                        <button
+                          type="button"
+                          onClick={() => setShowCreditsInfo((prev) => !prev)}
+                          className="w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold border"
+                          style={{ borderColor: textMuted, color: textMuted }}
+                          aria-label="Info sobre créditos"
+                        >
+                          i
+                        </button>
                       </div>
-                      <span className="text-lg font-black tabular-nums" style={{ color: credits.remaining > 0.3 ? accent : credits.remaining > 0.1 ? '#eab308' : '#ef4444' }}>
-                        ${credits.remaining.toFixed(2)}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <div className="w-16 rounded-full h-1.5 overflow-hidden" style={{ background: isDark ? '#1a1a2a' : '#e2e8f0' }}>
+                          <div
+                            className="h-full rounded-full"
+                            style={{
+                              width: Math.max(2, (credits.remaining / credits.limit) * 100) + '%',
+                              background: credits.remaining > 0.3 ? '#7c3aed' : credits.remaining > 0.1 ? '#eab308' : '#ef4444',
+                            }}
+                          />
+                        </div>
+                        <span className="text-lg font-black tabular-nums" style={{ color: credits.remaining > 0.3 ? accent : credits.remaining > 0.1 ? '#eab308' : '#ef4444' }}>
+                          ${credits.remaining.toFixed(2)}
+                        </span>
+                      </div>
                     </div>
+                    {showCreditsInfo && (
+                      <div className="mt-2 rounded-lg border p-2.5 text-xs" style={{ background: isDark ? '#0a0a0f' : '#f1f5f9', borderColor: border, color: textMuted }}>
+                        Cada vez que Andy crea o modifica un juego, usa un poco de créditos. Podés conseguir más desbloqueando juegos del catálogo.
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => router.push('/game-lab')}
+                      className="mt-2 w-full text-xs font-medium py-1.5 rounded-lg transition-colors hover:opacity-80"
+                      style={{ color: accent }}
+                    >
+                      🎮 Usá tus créditos creando un juego →
+                    </button>
                   </div>
                 )}
               </div>
@@ -327,6 +354,14 @@ export default function PerfilPage() {
               >
                 Eliminar mi cuenta
               </button>
+              <div className="mt-6 pt-4 border-t flex flex-col gap-1.5" style={{ borderColor: border }}>
+                <a href="/terminos" className="text-xs hover:underline" style={{ color: textMuted }}>
+                  Términos y condiciones
+                </a>
+                <a href="/privacidad" className="text-xs hover:underline" style={{ color: textMuted }}>
+                  Política de privacidad
+                </a>
+              </div>
             </div>
           </aside>
 

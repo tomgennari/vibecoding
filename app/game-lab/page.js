@@ -274,8 +274,9 @@ export default function GameLabPage() {
   const [tituloModal, setTituloModal] = useState('');
   const [descripcionModal, setDescripcionModal] = useState('');
   const [sugiriendoTitulo, setSugiriendoTitulo] = useState(false);
-  const [credits, setCredits] = useState({ used: 0, limit: 1.0, remaining: 1.0 });
+  const [credits, setCredits] = useState(null);
   const [creditsLoaded, setCreditsLoaded] = useState(false);
+  const [showCreditsInfo, setShowCreditsInfo] = useState(false);
 
   // 6 ideas al azar para la columna desktop; en mobile se usa el mismo set para el carrusel
   const inspirationCards = useMemo(() => pickRandom(IDEAS_JUEGOS, 6), []);
@@ -1137,8 +1138,8 @@ export default function GameLabPage() {
               {/* Header minimalista */}
               <div className="px-4 py-2.5 border-b shrink-0 flex items-center justify-between gap-3 sticky top-0 z-10" style={{ borderColor: border, background: bg }}>
                 <h1 className="text-sm font-bold shrink-0" style={{ color: headerColor }}>Game Lab</h1>
-                {creditsLoaded && (
-                  <div className="flex items-center gap-2 min-w-0 flex-1 max-w-[200px]">
+                {creditsLoaded && credits && (
+                  <div className="flex items-center gap-2 min-w-0 flex-1 max-w-[240px] relative">
                     <div className="flex-1 rounded-full h-2 overflow-hidden" style={{ background: isDark ? '#1a1a2a' : '#e2e8f0' }}>
                       <div
                         className="h-full rounded-full transition-all duration-500"
@@ -1151,6 +1152,34 @@ export default function GameLabPage() {
                     <span className="text-[10px] shrink-0 font-medium" style={{ color: textMuted }}>
                       {credits.remaining <= 0 ? '⚡ Sin créditos' : `⚡ $${credits.remaining.toFixed(2)}`}
                     </span>
+                    <button
+                      type="button"
+                      onClick={() => setShowCreditsInfo((prev) => !prev)}
+                      className="shrink-0 w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold border"
+                      style={{ borderColor: textMuted, color: textMuted }}
+                      aria-label="Info sobre créditos"
+                    >
+                      i
+                    </button>
+                    {showCreditsInfo && (
+                      <div
+                        className="absolute top-8 right-0 z-50 rounded-xl border p-3 shadow-lg w-64 text-xs"
+                        style={{ background: cardBg, borderColor: border, color: text }}
+                      >
+                        <p className="font-bold mb-1">⚡ Créditos de Andy</p>
+                        <p className="mb-2" style={{ color: textMuted }}>
+                          Cada vez que Andy crea o modifica un juego, usa un poco de créditos. Cuando se acaban, podés conseguir más desbloqueando juegos del catálogo.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => setShowCreditsInfo(false)}
+                          className="text-[10px] font-bold"
+                          style={{ color: accent }}
+                        >
+                          Entendido ✓
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
