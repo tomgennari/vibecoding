@@ -1115,12 +1115,12 @@ export default function GameLabPage() {
       {/* Contenedor principal */}
       <div
         className={`flex-1 flex flex-col-reverse lg:flex-row pb-20 lg:pb-6 pt-14 ${
-          currentHtml ? 'lg:fixed lg:top-[64px] lg:left-0 lg:right-0 lg:bottom-0 lg:overflow-hidden lg:pt-0' : 'lg:pt-16'
+          currentHtml ? 'lg:fixed lg:top-[56px] lg:left-0 lg:right-0 lg:bottom-0 lg:overflow-hidden lg:pt-0' : 'lg:pt-16'
         }`}
       >
         <div
           className={`flex-1 flex flex-col-reverse lg:flex-row min-h-0 w-full transition-all duration-300 ease-out ${
-            !currentHtml ? 'lg:max-w-[900px] lg:mx-auto lg:px-8 lg:gap-8' : 'lg:h-[calc(100vh-64px)]'
+            !currentHtml ? 'lg:max-w-[900px] lg:mx-auto lg:px-8 lg:gap-8' : 'lg:h-[calc(100vh-56px)]'
           }`}
         >
           {/* ——— Chat: desktop sin juego = flex-1 centrado max 600px; con juego = 40%; mobile = siempre visible ——— */}
@@ -1135,7 +1135,7 @@ export default function GameLabPage() {
           >
             <div className={`w-full flex-1 flex flex-col min-h-0 ${!currentHtml ? 'lg:max-w-[600px] lg:mx-auto' : 'lg:overflow-hidden'}`}>
               {/* Header minimalista */}
-              <div className="px-4 py-2.5 border-b shrink-0 flex items-center justify-between gap-3" style={{ borderColor: border, background: bg }}>
+              <div className="px-4 py-2.5 border-b shrink-0 flex items-center justify-between gap-3 sticky top-0 z-10" style={{ borderColor: border, background: bg }}>
                 <h1 className="text-sm font-bold shrink-0" style={{ color: headerColor }}>Game Lab</h1>
                 {creditsLoaded && (
                   <div className="flex items-center gap-2 min-w-0 flex-1 max-w-[200px]">
@@ -1404,7 +1404,7 @@ export default function GameLabPage() {
             aria-label="Vista previa del juego"
           >
             <div className="flex-1 flex flex-col min-h-0 overflow-hidden" style={{ background: isDark ? '#0f0f14' : '#f1f5f9' }}>
-              <div className="px-4 py-2.5 border-b shrink-0" style={{ borderColor: border, background: bg }}>
+              <div className="px-4 py-2.5 border-b shrink-0 sticky top-0 z-10" style={{ borderColor: border, background: bg }}>
                 <h2 className="text-sm font-bold" style={{ color: headerColor }}>Vista previa</h2>
               </div>
               <div className="flex-1 p-4 lg:p-6 min-h-0 flex flex-col overflow-hidden">
