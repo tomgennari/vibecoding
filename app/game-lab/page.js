@@ -274,6 +274,8 @@ export default function GameLabPage() {
   const [tituloModal, setTituloModal] = useState('');
   const [descripcionModal, setDescripcionModal] = useState('');
   const [sugiriendoTitulo, setSugiriendoTitulo] = useState(false);
+  const [credits, setCredits] = useState({ used: 0, limit: 1.0, remaining: 1.0 });
+  const [creditsLoaded, setCreditsLoaded] = useState(false);
 
   // 6 ideas al azar para la columna desktop; en mobile se usa el mismo set para el carrusel
   const inspirationCards = useMemo(() => pickRandom(IDEAS_JUEGOS, 6), []);
@@ -455,6 +457,27 @@ export default function GameLabPage() {
     return () => mq.removeEventListener('change', update);
   }, []);
 
+  // Cargar créditos de Andy al montar
+  useEffect(() => {
+    if (!profile) return;
+    async function loadCredits() {
+      try {
+        const { data } = await supabase
+          .from('profiles')
+          .select('tokens_used, tokens_limit')
+          .eq('id', profile.id)
+          .single();
+        if (data) {
+          const used = data.tokens_used || 0;
+          const limit = data.tokens_limit || 1.0;
+          setCredits({ used, limit, remaining: Math.max(0, limit - used) });
+        }
+      } catch {}
+      setCreditsLoaded(true);
+    }
+    loadCredits();
+  }, [profile]);
+
   // Cuando hay HTML generado, revelar el iframe tras un frame para que se pinte primero con opacity-0 y luego anime
   useEffect(() => {
     if (!currentHtml) {
@@ -542,6 +565,11 @@ export default function GameLabPage() {
         } catch {
           errData = { error: errText || `Error ${res.status}` };
         }
+        if (errData.code === 'NO_CREDITS') {
+          setMessages((prev) => [...prev, { role: 'andy', content: '😢 Se te acabaron los Créditos de Andy. Para recargar, pedile a alguien de tu familia que desbloquee un juego del catálogo — ¡y vos también recibís créditos para seguir creando!' }]);
+          setSending(false);
+          return;
+        }
         throw new Error(errData.error || `Error ${res.status}`);
       }
 
@@ -558,6 +586,13 @@ export default function GameLabPage() {
           if (payload === '[DONE]') return true;
           try {
             const data = JSON.parse(payload);
+            if (data.credits) {
+              setCredits({
+                used: data.credits.used,
+                limit: data.credits.limit,
+                remaining: data.credits.remaining,
+              });
+            }
             if (data.chunk != null && typeof data.chunk === 'string') {
               fullText += data.chunk;
               const textoVisible = fullText.replace(/```html[\s\S]*?(```|$)/gi, '').replace(/<!DOCTYPE html>[\s\S]*?(<\/html>|$)/gi, '').trim();
@@ -1100,8 +1135,24 @@ export default function GameLabPage() {
           >
             <div className={`w-full flex-1 flex flex-col min-h-0 ${!currentHtml ? 'lg:max-w-[600px] lg:mx-auto' : 'lg:overflow-hidden'}`}>
               {/* Header minimalista */}
-              <div className="px-4 py-2.5 border-b shrink-0 flex items-center justify-between" style={{ borderColor: border, background: bg }}>
-                <h1 className="text-sm font-bold" style={{ color: headerColor }}>Game Lab</h1>
+              <div className="px-4 py-2.5 border-b shrink-0 flex items-center justify-between gap-3" style={{ borderColor: border, background: bg }}>
+                <h1 className="text-sm font-bold shrink-0" style={{ color: headerColor }}>Game Lab</h1>
+                {creditsLoaded && (
+                  <div className="flex items-center gap-2 min-w-0 flex-1 max-w-[200px]">
+                    <div className="flex-1 rounded-full h-2 overflow-hidden" style={{ background: isDark ? '#1a1a2a' : '#e2e8f0' }}>
+                      <div
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{
+                          width: Math.max(2, (credits.remaining / credits.limit) * 100) + '%',
+                          background: credits.remaining > 0.3 ? 'linear-gradient(90deg, #7c3aed, #06b6d4)' : credits.remaining > 0.1 ? '#eab308' : '#ef4444',
+                        }}
+                      />
+                    </div>
+                    <span className="text-[10px] shrink-0 font-medium" style={{ color: textMuted }}>
+                      {credits.remaining <= 0 ? '⚡ Sin créditos' : `⚡ $${credits.remaining.toFixed(2)}`}
+                    </span>
+                  </div>
+                )}
               </div>
 
               <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4" style={{ background: bg }}>

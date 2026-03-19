@@ -95,6 +95,28 @@ export async function POST(request) {
     return NextResponse.json({ error: 'Sesión inválida o expirada' }, { status: 401 });
   }
 
+  const supabaseAdmin = createClient(supabaseUrl, process.env.SUPABASE_SERVICE_ROLE_KEY);
+  const { data: userProfile } = await supabaseAdmin
+    .from('profiles')
+    .select('tokens_used, tokens_limit, is_admin')
+    .eq('id', user.id)
+    .single();
+
+  if (!userProfile) {
+    return NextResponse.json({ error: 'Perfil no encontrado' }, { status: 404 });
+  }
+
+  const isAdmin = !!userProfile.is_admin;
+  if (!isAdmin) {
+    const saldoDisponible = (userProfile.tokens_limit || 1.0) - (userProfile.tokens_used || 0);
+    if (saldoDisponible < 0.01) {
+      return NextResponse.json({
+        error: 'Se te acabaron los Créditos de Andy. Para recargar, desbloqueá un juego del catálogo.',
+        code: 'NO_CREDITS',
+      }, { status: 402 });
+    }
+  }
+
   let body;
   try {
     body = await request.json();
@@ -147,6 +169,8 @@ export async function POST(request) {
       const reader = anthropicRes.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
+      let totalInputTokens = 0;
+      let totalOutputTokens = 0;
 
       try {
         while (true) {
@@ -164,6 +188,14 @@ export async function POST(request) {
 
             try {
               const parsed = JSON.parse(jsonStr);
+
+              if (parsed.type === 'message_start' && parsed.message?.usage) {
+                totalInputTokens = parsed.message.usage.input_tokens || 0;
+              }
+              if (parsed.type === 'message_delta' && parsed.usage) {
+                totalOutputTokens = parsed.usage.output_tokens || 0;
+              }
+
               if (
                 parsed.type === 'content_block_delta' &&
                 parsed.delta?.type === 'text_delta' &&
@@ -179,6 +211,23 @@ export async function POST(request) {
           }
         }
       } finally {
+        if (!isAdmin) {
+          const costUsd = (totalInputTokens * 3 / 1000000) + (totalOutputTokens * 15 / 1000000);
+          if (costUsd > 0) {
+            const newTokensUsed = (userProfile.tokens_used || 0) + costUsd;
+            await supabaseAdmin
+              .from('profiles')
+              .update({ tokens_used: newTokensUsed })
+              .eq('id', user.id);
+
+            const remaining = Math.max(0, (userProfile.tokens_limit || 1.0) - newTokensUsed);
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({
+                credits: { used: newTokensUsed, limit: userProfile.tokens_limit || 1.0, remaining },
+              })}\n\n`)
+            );
+          }
+        }
         controller.enqueue(encoder.encode('data: [DONE]\n\n'));
         controller.close();
       }
