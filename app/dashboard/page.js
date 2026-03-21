@@ -601,6 +601,32 @@ export default function DashboardPage() {
                     </div>
                   );
                 })}
+                <div className={`${cardBase} p-4 flex flex-col justify-between`} style={cardStyle}>
+                  <div>
+                    <p className="text-2xl mb-2">🎮</p>
+                    <h3 className="font-bold text-lg" style={{ color: text }}>¡Creá tu juego!</h3>
+                    <p className="text-xs mt-2" style={{ color: textMuted }}>
+                      Hacé tu propio juego y compartilo con todo el colegio. Podés crearlo con IA o subir uno que ya tengas.
+                    </p>
+                  </div>
+                  <div className="flex flex-col gap-2 mt-4">
+                    <button
+                      type="button"
+                      onClick={() => router.push('/game-lab')}
+                      className="vibe-btn-gradient w-full rounded-xl px-4 py-2.5 text-sm font-bold text-white cursor-pointer"
+                    >
+                      🤖 Crear con Andy
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => router.push('/juegos/subir')}
+                      className="w-full rounded-xl px-4 py-2.5 text-sm font-bold border cursor-pointer transition-colors hover:opacity-80"
+                      style={{ borderColor: border, color: textMuted, background: 'transparent' }}
+                    >
+                      🕹️ Subir mi juego
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
           </section>
@@ -1007,6 +1033,35 @@ export default function DashboardPage() {
                     </div>
                   );
                 })}
+                <div
+                  className={`${cardBase} p-4 flex flex-col justify-between flex-shrink-0`}
+                  style={{ ...cardStyle, width: '75vw', maxWidth: 300 }}
+                >
+                  <div>
+                    <p className="text-2xl mb-2">🎮</p>
+                    <h3 className="font-bold text-base" style={{ color: text }}>¡Creá tu juego!</h3>
+                    <p className="text-xs mt-2" style={{ color: textMuted }}>
+                      Hacé tu propio juego y compartilo con todo el colegio.
+                    </p>
+                  </div>
+                  <div className="flex flex-col gap-2 mt-4">
+                    <button
+                      type="button"
+                      onClick={() => router.push('/game-lab')}
+                      className="vibe-btn-gradient w-full rounded-xl px-4 py-2 text-sm font-bold text-white cursor-pointer"
+                    >
+                      🤖 Crear con Andy
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => router.push('/juegos/subir')}
+                      className="w-full rounded-xl px-4 py-2 text-sm font-bold border cursor-pointer transition-colors hover:opacity-80"
+                      style={{ borderColor: border, color: textMuted, background: 'transparent' }}
+                    >
+                      🕹️ Subir mi juego
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
           </section>

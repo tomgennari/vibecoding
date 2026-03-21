@@ -171,3 +171,7 @@ body {
 .legal-content th, .legal-content td { border: 1px solid #e2e8f0; padding: 0.5rem 0.75rem; text-align: left; }
 .legal-content th { background: #f8fafc; color: #00478e; font-weight: 600; }
 .legal-content blockquote { margin: 1em 0; padding-left: 1em; border-left: 4px solid #00478e; color: #64748b; }
+
+button, [role="button"] {
+  cursor: pointer;
+}
