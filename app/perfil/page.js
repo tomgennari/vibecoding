@@ -69,6 +69,7 @@ export default function PerfilPage() {
   const [deleteError, setDeleteError] = useState('');
   const [credits, setCredits] = useState(null);
   const [showCreditsInfo, setShowCreditsInfo] = useState(false);
+  const [playingGame, setPlayingGame] = useState(null); // { id, title, file_url }
 
   const isDark = theme === 'dark';
   const bg = isDark ? '#0a0a0f' : '#ffffff';
@@ -147,6 +148,15 @@ export default function PerfilPage() {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [deleteModalOpen]);
+
+  useEffect(() => {
+    if (playingGame) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [playingGame]);
 
   async function handleLogout() {
     await supabase.auth.signOut();
@@ -550,6 +560,28 @@ export default function PerfilPage() {
                           {game.status === 'rejected' && game.rejection_reason && (
                             <p className="text-xs mt-2" style={{ color: '#ef4444' }}>Motivo: {game.rejection_reason}</p>
                           )}
+                          <div className="flex gap-2 mt-3">
+                            <button
+                              type="button"
+                              onClick={() => setPlayingGame(game)}
+                              className="flex-1 rounded-lg px-3 py-2 text-xs font-bold border transition-colors hover:opacity-80"
+                              style={{ borderColor: accent, color: accent, background: 'transparent' }}
+                            >
+                              🎮 Jugar
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                sessionStorage.setItem('gamelab_edit_game_id', game.id);
+                                sessionStorage.setItem('gamelab_edit_url', game.file_url);
+                                router.push('/game-lab');
+                              }}
+                              className="flex-1 rounded-lg px-3 py-2 text-xs font-bold border transition-colors hover:opacity-80"
+                              style={{ borderColor: border, color: textMuted, background: 'transparent' }}
+                            >
+                              ✏️ Editar
+                            </button>
+                          </div>
                         </li>
                       ))}
                     </ul>
@@ -621,7 +653,31 @@ export default function PerfilPage() {
         </div>
       )}
 
-      <MobileBottomNav theme={theme} activeTabId="perfil" />
+      {playingGame && (
+        <div className="fixed inset-0 z-50 flex flex-col" style={{ background: '#000' }}>
+          <div className="shrink-0 flex items-center justify-between px-4 py-2" style={{ background: 'rgba(0,0,0,0.9)' }}>
+            <span className="text-white text-sm font-bold truncate mr-4">🎮 {playingGame.title || 'Mi juego'}</span>
+            <button
+              type="button"
+              onClick={() => setPlayingGame(null)}
+              className="text-red-400 text-sm font-bold px-3 py-1 rounded-lg border border-red-400/50 hover:bg-red-400/10 shrink-0"
+            >
+              ✕ Salir
+            </button>
+          </div>
+          <div className="flex-1 min-h-0 overflow-hidden" style={{ touchAction: 'none' }}>
+            <iframe
+              title={playingGame.title || 'Mi juego'}
+              sandbox="allow-scripts allow-same-origin"
+              src={playingGame.file_url}
+              className="w-full h-full border-0"
+              style={{ touchAction: 'auto' }}
+            />
+          </div>
+        </div>
+      )}
+
+      {!playingGame && <MobileBottomNav theme={theme} activeTabId="perfil" />}
     </div>
   );
 }
