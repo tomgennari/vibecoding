@@ -68,15 +68,34 @@ export default function JugarPage() {
   useEffect(() => {
     function handleMessage(event) {
       if (event.data?.type === 'GAME_SCORE' && event.data?.score != null) {
-        supabase
-          .from('game_scores')
-          .select('score, played_at, user_id, profiles(first_name, house)')
-          .eq('game_id', id)
-          .order('score', { ascending: false })
-          .limit(10)
-          .then(({ data }) => {
-            if (data) setHighScores(data);
-          });
+        const scoreValue = Number(event.data.score);
+        if (isNaN(scoreValue) || scoreValue < 0) return;
+
+        // Guardar score en la base de datos
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          if (!session?.user?.id || !id) return;
+
+          supabase
+            .from('game_scores')
+            .insert({
+              user_id: session.user.id,
+              game_id: id,
+              score: scoreValue,
+            })
+            .then(({ error }) => {
+              if (error) {
+                console.error('Error guardando score:', error);
+              }
+              // Recargar highscores después de insertar
+              supabase
+                .from('game_scores')
+                .select('score, played_at, user_id, profiles(first_name, house)')
+                .eq('game_id', id)
+                .order('score', { ascending: false })
+                .limit(10)
+                .then(({ data }) => { if (data) setHighScores(data); });
+            });
+        });
       }
     }
     window.addEventListener('message', handleMessage);
