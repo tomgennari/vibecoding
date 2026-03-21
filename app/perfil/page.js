@@ -581,6 +581,20 @@ export default function PerfilPage() {
                             >
                               ✏️ Editar
                             </button>
+                            {game.status === 'approved' && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const url = `https://sass.vibecoding.ar/jugar/${game.id}`;
+                                  const text = `¡Mirá el juego que creé en Campus San Andrés! 🎮 Jugalo acá: ${url}`;
+                                  window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+                                }}
+                                className="flex-1 rounded-lg px-3 py-2 text-xs font-bold border transition-colors hover:opacity-80"
+                                style={{ borderColor: '#22c55e', color: '#22c55e', background: 'transparent' }}
+                              >
+                                📲 Compartir
+                              </button>
+                            )}
                           </div>
                         </li>
                       ))}
