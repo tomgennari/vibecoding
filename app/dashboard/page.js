@@ -48,6 +48,103 @@ function IconChevronDown({ open }) {
   );
 }
 
+function normalizeGameProfiles(game) {
+  if (!game) return game;
+  const p = game.profiles;
+  return { ...game, profiles: Array.isArray(p) ? p[0] : p };
+}
+
+function GameMetricsFull({
+  game,
+  uniquePlayersByGame,
+  isDark,
+  accent,
+  textMuted,
+  showLikeButton,
+  liked,
+  onToggleLike,
+  likingGameId,
+}) {
+  const plays = uniquePlayersByGame?.[game.id] ?? game.total_plays ?? 0;
+  const bg = isDark ? '#1a1a2a' : '#f1f5f9';
+  const minPlayed = Math.round((game.total_time_played ?? 0) / 60);
+  return (
+    <div className="grid grid-cols-2 gap-2 mt-3">
+      <div className="rounded-lg p-2 text-center" style={{ background: bg }}>
+        <span className="text-base font-black block" style={{ color: accent }}>{plays}</span>
+        <span className="text-[10px]" style={{ color: textMuted }}>jugadores</span>
+      </div>
+      <div className="rounded-lg p-2 text-center" style={{ background: bg }}>
+        <div className="flex items-center justify-center gap-1 min-h-[1.25rem]">
+          {showLikeButton && (
+            <button
+              type="button"
+              onClick={() => onToggleLike(game.id)}
+              disabled={likingGameId === game.id}
+              className="inline-flex items-center justify-center rounded p-0.5 transition-transform duration-150 hover:scale-110 active:scale-[1.2] disabled:opacity-70"
+              aria-label={liked ? 'Quitar like' : 'Dar like'}
+            >
+              <span className="tabular-nums leading-none">{liked ? '❤️' : '🤍'}</span>
+            </button>
+          )}
+          <span className="text-base font-black tabular-nums" style={{ color: '#ef4444' }}>{game.total_likes ?? 0}</span>
+        </div>
+        <span className="text-[10px] block" style={{ color: textMuted }}>likes</span>
+      </div>
+      <div className="rounded-lg p-2 text-center" style={{ background: bg }}>
+        <span className="text-base font-black block" style={{ color: '#22c55e' }}>
+          ${(game.total_revenue ?? 0).toLocaleString('es-AR')}
+        </span>
+        <span className="text-[10px]" style={{ color: textMuted }}>recaudado</span>
+      </div>
+      <div className="rounded-lg p-2 text-center" style={{ background: bg }}>
+        <span className="text-base font-black block" style={{ color: '#06b6d4' }}>{minPlayed}</span>
+        <span className="text-[10px]" style={{ color: textMuted }}>min jugados</span>
+      </div>
+    </div>
+  );
+}
+
+function GameMetricsCompact({
+  game,
+  uniquePlayersByGame,
+  isDark,
+  accent,
+  textMuted,
+  showLikeButton,
+  liked,
+  onToggleLike,
+  likingGameId,
+}) {
+  const plays = uniquePlayersByGame?.[game.id] ?? game.total_plays ?? 0;
+  const bg = isDark ? '#1a1a2a' : '#f1f5f9';
+  return (
+    <div className="flex gap-2 mt-2">
+      <div className="flex-1 rounded-lg p-1.5 text-center" style={{ background: bg }}>
+        <span className="text-sm font-black block" style={{ color: accent }}>{plays}</span>
+        <span className="text-[9px]" style={{ color: textMuted }}>jugadores</span>
+      </div>
+      <div className="flex-1 rounded-lg p-1.5 text-center" style={{ background: bg }}>
+        <div className="flex items-center justify-center gap-0.5">
+          {showLikeButton && (
+            <button
+              type="button"
+              onClick={() => onToggleLike(game.id)}
+              disabled={likingGameId === game.id}
+              className="inline-flex items-center justify-center rounded p-0.5 transition-transform duration-150 hover:scale-110 active:scale-[1.2] disabled:opacity-70"
+              aria-label={liked ? 'Quitar like' : 'Dar like'}
+            >
+              <span className="tabular-nums text-xs leading-none">{liked ? '❤️' : '🤍'}</span>
+            </button>
+          )}
+          <span className="text-sm font-black tabular-nums" style={{ color: '#ef4444' }}>{game.total_likes ?? 0}</span>
+        </div>
+        <span className="text-[9px] block" style={{ color: textMuted }}>likes</span>
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const [theme, toggleTheme] = useDashboardTheme();
@@ -111,7 +208,7 @@ export default function DashboardPage() {
         supabase.from('game_sessions').select('game_id, user_id').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('daily_free_games').select('game_id').eq('active_date', today).then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('game_unlocks').select('game_id').eq('user_id', uid).then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
-        supabase.from('games').select('*').eq('status', 'approved').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
+        supabase.from('games').select('*, profiles(first_name, last_name)').eq('status', 'approved').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('game_likes').select('game_id').eq('user_id', uid).then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('buildings').select('*').order('display_order', { ascending: true }).then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => supabase.from('buildings').select('*').order('name', { ascending: true }).then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true }))),
         supabase.from('game_unlocks').select('game_id, amount_paid').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
@@ -141,7 +238,7 @@ export default function DashboardPage() {
 
       const dailyIds = (dailyIdsRes.data || []).map((row) => row.game_id).filter(Boolean);
       const unlockedIds = (unlocksListRes.data || []).map((row) => row.game_id).filter(Boolean);
-      const approvedGames = approvedGamesRes.data || [];
+      const approvedGames = (approvedGamesRes.data || []).map((g) => normalizeGameProfiles(g));
 
       setDailyGames(approvedGames.filter((g) => g.id && dailyIds.includes(g.id)));
       setGamesToUnlock(approvedGames.filter((g) => g.id && !unlockedIds.includes(g.id) && !dailyIds.includes(g.id)));
@@ -263,6 +360,7 @@ export default function DashboardPage() {
   const userHouse = profile?.house || 'william_brown';
   const displayName = profile ? [profile.first_name, profile.last_name].filter(Boolean).join(' ') || 'Usuario' : 'Usuario';
   const hasUnlockedGames = unlockedGames.length > 0;
+  const dailyGameIdSet = useMemo(() => new Set(dailyGames.map((g) => g.id)), [dailyGames]);
 
   const progressBarBg = isDark ? 'var(--vibe-border)' : '#e2e8f0';
   const progressBarFill = isDark ? 'var(--vibe-gradient-primary)' : 'linear-gradient(135deg, #7c3aed 0%, #06b6d4 100%)';
@@ -494,26 +592,33 @@ export default function DashboardPage() {
                   const house = HOUSES.find((h) => h.id === game.house) || HOUSES[0];
                   return (
                     <div key={game.id} className={`${cardBase} p-4 flex flex-col`} style={cardStyle}>
+                      <div className="flex items-center gap-1.5 mb-2 min-w-0">
+                        <Image src={house.image} alt={house.name} width={20} height={20} className="flex-shrink-0 object-contain" />
+                        <span className="text-[10px] font-bold truncate" style={{ color: house.color }}>{house.name}</span>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5 mb-2 min-w-0">
+                        <span className="inline-block rounded-md px-2 py-0.5 text-[10px] font-bold uppercase" style={{ background: '#22c55e', color: '#fff' }}>
+                          GRATIS HOY
+                        </span>
+                      </div>
                       <h3 className="font-bold text-lg break-words min-w-0" style={{ color: text }}>{game.title || 'Juego'}</h3>
-                      <p className="text-sm mt-2 flex-1 break-words min-w-0" style={{ color: textMuted }}>{game.description || ''}</p>
-                      <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-2 text-[11px] items-center" style={{ color: textMuted }}>
-                        <span>👥 {uniquePlayersByGame[game.id] ?? 0} jugadores</span>
-                        <button
-                          type="button"
-                          onClick={() => handleToggleLike(game.id)}
-                          disabled={likingGameId === game.id}
-                          className="inline-flex items-center gap-0.5 rounded p-0.5 transition-transform duration-150 hover:scale-110 active:scale-[1.2] disabled:opacity-70"
-                          aria-label={userLikedIds.has(game.id) ? 'Quitar like' : 'Dar like'}
-                        >
-                          <span className="tabular-nums">{userLikedIds.has(game.id) ? '❤️' : '🤍'}</span>
-                          <span>{game.total_likes ?? 0}</span>
-                        </button>
-                        <span>💰 ${(game.total_revenue ?? 0).toLocaleString('es-AR')} ARS recaudado</span>
-                      </div>
-                      <div className="flex items-center gap-2 mt-3 min-w-0">
-                        <Image src={house.image} alt={house.name} width={28} height={28} className="flex-shrink-0 object-contain" />
-                        <span className="text-xs font-bold uppercase truncate" style={{ color: house.color }}>{house.name}</span>
-                      </div>
+                      {game.show_author !== false && game.profiles?.first_name && (
+                        <p className="text-xs mt-0.5" style={{ color: textMuted }}>
+                          por {game.profiles.first_name}
+                        </p>
+                      )}
+                      <p className="text-xs mt-1 flex-1 break-words min-w-0 line-clamp-2" style={{ color: textMuted }}>{game.description || ''}</p>
+                      <GameMetricsFull
+                        game={game}
+                        uniquePlayersByGame={uniquePlayersByGame}
+                        isDark={isDark}
+                        accent={accent}
+                        textMuted={textMuted}
+                        showLikeButton
+                        liked={userLikedIds.has(game.id)}
+                        onToggleLike={handleToggleLike}
+                        likingGameId={likingGameId}
+                      />
                       <Link href={`/jugar/${game.id}`} className="vibe-btn-gradient mt-4 w-full rounded-xl py-3.5 font-bold text-white text-center block">
                         Jugar
                       </Link>
@@ -541,17 +646,28 @@ export default function DashboardPage() {
                 const house = HOUSES.find((h) => h.id === game.house) || HOUSES[0];
                 return (
                   <div key={game.id} className="flex-shrink-0 w-[220px] rounded-xl border p-4 flex flex-col min-w-0 overflow-hidden" style={cardStyle}>
-                    <div className="flex items-center gap-2 mb-2 min-w-0">
-                      <Image src={house.image} alt={house.name} width={24} height={24} className="flex-shrink-0 object-contain" />
-                      <span className="text-xs font-bold truncate" style={{ color: house.color }}>{house.name}</span>
+                    <div className="flex items-center gap-1.5 mb-2 min-w-0">
+                      <Image src={house.image} alt={house.name} width={20} height={20} className="flex-shrink-0 object-contain" />
+                      <span className="text-[10px] font-bold truncate" style={{ color: house.color }}>{house.name}</span>
                     </div>
                     <h3 className="font-bold text-sm break-words min-w-0" style={{ color: text }}>{game.title || 'Juego'}</h3>
-                    <p className="text-xs mt-1 flex-1 break-words min-w-0" style={{ color: textMuted }}>{game.description || ''}</p>
-                    <div className="flex flex-wrap gap-x-2 gap-y-0.5 mt-2 text-[11px] min-w-0" style={{ color: textMuted }}>
-                      <span>👥 {uniquePlayersByGame[game.id] ?? 0} jugadores</span>
-                      <span>❤️ 0 likes</span>
-                      <span>💰 ${(game.total_revenue ?? 0).toLocaleString('es-AR')} ARS recaudado</span>
-                    </div>
+                    {game.show_author !== false && game.profiles?.first_name && (
+                      <p className="text-xs mt-0.5" style={{ color: textMuted }}>
+                        por {game.profiles.first_name}
+                      </p>
+                    )}
+                    <p className="text-xs mt-1 flex-1 break-words min-w-0 line-clamp-2" style={{ color: textMuted }}>{game.description || ''}</p>
+                    <GameMetricsCompact
+                      game={game}
+                      uniquePlayersByGame={uniquePlayersByGame}
+                      isDark={isDark}
+                      accent={accent}
+                      textMuted={textMuted}
+                      showLikeButton={false}
+                      liked={userLikedIds.has(game.id)}
+                      onToggleLike={handleToggleLike}
+                      likingGameId={likingGameId}
+                    />
                     <p className="text-lg font-black tabular-nums mt-2 flex-shrink-0" style={{ color: accent }}>
                       ${(Number(game.price) || 5000).toLocaleString('es-AR')} ARS
                     </p>
@@ -620,25 +736,39 @@ export default function DashboardPage() {
                   const house = HOUSES.find((h) => h.id === game.house) || HOUSES[0];
                   return (
                     <div key={game.id} className="flex-shrink-0 w-[220px] rounded-xl border p-4 flex flex-col min-w-0 overflow-hidden" style={cardStyle}>
-                      <div className="flex items-center gap-2 mb-2 min-w-0">
-                        <Image src={house.image} alt={house.name} width={24} height={24} className="flex-shrink-0 object-contain" />
-                        <span className="text-xs font-bold truncate" style={{ color: house.color }}>{house.name}</span>
+                      <div className="flex items-center gap-1.5 mb-2 min-w-0">
+                        <Image src={house.image} alt={house.name} width={20} height={20} className="flex-shrink-0 object-contain" />
+                        <span className="text-[10px] font-bold truncate" style={{ color: house.color }}>{house.name}</span>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5 mb-2 min-w-0">
+                        {dailyGameIdSet.has(game.id) ? (
+                          <span className="inline-block rounded-md px-2 py-0.5 text-[10px] font-bold uppercase" style={{ background: '#22c55e', color: '#fff' }}>
+                            GRATIS HOY
+                          </span>
+                        ) : (
+                          <span className="inline-block rounded-md px-2 py-0.5 text-[10px] font-bold uppercase" style={{ background: accent, color: '#fff' }}>
+                            DESBLOQUEADO
+                          </span>
+                        )}
                       </div>
                       <h3 className="font-bold text-sm break-words min-w-0" style={{ color: text }}>{game.title || 'Juego'}</h3>
-                      <div className="flex flex-wrap gap-x-2 gap-y-0.5 mt-2 text-[11px] min-w-0 items-center" style={{ color: textMuted }}>
-                        <span>👥 {uniquePlayersByGame[game.id] ?? 0}</span>
-                        <button
-                          type="button"
-                          onClick={() => handleToggleLike(game.id)}
-                          disabled={likingGameId === game.id}
-                          className="inline-flex items-center gap-0.5 rounded p-0.5 transition-transform duration-150 hover:scale-110 active:scale-[1.2] disabled:opacity-70"
-                          aria-label={userLikedIds.has(game.id) ? 'Quitar like' : 'Dar like'}
-                        >
-                          <span className="tabular-nums">{userLikedIds.has(game.id) ? '❤️' : '🤍'}</span>
-                          <span>{game.total_likes ?? 0}</span>
-                        </button>
-                        <span>💰 ${(game.total_revenue ?? 0).toLocaleString('es-AR')} ARS</span>
-                      </div>
+                      {game.show_author !== false && game.profiles?.first_name && (
+                        <p className="text-xs mt-0.5" style={{ color: textMuted }}>
+                          por {game.profiles.first_name}
+                        </p>
+                      )}
+                      <p className="text-xs mt-1 flex-1 break-words min-w-0 line-clamp-2" style={{ color: textMuted }}>{game.description || ''}</p>
+                      <GameMetricsCompact
+                        game={game}
+                        uniquePlayersByGame={uniquePlayersByGame}
+                        isDark={isDark}
+                        accent={accent}
+                        textMuted={textMuted}
+                        showLikeButton
+                        liked={userLikedIds.has(game.id)}
+                        onToggleLike={handleToggleLike}
+                        likingGameId={likingGameId}
+                      />
                       <Link href={`/jugar/${game.id}`} className="vibe-btn-gradient mt-3 w-full rounded-xl py-2.5 font-bold text-white text-sm text-center block">Jugar</Link>
                     </div>
                   );
@@ -858,24 +988,33 @@ export default function DashboardPage() {
                   const house = HOUSES.find((h) => h.id === game.house) || HOUSES[0];
                   return (
                     <div key={game.id} className="flex-shrink-0 rounded-xl border p-4 flex flex-col min-w-0 overflow-hidden" style={{ width: '75vw', ...cardStyle }}>
-                      <div className="flex items-center gap-2 mb-2 min-w-0">
-                        <Image src={house.image} alt={house.name} width={28} height={28} className="flex-shrink-0 object-contain" />
-                        <span className="text-xs font-bold truncate" style={{ color: house.color }}>{house.name}</span>
+                      <div className="flex items-center gap-1.5 mb-2 min-w-0">
+                        <Image src={house.image} alt={house.name} width={20} height={20} className="flex-shrink-0 object-contain" />
+                        <span className="text-[10px] font-bold truncate" style={{ color: house.color }}>{house.name}</span>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5 mb-2 min-w-0">
+                        <span className="inline-block rounded-md px-2 py-0.5 text-[10px] font-bold uppercase" style={{ background: '#22c55e', color: '#fff' }}>
+                          GRATIS HOY
+                        </span>
                       </div>
                       <h3 className="font-bold text-sm break-words min-w-0 flex-1" style={{ color: text }}>{game.title || 'Juego'}</h3>
-                      <div className="flex items-center gap-2 mt-2">
-                        <button
-                          type="button"
-                          onClick={() => handleToggleLike(game.id)}
-                          disabled={likingGameId === game.id}
-                          className="inline-flex items-center gap-0.5 rounded p-0.5 text-[11px] transition-transform duration-150 hover:scale-110 active:scale-[1.2] disabled:opacity-70"
-                          style={{ color: textMuted }}
-                          aria-label={userLikedIds.has(game.id) ? 'Quitar like' : 'Dar like'}
-                        >
-                          <span className="tabular-nums">{userLikedIds.has(game.id) ? '❤️' : '🤍'}</span>
-                          <span>{game.total_likes ?? 0}</span>
-                        </button>
-                      </div>
+                      {game.show_author !== false && game.profiles?.first_name && (
+                        <p className="text-xs mt-0.5" style={{ color: textMuted }}>
+                          por {game.profiles.first_name}
+                        </p>
+                      )}
+                      <p className="text-xs mt-1 flex-1 break-words min-w-0 line-clamp-2" style={{ color: textMuted }}>{game.description || ''}</p>
+                      <GameMetricsCompact
+                        game={game}
+                        uniquePlayersByGame={uniquePlayersByGame}
+                        isDark={isDark}
+                        accent={accent}
+                        textMuted={textMuted}
+                        showLikeButton
+                        liked={userLikedIds.has(game.id)}
+                        onToggleLike={handleToggleLike}
+                        likingGameId={likingGameId}
+                      />
                       <Link href={`/jugar/${game.id}`} className="vibe-btn-gradient mt-3 w-full rounded-xl py-3 font-bold text-white text-sm text-center block">Jugar</Link>
                     </div>
                   );
@@ -920,12 +1059,28 @@ export default function DashboardPage() {
                   const house = HOUSES.find((h) => h.id === game.house) || HOUSES[0];
                   return (
                     <div key={game.id} className="flex-shrink-0 rounded-xl border p-4 flex flex-col min-w-0 overflow-hidden" style={{ width: '75vw', ...cardStyle }}>
-                      <div className="flex items-center gap-2 mb-2 min-w-0">
-                        <Image src={house.image} alt={house.name} width={24} height={24} className="flex-shrink-0 object-contain" />
-                        <span className="text-xs font-bold truncate" style={{ color: house.color }}>{house.name}</span>
+                      <div className="flex items-center gap-1.5 mb-2 min-w-0">
+                        <Image src={house.image} alt={house.name} width={20} height={20} className="flex-shrink-0 object-contain" />
+                        <span className="text-[10px] font-bold truncate" style={{ color: house.color }}>{house.name}</span>
                       </div>
                       <h3 className="font-bold text-sm break-words min-w-0" style={{ color: text }}>{game.title || 'Juego'}</h3>
+                      {game.show_author !== false && game.profiles?.first_name && (
+                        <p className="text-xs mt-0.5" style={{ color: textMuted }}>
+                          por {game.profiles.first_name}
+                        </p>
+                      )}
                       <p className="text-xs mt-1 flex-1 break-words min-w-0 line-clamp-2" style={{ color: textMuted }}>{game.description || ''}</p>
+                      <GameMetricsCompact
+                        game={game}
+                        uniquePlayersByGame={uniquePlayersByGame}
+                        isDark={isDark}
+                        accent={accent}
+                        textMuted={textMuted}
+                        showLikeButton={false}
+                        liked={userLikedIds.has(game.id)}
+                        onToggleLike={handleToggleLike}
+                        likingGameId={likingGameId}
+                      />
                       <p className="text-lg font-black tabular-nums mt-2 flex-shrink-0" style={{ color: accent }}>
                         ${(Number(game.price) || 5000).toLocaleString('es-AR')} ARS
                       </p>
@@ -963,24 +1118,39 @@ export default function DashboardPage() {
                   const house = HOUSES.find((h) => h.id === game.house) || HOUSES[0];
                   return (
                     <div key={game.id} className="rounded-xl border p-4 flex flex-col min-w-0 overflow-hidden" style={cardStyle}>
-                      <div className="flex items-center gap-2 mb-2 min-w-0">
-                        <Image src={house.image} alt={house.name} width={24} height={24} className="flex-shrink-0 object-contain" />
-                        <span className="text-xs font-bold truncate" style={{ color: house.color }}>{house.name}</span>
+                      <div className="flex items-center gap-1.5 mb-2 min-w-0">
+                        <Image src={house.image} alt={house.name} width={20} height={20} className="flex-shrink-0 object-contain" />
+                        <span className="text-[10px] font-bold truncate" style={{ color: house.color }}>{house.name}</span>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5 mb-2 min-w-0">
+                        {dailyGameIdSet.has(game.id) ? (
+                          <span className="inline-block rounded-md px-2 py-0.5 text-[10px] font-bold uppercase" style={{ background: '#22c55e', color: '#fff' }}>
+                            GRATIS HOY
+                          </span>
+                        ) : (
+                          <span className="inline-block rounded-md px-2 py-0.5 text-[10px] font-bold uppercase" style={{ background: accent, color: '#fff' }}>
+                            DESBLOQUEADO
+                          </span>
+                        )}
                       </div>
                       <h3 className="font-bold text-sm break-words min-w-0" style={{ color: text }}>{game.title || 'Juego'}</h3>
-                      <div className="flex items-center mt-2">
-                        <button
-                          type="button"
-                          onClick={() => handleToggleLike(game.id)}
-                          disabled={likingGameId === game.id}
-                          className="inline-flex items-center gap-0.5 rounded p-0.5 text-[11px] transition-transform duration-150 hover:scale-110 active:scale-[1.2] disabled:opacity-70"
-                          style={{ color: textMuted }}
-                          aria-label={userLikedIds.has(game.id) ? 'Quitar like' : 'Dar like'}
-                        >
-                          <span className="tabular-nums">{userLikedIds.has(game.id) ? '❤️' : '🤍'}</span>
-                          <span>{game.total_likes ?? 0}</span>
-                        </button>
-                      </div>
+                      {game.show_author !== false && game.profiles?.first_name && (
+                        <p className="text-xs mt-0.5" style={{ color: textMuted }}>
+                          por {game.profiles.first_name}
+                        </p>
+                      )}
+                      <p className="text-xs mt-1 flex-1 break-words min-w-0 line-clamp-2" style={{ color: textMuted }}>{game.description || ''}</p>
+                      <GameMetricsCompact
+                        game={game}
+                        uniquePlayersByGame={uniquePlayersByGame}
+                        isDark={isDark}
+                        accent={accent}
+                        textMuted={textMuted}
+                        showLikeButton
+                        liked={userLikedIds.has(game.id)}
+                        onToggleLike={handleToggleLike}
+                        likingGameId={likingGameId}
+                      />
                       <Link href={`/jugar/${game.id}`} className="vibe-btn-gradient mt-3 w-full rounded-xl py-2.5 font-bold text-white text-sm text-center block">Jugar</Link>
                     </div>
                   );

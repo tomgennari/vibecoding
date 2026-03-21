@@ -24,6 +24,103 @@ const SORT_OPTIONS = [
   { id: 'revenue', label: 'Más recaudado' },
 ];
 
+function normalizeGameProfiles(game) {
+  if (!game) return game;
+  const p = game.profiles;
+  return { ...game, profiles: Array.isArray(p) ? p[0] : p };
+}
+
+function GameMetricsFull({
+  game,
+  uniquePlayersByGame,
+  isDark,
+  accent,
+  textMuted,
+  showLikeButton,
+  liked,
+  onToggleLike,
+  likingGameId,
+}) {
+  const plays = uniquePlayersByGame?.[game.id] ?? game.total_plays ?? 0;
+  const bg = isDark ? '#1a1a2a' : '#f1f5f9';
+  const minPlayed = Math.round((game.total_time_played ?? 0) / 60);
+  return (
+    <div className="grid grid-cols-2 gap-2 mt-3">
+      <div className="rounded-lg p-2 text-center" style={{ background: bg }}>
+        <span className="text-base font-black block" style={{ color: accent }}>{plays}</span>
+        <span className="text-[10px]" style={{ color: textMuted }}>jugadores</span>
+      </div>
+      <div className="rounded-lg p-2 text-center" style={{ background: bg }}>
+        <div className="flex items-center justify-center gap-1 min-h-[1.25rem]">
+          {showLikeButton && (
+            <button
+              type="button"
+              onClick={() => onToggleLike(game.id)}
+              disabled={likingGameId === game.id}
+              className="inline-flex items-center justify-center rounded p-0.5 transition-transform duration-150 hover:scale-110 active:scale-[1.2] disabled:opacity-70"
+              aria-label={liked ? 'Quitar like' : 'Dar like'}
+            >
+              <span className="tabular-nums leading-none">{liked ? '❤️' : '🤍'}</span>
+            </button>
+          )}
+          <span className="text-base font-black tabular-nums" style={{ color: '#ef4444' }}>{game.total_likes ?? 0}</span>
+        </div>
+        <span className="text-[10px] block" style={{ color: textMuted }}>likes</span>
+      </div>
+      <div className="rounded-lg p-2 text-center" style={{ background: bg }}>
+        <span className="text-base font-black block" style={{ color: '#22c55e' }}>
+          ${(game.total_revenue ?? 0).toLocaleString('es-AR')}
+        </span>
+        <span className="text-[10px]" style={{ color: textMuted }}>recaudado</span>
+      </div>
+      <div className="rounded-lg p-2 text-center" style={{ background: bg }}>
+        <span className="text-base font-black block" style={{ color: '#06b6d4' }}>{minPlayed}</span>
+        <span className="text-[10px]" style={{ color: textMuted }}>min jugados</span>
+      </div>
+    </div>
+  );
+}
+
+function GameMetricsCompact({
+  game,
+  uniquePlayersByGame,
+  isDark,
+  accent,
+  textMuted,
+  showLikeButton,
+  liked,
+  onToggleLike,
+  likingGameId,
+}) {
+  const plays = uniquePlayersByGame?.[game.id] ?? game.total_plays ?? 0;
+  const bg = isDark ? '#1a1a2a' : '#f1f5f9';
+  return (
+    <div className="flex gap-2 mt-2">
+      <div className="flex-1 rounded-lg p-1.5 text-center" style={{ background: bg }}>
+        <span className="text-sm font-black block" style={{ color: accent }}>{plays}</span>
+        <span className="text-[9px]" style={{ color: textMuted }}>jugadores</span>
+      </div>
+      <div className="flex-1 rounded-lg p-1.5 text-center" style={{ background: bg }}>
+        <div className="flex items-center justify-center gap-0.5">
+          {showLikeButton && (
+            <button
+              type="button"
+              onClick={() => onToggleLike(game.id)}
+              disabled={likingGameId === game.id}
+              className="inline-flex items-center justify-center rounded p-0.5 transition-transform duration-150 hover:scale-110 active:scale-[1.2] disabled:opacity-70"
+              aria-label={liked ? 'Quitar like' : 'Dar like'}
+            >
+              <span className="tabular-nums text-xs leading-none">{liked ? '❤️' : '🤍'}</span>
+            </button>
+          )}
+          <span className="text-sm font-black tabular-nums" style={{ color: '#ef4444' }}>{game.total_likes ?? 0}</span>
+        </div>
+        <span className="text-[9px] block" style={{ color: textMuted }}>likes</span>
+      </div>
+    </div>
+  );
+}
+
 export default function JuegosPage() {
   const router = useRouter();
   const [theme, toggleTheme] = useDashboardTheme();
@@ -84,7 +181,7 @@ export default function JuegosPage() {
         unlocksRes,
         dailyRes,
       ] = await Promise.all([
-        supabase.from('games').select('*').eq('status', 'approved').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
+        supabase.from('games').select('*, profiles(first_name, last_name)').eq('status', 'approved').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('game_sessions').select('game_id, user_id').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('game_likes').select('game_id').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('game_likes').select('game_id').eq('user_id', uid).then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
@@ -106,7 +203,7 @@ export default function JuegosPage() {
       });
 
       const withMetrics = gamesList.map((g) => ({
-        ...g,
+        ...normalizeGameProfiles(g),
         total_plays: uniquePlayersByGame[g.id]?.size || 0,
         total_likes: likesByGame[g.id] || 0,
         total_revenue: Number(g.total_revenue) || 0,
@@ -441,9 +538,9 @@ export default function JuegosPage() {
 
             return (
               <div key={game.id} className={`${cardBase} p-4 flex flex-col`} style={cardStyle}>
-                <div className="flex items-center gap-2 mb-2 min-w-0">
-                  <Image src={house.image} alt={house.name} width={32} height={32} className="flex-shrink-0 object-contain" />
-                  <span className="text-xs font-bold truncate" style={{ color: house.color }}>{house.name}</span>
+                <div className="flex items-center gap-1.5 mb-2 min-w-0">
+                  <Image src={house.image} alt={house.name} width={20} height={20} className="flex-shrink-0 object-contain" />
+                  <span className="text-[10px] font-bold truncate" style={{ color: house.color }}>{house.name}</span>
                 </div>
                 <div className="flex flex-wrap gap-1.5 mb-2 min-w-0">
                   {isFreeToday && (
@@ -458,24 +555,37 @@ export default function JuegosPage() {
                   )}
                 </div>
                 <h2 className="font-bold text-base break-words min-w-0" style={{ color: text }}>{game.title || 'Juego'}</h2>
+                {game.show_author !== false && game.profiles?.first_name && (
+                  <p className="text-xs mt-0.5" style={{ color: textMuted }}>
+                    por {game.profiles.first_name}
+                  </p>
+                )}
                 <p className="text-xs mt-1 line-clamp-2 break-words min-w-0 flex-1" style={{ color: textMuted }}>{game.description || ''}</p>
-                <div className="flex flex-wrap gap-x-2 gap-y-0.5 mt-2 text-[11px] min-w-0 items-center" style={{ color: textMuted }}>
-                  <span>👥 {game.total_plays ?? 0} jugadores</span>
-                  {canPlay ? (
-                    <button
-                      type="button"
-                      onClick={() => handleToggleLike(game.id)}
-                      disabled={likingGameId === game.id}
-                      className="inline-flex items-center gap-0.5 rounded p-0.5 transition-transform duration-150 hover:scale-110 active:scale-[1.2] disabled:opacity-70"
-                      aria-label={userLikedIds.has(game.id) ? 'Quitar like' : 'Dar like'}
-                    >
-                      <span className="tabular-nums">{userLikedIds.has(game.id) ? '❤️' : '🤍'}</span>
-                      <span>{game.total_likes ?? 0}</span>
-                    </button>
-                  ) : (
-                    <span>❤️ {game.total_likes ?? 0} likes</span>
-                  )}
-                  <span>💰 ${(game.total_revenue ?? 0).toLocaleString('es-AR')} ARS</span>
+                <div className="md:hidden">
+                  <GameMetricsCompact
+                    game={game}
+                    uniquePlayersByGame={{}}
+                    isDark={isDark}
+                    accent={accent}
+                    textMuted={textMuted}
+                    showLikeButton={canPlay}
+                    liked={userLikedIds.has(game.id)}
+                    onToggleLike={handleToggleLike}
+                    likingGameId={likingGameId}
+                  />
+                </div>
+                <div className="hidden md:block">
+                  <GameMetricsFull
+                    game={game}
+                    uniquePlayersByGame={{}}
+                    isDark={isDark}
+                    accent={accent}
+                    textMuted={textMuted}
+                    showLikeButton={canPlay}
+                    liked={userLikedIds.has(game.id)}
+                    onToggleLike={handleToggleLike}
+                    likingGameId={likingGameId}
+                  />
                 </div>
                 {!canPlay && (
                   <p className="text-lg font-black tabular-nums mt-2 flex-shrink-0" style={{ color: accent }}>
