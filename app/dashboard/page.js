@@ -1093,7 +1093,17 @@ export default function DashboardPage() {
 
           {/* Juegos para desbloquear — scroll horizontal mismo estilo que Juegos del día */}
           <section className="min-w-0">
-            <h2 className="text-base font-bold mb-3 w-full" style={{ color: text }}>🎮 Juegos para desbloquear</h2>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-lg font-bold" style={{ color: text }}>🎮 Juegos para desbloquear</h2>
+              <button
+                type="button"
+                onClick={() => router.push('/juegos')}
+                className="text-xs font-bold px-3 py-1 rounded-lg border cursor-pointer hover:opacity-80"
+                style={{ borderColor: border, color: accent }}
+              >
+                Ver todos →
+              </button>
+            </div>
             {gamesToUnlock.length === 0 ? (
               <p className="text-sm py-4 rounded-xl border text-center min-w-0" style={{ color: textMuted, ...cardStyle }}>No hay más juegos para desbloquear</p>
             ) : (

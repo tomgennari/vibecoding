@@ -5,7 +5,7 @@ import { useCreateGameModal } from '@/lib/create-game-context.js';
 import { useUser } from '@/lib/user-context.js';
 
 const TABS = [
-  { id: 'juegos-dia', label: 'Juegos', icon: '🎮', href: '/dashboard' },
+  { id: 'juegos-dia', label: 'Juegos', icon: '🎮', href: '/juegos' },
   { id: 'ranking-houses', label: 'Ranking', icon: '🏆', href: '/dashboard' },
   { id: 'crear-juego', label: 'Crear', icon: '🕹️', href: '/juegos/subir' },
   { id: 'progreso-campus', label: 'Campus', icon: '🏗', href: '/dashboard' },
@@ -25,6 +25,10 @@ export function MobileBottomNav({ theme, activeTabId, onTabChange }) {
   function handleTabClick(tab) {
     if (tab.id === 'crear-juego') {
       openCreateGameModal();
+      return;
+    }
+    if (tab.id === 'juegos-dia') {
+      router.push('/juegos');
       return;
     }
     if (tab.id === 'perfil') {
