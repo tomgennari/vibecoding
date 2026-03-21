@@ -34,9 +34,13 @@ export default function JugarPage() {
   const sessionIdRef = useRef(null);
   const startTimeRef = useRef(null);
   const accessTokenRef = useRef(null);
+  const gameContainerRef = useRef(null);
 
   const [iframeSrc, setIframeSrc] = useState('');
   const [needsUnlock, setNeedsUnlock] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [highScores, setHighScores] = useState([]);
+  const [showHighScores, setShowHighScores] = useState(false);
 
   const theme = 'dark';
   const isDark = theme === 'dark';
@@ -52,6 +56,32 @@ export default function JugarPage() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    function onFsChange() {
+      setIsFullscreen(!!document.fullscreenElement);
+    }
+    document.addEventListener('fullscreenchange', onFsChange);
+    return () => document.removeEventListener('fullscreenchange', onFsChange);
+  }, []);
+
+  useEffect(() => {
+    function handleMessage(event) {
+      if (event.data?.type === 'GAME_SCORE' && event.data?.score != null) {
+        supabase
+          .from('game_scores')
+          .select('score, played_at, user_id, profiles(first_name, house)')
+          .eq('game_id', id)
+          .order('score', { ascending: false })
+          .limit(10)
+          .then(({ data }) => {
+            if (data) setHighScores(data);
+          });
+      }
+    }
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [id]);
 
   useEffect(() => {
     if (!id) {
@@ -80,6 +110,16 @@ export default function JugarPage() {
       }
       setGame(data);
       setTotalLikes(Number(data.total_likes) || 0);
+
+      // Cargar top 10 highscores
+      const { data: scores } = await supabase
+        .from('game_scores')
+        .select('score, played_at, user_id, profiles(first_name, house)')
+        .eq('game_id', id)
+        .order('score', { ascending: false })
+        .limit(10);
+      if (scores) setHighScores(scores);
+
       const { data: likeRow } = await supabase.from('game_likes').select('id').eq('user_id', session.user.id).eq('game_id', id).maybeSingle();
       setUserLiked(Boolean(likeRow));
 
@@ -212,6 +252,16 @@ export default function JugarPage() {
     }
   }
 
+  function toggleFullscreen() {
+    const el = gameContainerRef.current;
+    if (!el) return;
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    } else {
+      el.requestFullscreen().catch(() => {});
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center font-sans bg-[#0a0a0f] text-[#94a3b8]">
@@ -238,6 +288,61 @@ export default function JugarPage() {
           {copyMessage}
         </div>
       )}
+      {showHighScores && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.7)' }}
+          onClick={() => setShowHighScores(false)}
+        >
+          <div
+            className="rounded-2xl border p-6 max-w-sm w-full"
+            style={{ background: '#13131a', borderColor: '#2a2a3a' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold" style={{ color: '#f1f5f9' }}>🏆 Top 10 — {game?.title}</h2>
+              <button
+                type="button"
+                onClick={() => setShowHighScores(false)}
+                className="text-lg cursor-pointer"
+                style={{ color: '#94a3b8' }}
+              >
+                ✕
+              </button>
+            </div>
+            {highScores.length === 0 ? (
+              <p className="text-sm text-center py-6" style={{ color: '#94a3b8' }}>
+                Todavía no hay puntajes. ¡Sé el primero!
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {highScores.map((s, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center justify-between rounded-lg px-3 py-2"
+                    style={{
+                      background: i === 0 ? 'rgba(234,179,8,0.15)' : i === 1 ? 'rgba(148,163,184,0.1)' : i === 2 ? 'rgba(180,83,9,0.1)' : 'transparent',
+                      borderLeft: i < 3 ? `3px solid ${i === 0 ? '#eab308' : i === 1 ? '#94a3b8' : '#b45309'}` : '3px solid transparent',
+                    }}
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-sm font-bold w-6 text-center" style={{ color: i === 0 ? '#eab308' : i === 1 ? '#94a3b8' : i === 2 ? '#b45309' : '#64748b' }}>
+                        {i + 1}
+                      </span>
+                      <span className="text-sm truncate" style={{ color: '#f1f5f9' }}>
+                        {s.profiles?.first_name || 'Anónimo'}
+                      </span>
+                    </div>
+                    <span className="text-sm font-black tabular-nums" style={{ color: '#7c3aed' }}>
+                      {Number(s.score).toLocaleString()}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
       <header className="flex-shrink-0 flex items-center justify-between gap-3 px-4 py-3 border-b border-[#2a2a3a] bg-[#13131a]">
         <Link href="/dashboard" className="text-sm font-medium flex-shrink-0" style={{ color: '#94a3b8' }}>← Volver</Link>
         <h1 className="text-lg font-bold truncate max-w-[30%] min-w-0" style={{ color: '#f1f5f9' }}>{game.title || 'Juego'}</h1>
@@ -252,6 +357,14 @@ export default function JugarPage() {
           >
             <span>{userLiked ? '❤️' : '🤍'}</span>
             <span>Me gusta ({totalLikes})</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowHighScores(true)}
+            className="text-sm font-medium px-2 py-1 rounded-lg border border-[#2a2a3a] cursor-pointer hover:opacity-80 transition-colors"
+            style={{ color: '#eab308' }}
+          >
+            🏆 Top 10
           </button>
           <div className="relative" ref={shareRef}>
             <button
@@ -299,6 +412,15 @@ export default function JugarPage() {
               </div>
             )}
           </div>
+          <button
+            type="button"
+            onClick={toggleFullscreen}
+            className="text-sm font-medium px-2 py-1 rounded-lg border border-[#2a2a3a] cursor-pointer hover:opacity-80 transition-colors hidden lg:inline-flex items-center gap-1"
+            style={{ color: '#94a3b8' }}
+            title="Pantalla completa"
+          >
+            {isFullscreen ? '⬜ Salir' : '⛶ Expandir'}
+          </button>
         </div>
       </header>
       <main className="flex-1 flex flex-col items-center justify-center p-4 min-h-0 overflow-auto">
@@ -359,16 +481,25 @@ export default function JugarPage() {
           </div>
         )}
         {!needsUnlock && (
-          <div className="rounded-xl overflow-hidden border-2 border-[#2a2a3a] shadow-xl" style={{ width: width, maxWidth: '100%' }}>
+          <div
+            ref={gameContainerRef}
+            className="rounded-xl overflow-hidden border-2 border-[#2a2a3a] shadow-xl fullscreen:border-0 fullscreen:rounded-none flex items-center justify-center"
+            style={{ width: width, maxWidth: '100%', background: '#000' }}
+          >
             {iframeSrc && (
               <iframe
                 src={iframeSrc}
                 title={game.title || 'Juego'}
-                sandbox="allow-scripts"
+                sandbox="allow-scripts allow-same-origin"
                 width={width}
                 height={height}
-                className="block border-0 bg-black"
-                style={{ maxWidth: '100%', height: height }}
+                className="block border-0 bg-black max-w-full"
+                style={{
+                  maxWidth: '100%',
+                  width: isFullscreen ? '100vw' : width,
+                  height: isFullscreen ? '100vh' : height,
+                  objectFit: 'contain',
+                }}
               />
             )}
           </div>
