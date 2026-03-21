@@ -48,6 +48,7 @@ export async function POST(request) {
   const title = typeof body?.title === 'string' ? body.title.trim() : '';
   const description = typeof body?.description === 'string' ? body.description.trim() : '';
   const gameId = body?.gameId || null;
+  const showAuthor = body?.showAuthor !== false;
 
   const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
     auth: { autoRefreshToken: false, persistSession: false },
@@ -91,6 +92,7 @@ export async function POST(request) {
         status: 'pending',
         rejection_reason: null,
         approved_at: null,
+        show_author: showAuthor,
       })
       .eq('id', gameId)
       .eq('submitted_by', user.id);
@@ -146,6 +148,7 @@ export async function POST(request) {
       game_width: 480,
       game_height: 640,
       orientation: 'vertical',
+      show_author: showAuthor,
     })
     .select('id')
     .single();

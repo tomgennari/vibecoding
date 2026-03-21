@@ -62,6 +62,7 @@ export default function SubirJuegoPage() {
   const [detectedSize, setDetectedSize] = useState(null);
   const [orientation, setOrientation] = useState('horizontal');
   const [dragOver, setDragOver] = useState(false);
+  const [showAuthor, setShowAuthor] = useState(true);
   const inputRef = useRef(null);
 
   const isDark = theme === 'dark';
@@ -157,6 +158,7 @@ export default function SubirJuegoPage() {
         game_width: w,
         game_height: h,
         orientation: detectedSize ? getOrientation(w, h) : orientation,
+        show_author: showAuthor,
       });
 
       if (insertError) {
@@ -392,6 +394,16 @@ export default function SubirJuegoPage() {
             >
               📋 Tu juego será revisado por un admin antes de publicarse. Normalmente tarda menos de 24hs.
             </div>
+
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showAuthor}
+                onChange={(e) => setShowAuthor(e.target.checked)}
+                className="w-4 h-4 rounded border cursor-pointer accent-[#7c3aed]"
+              />
+              <span className="text-sm" style={{ color: text || '#f1f5f9' }}>Mostrar mi nombre como autor del juego</span>
+            </label>
 
             <button
               type="submit"

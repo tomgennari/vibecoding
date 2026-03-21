@@ -277,6 +277,7 @@ export default function GameLabPage() {
   const [credits, setCredits] = useState(null);
   const [creditsLoaded, setCreditsLoaded] = useState(false);
   const [showCreditsInfo, setShowCreditsInfo] = useState(false);
+  const [showAuthor, setShowAuthor] = useState(true);
 
   // 6 ideas al azar para la columna desktop; en mobile se usa el mismo set para el carrusel
   const inspirationCards = useMemo(() => pickRandom(IDEAS_JUEGOS, 6), []);
@@ -1120,6 +1121,7 @@ export default function GameLabPage() {
           title: tituloModal.trim() || 'Juego del Game Lab',
           description: descripcionModal.trim() || 'Generado con Andy en el Game Lab',
           gameId: sessionStorage.getItem('gamelab_editing_id') || null,
+          showAuthor,
         }),
       });
       const data = await res.json().catch(() => ({}));
@@ -1672,6 +1674,15 @@ export default function GameLabPage() {
               style={{ background: isDark ? '#0a0a0f' : '#fff', borderColor: border, color: text }}
               disabled={sugiriendoTitulo}
             />
+            <label className="flex items-center gap-2 mb-4 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showAuthor}
+                onChange={(e) => setShowAuthor(e.target.checked)}
+                className="w-4 h-4 rounded border cursor-pointer accent-[#7c3aed]"
+              />
+              <span className="text-sm" style={{ color: text }}>Mostrar mi nombre como autor del juego</span>
+            </label>
             <div className="flex gap-2">
               <button
                 type="button"
