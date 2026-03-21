@@ -24,12 +24,6 @@ const SORT_OPTIONS = [
   { id: 'revenue', label: 'Más recaudado' },
 ];
 
-function normalizeGameProfiles(game) {
-  if (!game) return game;
-  const p = game.profiles;
-  return { ...game, profiles: Array.isArray(p) ? p[0] : p };
-}
-
 function GameMetricsFull({ game, uniquePlayers, showLikeButton, liked, onLike }) {
   return (
     <div className="flex items-center gap-3 mt-2 text-xs flex-wrap" style={{ color: '#94a3b8' }}>
@@ -94,6 +88,7 @@ export default function JuegosPage() {
   const housesDropdownRefDesktop = useRef(null);
   const housesDropdownRefMobile = useRef(null);
   const [unlockingGameId, setUnlockingGameId] = useState(null);
+  const [gameAuthors, setGameAuthors] = useState({});
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -136,7 +131,7 @@ export default function JuegosPage() {
         unlocksRes,
         dailyRes,
       ] = await Promise.all([
-        supabase.from('games').select('*, profiles!submitted_by(first_name, last_name)').eq('status', 'approved').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
+        supabase.from('games').select('*').eq('status', 'approved').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('game_sessions').select('game_id, user_id').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('game_likes').select('game_id').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('game_likes').select('game_id').eq('user_id', uid).then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
@@ -145,6 +140,23 @@ export default function JuegosPage() {
       ]);
 
       const gamesList = gamesRes.data || [];
+
+      const authorIds = gamesList
+        .map((g) => g.submitted_by)
+        .filter(Boolean)
+        .filter((v, i, a) => a.indexOf(v) === i);
+      let authorsMap = {};
+      if (authorIds.length > 0) {
+        const { data: authors } = await supabase
+          .from('profiles')
+          .select('id, first_name, last_name')
+          .in('id', authorIds);
+        if (authors) {
+          authors.forEach((a) => { authorsMap[a.id] = a; });
+        }
+      }
+      setGameAuthors(authorsMap);
+
       const uniquePlayersByGame = {};
       (sessionsRes.data || []).forEach((s) => {
         if (s.game_id) {
@@ -158,7 +170,7 @@ export default function JuegosPage() {
       });
 
       const withMetrics = gamesList.map((g) => ({
-        ...normalizeGameProfiles(g),
+        ...g,
         total_plays: uniquePlayersByGame[g.id]?.size || 0,
         total_likes: likesByGame[g.id] || 0,
         total_revenue: Number(g.total_revenue) || 0,
@@ -510,9 +522,9 @@ export default function JuegosPage() {
                   )}
                 </div>
                 <h2 className="font-bold text-base line-clamp-1 min-w-0" style={{ color: text }}>{game.title || 'Juego'}</h2>
-                {game.show_author !== false && game.profiles?.first_name && (
+                {game.show_author !== false && gameAuthors[game.submitted_by] && (
                   <p className="text-xs mt-0.5" style={{ color: textMuted }}>
-                    por {game.profiles.first_name}
+                    por {gameAuthors[game.submitted_by]?.first_name} {gameAuthors[game.submitted_by]?.last_name}
                   </p>
                 )}
                 <p className="text-xs mt-1 line-clamp-2 min-w-0 flex-1" style={{ color: textMuted }}>{game.description || ''}</p>

@@ -126,6 +126,7 @@ export default function DashboardPage() {
   const [donationModalOpen, setDonationModalOpen] = useState(false);
   const [donatingAmount, setDonatingAmount] = useState(null);
   const [hoveredDonationAmount, setHoveredDonationAmount] = useState(null);
+  const [gameAuthors, setGameAuthors] = useState({});
 
   const isDark = theme === 'dark';
   const bg = isDark ? '#0a0a0f' : '#ffffff';
@@ -163,7 +164,7 @@ export default function DashboardPage() {
         supabase.from('game_sessions').select('game_id, user_id').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('daily_free_games').select('game_id').eq('active_date', today).then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('game_unlocks').select('game_id').eq('user_id', uid).then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
-        supabase.from('games').select('*, profiles!submitted_by(first_name, last_name)').eq('status', 'approved').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
+        supabase.from('games').select('*').eq('status', 'approved').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('game_likes').select('game_id').eq('user_id', uid).then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('buildings').select('*').order('display_order', { ascending: true }).then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => supabase.from('buildings').select('*').order('name', { ascending: true }).then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true }))),
         supabase.from('game_unlocks').select('game_id, amount_paid').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
@@ -194,6 +195,22 @@ export default function DashboardPage() {
       const dailyIds = (dailyIdsRes.data || []).map((row) => row.game_id).filter(Boolean);
       const unlockedIds = (unlocksListRes.data || []).map((row) => row.game_id).filter(Boolean);
       const approvedGames = (approvedGamesRes.data || []).map((g) => normalizeGameProfiles(g));
+
+      const authorIds = approvedGames
+        .map((g) => g.submitted_by)
+        .filter(Boolean)
+        .filter((v, i, a) => a.indexOf(v) === i);
+      let authorsMap = {};
+      if (authorIds.length > 0) {
+        const { data: authors } = await supabase
+          .from('profiles')
+          .select('id, first_name, last_name')
+          .in('id', authorIds);
+        if (authors) {
+          authors.forEach((a) => { authorsMap[a.id] = a; });
+        }
+      }
+      setGameAuthors(authorsMap);
 
       setDailyGames(approvedGames.filter((g) => g.id && dailyIds.includes(g.id)));
       setGamesToUnlock(approvedGames.filter((g) => g.id && !unlockedIds.includes(g.id) && !dailyIds.includes(g.id)));
@@ -557,9 +574,9 @@ export default function DashboardPage() {
                         </span>
                       </div>
                       <h3 className="font-bold text-lg line-clamp-1 min-w-0" style={{ color: text }}>{game.title || 'Juego'}</h3>
-                      {game.show_author !== false && game.profiles?.first_name && (
+                      {game.show_author !== false && gameAuthors[game.submitted_by] && (
                         <p className="text-xs mt-0.5" style={{ color: textMuted }}>
-                          por {game.profiles.first_name}
+                          por {gameAuthors[game.submitted_by]?.first_name} {gameAuthors[game.submitted_by]?.last_name}
                         </p>
                       )}
                       <p className="text-xs mt-1 line-clamp-2 min-w-0" style={{ color: textMuted }}>{game.description || ''}</p>
@@ -602,9 +619,9 @@ export default function DashboardPage() {
                       <span className="text-[10px] font-bold truncate" style={{ color: house.color }}>{house.name}</span>
                     </div>
                     <h3 className="font-bold text-sm line-clamp-1 min-w-0" style={{ color: text }}>{game.title || 'Juego'}</h3>
-                    {game.show_author !== false && game.profiles?.first_name && (
+                    {game.show_author !== false && gameAuthors[game.submitted_by] && (
                       <p className="text-xs mt-0.5" style={{ color: textMuted }}>
-                        por {game.profiles.first_name}
+                        por {gameAuthors[game.submitted_by]?.first_name} {gameAuthors[game.submitted_by]?.last_name}
                       </p>
                     )}
                     <p className="text-xs mt-1 line-clamp-2 min-w-0" style={{ color: textMuted }}>{game.description || ''}</p>
@@ -699,9 +716,9 @@ export default function DashboardPage() {
                         )}
                       </div>
                       <h3 className="font-bold text-sm line-clamp-1 min-w-0" style={{ color: text }}>{game.title || 'Juego'}</h3>
-                      {game.show_author !== false && game.profiles?.first_name && (
+                      {game.show_author !== false && gameAuthors[game.submitted_by] && (
                         <p className="text-xs mt-0.5" style={{ color: textMuted }}>
-                          por {game.profiles.first_name}
+                          por {gameAuthors[game.submitted_by]?.first_name} {gameAuthors[game.submitted_by]?.last_name}
                         </p>
                       )}
                       <p className="text-xs mt-1 line-clamp-2 min-w-0" style={{ color: textMuted }}>{game.description || ''}</p>
@@ -941,9 +958,9 @@ export default function DashboardPage() {
                         </span>
                       </div>
                       <h3 className="font-bold text-sm line-clamp-1 min-w-0 flex-1" style={{ color: text }}>{game.title || 'Juego'}</h3>
-                      {game.show_author !== false && game.profiles?.first_name && (
+                      {game.show_author !== false && gameAuthors[game.submitted_by] && (
                         <p className="text-xs mt-0.5" style={{ color: textMuted }}>
-                          por {game.profiles.first_name}
+                          por {gameAuthors[game.submitted_by]?.first_name} {gameAuthors[game.submitted_by]?.last_name}
                         </p>
                       )}
                       <p className="text-xs mt-1 line-clamp-2 min-w-0" style={{ color: textMuted }}>{game.description || ''}</p>
@@ -1003,9 +1020,9 @@ export default function DashboardPage() {
                         <span className="text-[10px] font-bold truncate" style={{ color: house.color }}>{house.name}</span>
                       </div>
                       <h3 className="font-bold text-sm line-clamp-1 min-w-0" style={{ color: text }}>{game.title || 'Juego'}</h3>
-                      {game.show_author !== false && game.profiles?.first_name && (
+                      {game.show_author !== false && gameAuthors[game.submitted_by] && (
                         <p className="text-xs mt-0.5" style={{ color: textMuted }}>
-                          por {game.profiles.first_name}
+                          por {gameAuthors[game.submitted_by]?.first_name} {gameAuthors[game.submitted_by]?.last_name}
                         </p>
                       )}
                       <p className="text-xs mt-1 line-clamp-2 min-w-0" style={{ color: textMuted }}>{game.description || ''}</p>
@@ -1069,9 +1086,9 @@ export default function DashboardPage() {
                         )}
                       </div>
                       <h3 className="font-bold text-sm line-clamp-1 min-w-0" style={{ color: text }}>{game.title || 'Juego'}</h3>
-                      {game.show_author !== false && game.profiles?.first_name && (
+                      {game.show_author !== false && gameAuthors[game.submitted_by] && (
                         <p className="text-xs mt-0.5" style={{ color: textMuted }}>
-                          por {game.profiles.first_name}
+                          por {gameAuthors[game.submitted_by]?.first_name} {gameAuthors[game.submitted_by]?.last_name}
                         </p>
                       )}
                       <p className="text-xs mt-1 line-clamp-2 min-w-0" style={{ color: textMuted }}>{game.description || ''}</p>
