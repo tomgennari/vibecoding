@@ -42,13 +42,6 @@ export default function JugarPage() {
   const [highScores, setHighScores] = useState([]);
   const [showHighScores, setShowHighScores] = useState(false);
 
-  const theme = 'dark';
-  const isDark = theme === 'dark';
-  const cardBg = isDark ? '#13131a' : '#f8fafc';
-  const border = isDark ? '#2a2a3a' : '#e2e8f0';
-  const text = isDark ? '#f1f5f9' : '#0f172a';
-  const textMuted = isDark ? '#94a3b8' : '#64748b';
-
   useEffect(() => {
     function handleClickOutside(e) {
       if (shareRef.current && !shareRef.current.contains(e.target)) setShareOpen(false);
@@ -300,13 +293,86 @@ export default function JugarPage() {
     );
   }
 
+  const actionBar = (
+    <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-4 px-2 py-3">
+      <button
+        type="button"
+        onClick={handleToggleLike}
+        disabled={liking}
+        className="inline-flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-bold border border-[#2a2a3a] transition-transform duration-150 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 cursor-pointer"
+        style={{ color: userLiked ? '#ef4444' : '#94a3b8', background: '#0a0a0f' }}
+        aria-label={userLiked ? 'Quitar like' : 'Dar like'}
+      >
+        <span>{userLiked ? '❤️' : '🤍'}</span>
+        <span>Me gusta ({totalLikes})</span>
+      </button>
+      <button
+        type="button"
+        onClick={() => setShowHighScores(true)}
+        className="text-sm font-bold px-4 py-2.5 rounded-xl border border-[#2a2a3a] cursor-pointer hover:opacity-90 transition-colors"
+        style={{ color: '#eab308', background: '#0a0a0f' }}
+      >
+        🏆 Top 10
+      </button>
+      <div className="relative" ref={shareRef}>
+        <button
+          type="button"
+          onClick={() => setShareOpen((o) => !o)}
+          className="inline-flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-bold border border-[#2a2a3a] transition-transform duration-150 hover:scale-[1.02] cursor-pointer"
+          style={{ color: '#94a3b8', background: '#0a0a0f' }}
+          aria-label="Compartir"
+        >
+          <IconShare />
+          <span>Compartir</span>
+        </button>
+        {shareOpen && (
+          <div
+            className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 lg:bottom-auto lg:top-full lg:mb-0 lg:mt-2 lg:left-auto lg:right-0 lg:translate-x-0 z-30 rounded-xl border py-1.5 min-w-[200px] shadow-xl"
+            style={{ background: '#13131a', borderColor: '#2a2a3a' }}
+          >
+            <button
+              type="button"
+              onClick={handleShareWhatsApp}
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-left text-sm font-medium hover:bg-[#1e1e28] transition-colors rounded-lg"
+              style={{ color: '#f1f5f9' }}
+            >
+              <span className="text-lg" aria-hidden>💬</span>
+              <span>WhatsApp</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleShareCopy('Link copiado para compartir en Instagram')}
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-left text-sm font-medium hover:bg-[#1e1e28] transition-colors rounded-lg"
+              style={{ color: '#f1f5f9' }}
+            >
+              <span className="text-lg" aria-hidden>📷</span>
+              <span>Instagram</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleShareCopy('Link copiado para compartir en TikTok')}
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-left text-sm font-medium hover:bg-[#1e1e28] transition-colors rounded-lg"
+              style={{ color: '#f1f5f9' }}
+            >
+              <span className="text-lg" aria-hidden>🎵</span>
+              <span>TikTok</span>
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen flex flex-col font-sans bg-[#0a0a0f] text-[#f1f5f9]">
+      {/* Toast de copiado */}
       {copyMessage && (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 rounded-xl px-4 py-2 text-sm font-medium bg-[#13131a] border border-[#2a2a3a] shadow-lg" style={{ color: '#f1f5f9' }}>
           {copyMessage}
         </div>
       )}
+
+      {/* Modal highscores */}
       {showHighScores && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -320,41 +386,24 @@ export default function JugarPage() {
           >
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold" style={{ color: '#f1f5f9' }}>🏆 Top 10 — {game?.title}</h2>
-              <button
-                type="button"
-                onClick={() => setShowHighScores(false)}
-                className="text-lg cursor-pointer"
-                style={{ color: '#94a3b8' }}
-              >
-                ✕
-              </button>
+              <button type="button" onClick={() => setShowHighScores(false)} className="text-lg cursor-pointer" style={{ color: '#94a3b8' }}>✕</button>
             </div>
             {highScores.length === 0 ? (
-              <p className="text-sm text-center py-6" style={{ color: '#94a3b8' }}>
-                Todavía no hay puntajes. ¡Sé el primero!
-              </p>
+              <p className="text-sm text-center py-6" style={{ color: '#94a3b8' }}>Todavía no hay puntajes. ¡Sé el primero!</p>
             ) : (
               <div className="space-y-2">
                 {highScores.map((s, i) => (
-                  <div
-                    key={i}
-                    className="flex items-center justify-between rounded-lg px-3 py-2"
+                  <div key={i} className="flex items-center justify-between rounded-lg px-3 py-2"
                     style={{
                       background: i === 0 ? 'rgba(234,179,8,0.15)' : i === 1 ? 'rgba(148,163,184,0.1)' : i === 2 ? 'rgba(180,83,9,0.1)' : 'transparent',
                       borderLeft: i < 3 ? `3px solid ${i === 0 ? '#eab308' : i === 1 ? '#94a3b8' : '#b45309'}` : '3px solid transparent',
                     }}
                   >
                     <div className="flex items-center gap-2 min-w-0">
-                      <span className="text-sm font-bold w-6 text-center" style={{ color: i === 0 ? '#eab308' : i === 1 ? '#94a3b8' : i === 2 ? '#b45309' : '#64748b' }}>
-                        {i + 1}
-                      </span>
-                      <span className="text-sm truncate" style={{ color: '#f1f5f9' }}>
-                        {s.profiles?.first_name || 'Anónimo'}
-                      </span>
+                      <span className="text-sm font-bold w-6 text-center" style={{ color: i === 0 ? '#eab308' : i === 1 ? '#94a3b8' : i === 2 ? '#b45309' : '#64748b' }}>{i + 1}</span>
+                      <span className="text-sm truncate" style={{ color: '#f1f5f9' }}>{s.profiles?.first_name || 'Anónimo'}</span>
                     </div>
-                    <span className="text-sm font-black tabular-nums" style={{ color: '#7c3aed' }}>
-                      {Number(s.score).toLocaleString()}
-                    </span>
+                    <span className="text-sm font-black tabular-nums" style={{ color: '#7c3aed' }}>{Number(s.score).toLocaleString()}</span>
                   </div>
                 ))}
               </div>
@@ -362,75 +411,16 @@ export default function JugarPage() {
           </div>
         </div>
       )}
-      <header className="flex-shrink-0 flex items-center justify-between gap-3 px-4 py-3 border-b border-[#2a2a3a] bg-[#13131a]">
-        <Link href="/dashboard" className="text-sm font-medium flex-shrink-0" style={{ color: '#94a3b8' }}>← Volver</Link>
-        <h1 className="text-lg font-bold truncate max-w-[30%] min-w-0" style={{ color: '#f1f5f9' }}>{game.title || 'Juego'}</h1>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <button
-            type="button"
-            onClick={handleToggleLike}
-            disabled={liking}
-            className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-bold transition-transform duration-150 hover:scale-105 active:scale-[1.1] disabled:opacity-70"
-            style={{ color: userLiked ? '#ef4444' : '#94a3b8' }}
-            aria-label={userLiked ? 'Quitar like' : 'Dar like'}
-          >
-            <span>{userLiked ? '❤️' : '🤍'}</span>
-            <span>Me gusta ({totalLikes})</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setShowHighScores(true)}
-            className="text-sm font-medium px-2 py-1 rounded-lg border border-[#2a2a3a] cursor-pointer hover:opacity-80 transition-colors"
-            style={{ color: '#eab308' }}
-          >
-            🏆 Top 10
-          </button>
-          <div className="relative" ref={shareRef}>
-            <button
-              type="button"
-              onClick={() => setShareOpen((o) => !o)}
-              className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-bold transition-transform duration-150 hover:scale-105 active:scale-[1.1]"
-              style={{ color: '#94a3b8' }}
-              aria-label="Compartir"
-            >
-              <IconShare />
-              <span>Compartir</span>
-            </button>
-            {shareOpen && (
-              <div
-                className="absolute top-full right-0 mt-1 z-20 rounded-xl border py-1.5 min-w-[200px] shadow-xl"
-                style={{ background: '#13131a', borderColor: '#2a2a3a' }}
-              >
-                <button
-                  type="button"
-                  onClick={handleShareWhatsApp}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-left text-sm font-medium hover:bg-[#1e1e28] transition-colors rounded-lg"
-                  style={{ color: '#f1f5f9' }}
-                >
-                  <span className="text-lg" aria-hidden>💬</span>
-                  <span>WhatsApp</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleShareCopy('Link copiado para compartir en Instagram')}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-left text-sm font-medium hover:bg-[#1e1e28] transition-colors rounded-lg"
-                  style={{ color: '#f1f5f9' }}
-                >
-                  <span className="text-lg" aria-hidden>📷</span>
-                  <span>Instagram</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleShareCopy('Link copiado para compartir en TikTok')}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-left text-sm font-medium hover:bg-[#1e1e28] transition-colors rounded-lg"
-                  style={{ color: '#f1f5f9' }}
-                >
-                  <span className="text-lg" aria-hidden>🎵</span>
-                  <span>TikTok</span>
-                </button>
-              </div>
-            )}
-          </div>
+
+      {/* Header mínimo */}
+      <header className="flex-shrink-0 flex items-center px-4 py-2.5 border-b border-[#2a2a3a] bg-[#13131a]">
+        <Link href="/dashboard" className="text-sm font-medium cursor-pointer hover:opacity-80 shrink-0 w-16" style={{ color: '#94a3b8' }}>
+          ← Volver
+        </Link>
+        <h1 className="text-sm font-bold truncate mx-2 min-w-0 text-center flex-1" style={{ color: '#f1f5f9' }}>
+          {game?.title || 'Juego'}
+        </h1>
+        <div className="w-16 shrink-0 flex justify-end">
           <button
             type="button"
             onClick={toggleFullscreen}
@@ -442,43 +432,29 @@ export default function JugarPage() {
           </button>
         </div>
       </header>
-      <main className="flex-1 flex flex-col items-center justify-center p-4 min-h-0 overflow-auto">
+
+      {/* Contenido principal */}
+      <main className={`flex-1 flex flex-col min-h-0 overflow-hidden relative ${!needsUnlock ? 'pb-[5.5rem] lg:pb-0' : ''}`}>
+        {/* Pantalla de desbloqueo */}
         {needsUnlock && game && (
-          <div className="flex-1 flex items-center justify-center p-6 w-full">
-            <div className="rounded-2xl border p-6 max-w-md w-full text-center" style={{ background: cardBg, borderColor: border }}>
-              <h2 className="text-2xl font-bold mb-2" style={{ color: text }}>🔒 {game.title}</h2>
-              <p className="text-sm mb-6" style={{ color: textMuted }}>
-                Este juego necesita ser desbloqueado para poder jugarlo.
-              </p>
+          <div className="flex-1 flex items-center justify-center p-6 w-full overflow-auto">
+            <div className="rounded-2xl border p-6 max-w-md w-full text-center" style={{ background: '#13131a', borderColor: '#2a2a3a' }}>
+              <h2 className="text-2xl font-bold mb-2" style={{ color: '#f1f5f9' }}>🔒 {game.title}</h2>
+              <p className="text-sm mb-6" style={{ color: '#94a3b8' }}>Este juego necesita ser desbloqueado para poder jugarlo.</p>
               <button
                 type="button"
                 onClick={async () => {
                   try {
                     const { data: { session: s } } = await supabase.auth.getSession();
                     if (!s) return;
-                    console.log('Creando preferencia MP:', { gameId: game.id, userId: s.user.id, gameTitle: game.title });
                     const res = await fetch('/api/mp/crear-preferencia', {
                       method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json',
-                        Authorization: `Bearer ${s.access_token}`,
-                      },
-                      body: JSON.stringify({
-                        gameId: game.id,
-                        userId: s.user.id,
-                        gameTitle: game.title,
-                        gamePrice: 5000,
-                      }),
+                      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${s.access_token}` },
+                      body: JSON.stringify({ gameId: game.id, userId: s.user.id, gameTitle: game.title, gamePrice: 5000 }),
                     });
                     const data = await res.json();
-                    console.log('Respuesta MP:', data);
-                    if (data.error) {
-                      alert(data.error);
-                      return;
-                    }
-                    if (data.init_point) {
-                      window.location.href = data.init_point;
-                    }
+                    if (data.error) { alert(data.error); return; }
+                    if (data.init_point) window.location.href = data.init_point;
                   } catch (err) {
                     console.error('Error:', err);
                     alert('Error al crear el pago. Intentá de nuevo.');
@@ -488,40 +464,48 @@ export default function JugarPage() {
               >
                 🎮 Desbloquear — $5.000
               </button>
-              <button
-                type="button"
-                onClick={() => router.push('/dashboard')}
+              <button type="button" onClick={() => router.push('/dashboard')}
                 className="w-full rounded-xl px-6 py-3 text-sm font-bold border transition-colors cursor-pointer"
-                style={{ borderColor: border, color: textMuted, background: 'transparent' }}
+                style={{ borderColor: '#2a2a3a', color: '#94a3b8', background: 'transparent' }}
               >
                 ← Volver al catálogo
               </button>
             </div>
           </div>
         )}
+
+        {/* Juego */}
         {!needsUnlock && (
-          <div
-            ref={gameContainerRef}
-            className="rounded-xl overflow-hidden border-2 border-[#2a2a3a] shadow-xl fullscreen:border-0 fullscreen:rounded-none flex items-center justify-center"
-            style={{ width: width, maxWidth: '100%', background: '#000' }}
-          >
-            {iframeSrc && (
-              <iframe
-                src={iframeSrc}
-                title={game.title || 'Juego'}
-                sandbox="allow-scripts allow-same-origin"
-                width={width}
-                height={height}
-                className="block border-0 bg-black max-w-full"
-                style={{
-                  maxWidth: '100%',
-                  width: isFullscreen ? '100vw' : width,
-                  height: isFullscreen ? '100vh' : height,
-                  objectFit: 'contain',
-                }}
-              />
-            )}
-          </div>
+          <>
+            <div className="flex-1 flex items-center justify-center w-full p-2 lg:p-4 min-h-0">
+              <div
+                ref={gameContainerRef}
+                className="rounded-xl overflow-hidden border-2 border-[#2a2a3a] shadow-xl fullscreen:border-0 fullscreen:rounded-none flex items-center justify-center max-w-full max-h-full"
+                style={{ background: '#000', width: 'min(100%, 100vw - 1rem)', height: 'auto' }}
+              >
+                {iframeSrc && (
+                  <iframe
+                    src={iframeSrc}
+                    title={game?.title || 'Juego'}
+                    sandbox="allow-scripts allow-same-origin"
+                    width={width}
+                    height={height}
+                    className="block border-0 bg-black max-w-full"
+                    style={{
+                      maxWidth: '100%',
+                      width: isFullscreen ? '100vw' : width,
+                      height: isFullscreen ? '100vh' : height,
+                      objectFit: 'contain',
+                    }}
+                  />
+                )}
+              </div>
+            </div>
+            {/* Barra de acciones: fija abajo en mobile, debajo del juego en desktop (una sola instancia → shareRef OK) */}
+            <div className="flex-shrink-0 border-t border-[#2a2a3a] bg-[#13131a] fixed bottom-0 left-0 right-0 z-40 pb-[env(safe-area-inset-bottom)] lg:static lg:z-auto lg:pb-0">
+              {actionBar}
+            </div>
+          </>
         )}
       </main>
     </div>
