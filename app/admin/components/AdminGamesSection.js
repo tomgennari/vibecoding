@@ -66,7 +66,23 @@ export default function AdminGamesSection() {
 
   async function handleApprove(gameId) {
     const { error } = await supabase.from('games').update({ status: 'approved', approved_at: new Date().toISOString() }).eq('id', gameId);
-    if (!error) fetchGames();
+    if (!error) {
+      // Enviar email de aprobación al alumno
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        await fetch('/api/admin/notify-approval', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ gameId }),
+        });
+      } catch (err) {
+        console.error('Error enviando email de aprobación:', err);
+      }
+      fetchGames();
+    }
   }
 
   async function handleReject(reason) {
