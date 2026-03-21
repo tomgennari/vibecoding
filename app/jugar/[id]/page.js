@@ -36,6 +36,14 @@ export default function JugarPage() {
   const accessTokenRef = useRef(null);
 
   const [iframeSrc, setIframeSrc] = useState('');
+  const [needsUnlock, setNeedsUnlock] = useState(false);
+
+  const theme = 'dark';
+  const isDark = theme === 'dark';
+  const cardBg = isDark ? '#13131a' : '#f8fafc';
+  const border = isDark ? '#2a2a3a' : '#e2e8f0';
+  const text = isDark ? '#f1f5f9' : '#0f172a';
+  const textMuted = isDark ? '#94a3b8' : '#64748b';
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -52,13 +60,14 @@ export default function JugarPage() {
       return;
     }
     async function load() {
+      setNeedsUnlock(false);
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         setError('Tenés que iniciar sesión para jugar.');
         setLoading(false);
         return;
       }
-      const { data, error: e } = await supabase.from('games').select('id, title, file_url, game_width, game_height, total_likes').eq('id', id).eq('status', 'approved').single();
+      const { data, error: e } = await supabase.from('games').select('id, title, file_url, game_width, game_height, total_likes, submitted_by').eq('id', id).eq('status', 'approved').single();
       if (e || !data) {
         setError('Juego no encontrado o no disponible.');
         setLoading(false);
@@ -73,6 +82,43 @@ export default function JugarPage() {
       setTotalLikes(Number(data.total_likes) || 0);
       const { data: likeRow } = await supabase.from('game_likes').select('id').eq('user_id', session.user.id).eq('game_id', id).maybeSingle();
       setUserLiked(Boolean(likeRow));
+
+      // Verificar si el usuario tiene acceso
+      const isCreator = data.submitted_by === session.user.id;
+      if (!isCreator) {
+        // Verificar unlocked_for_all
+        const { data: gameAccess } = await supabase
+          .from('games')
+          .select('unlocked_for_all')
+          .eq('id', id)
+          .single();
+
+        if (!gameAccess?.unlocked_for_all) {
+          // Verificar unlock individual
+          const { data: unlock } = await supabase
+            .from('game_unlocks')
+            .select('id')
+            .eq('user_id', session.user.id)
+            .eq('game_id', id)
+            .maybeSingle();
+
+          // Verificar juego gratis del día
+          const today = new Date().toISOString().split('T')[0];
+          const { data: dailyFree } = await supabase
+            .from('daily_free_games')
+            .select('id')
+            .eq('game_id', id)
+            .eq('active_date', today)
+            .maybeSingle();
+
+          if (!unlock && !dailyFree) {
+            setNeedsUnlock(true);
+            setLoading(false);
+            return;
+          }
+        }
+      }
+
       setIframeSrc(`/api/juego/${id}?token=${encodeURIComponent(session.access_token)}`);
       accessTokenRef.current = session.access_token;
       startTimeRef.current = Date.now();
@@ -248,20 +294,71 @@ export default function JugarPage() {
           </div>
         </div>
       </header>
-      <main className="flex-1 flex items-center justify-center p-4 min-h-0 overflow-auto">
-        <div className="rounded-xl overflow-hidden border-2 border-[#2a2a3a] shadow-xl" style={{ width: width, maxWidth: '100%' }}>
-          {iframeSrc && (
-            <iframe
-              src={iframeSrc}
-              title={game.title || 'Juego'}
-              sandbox="allow-scripts"
-              width={width}
-              height={height}
-              className="block border-0 bg-black"
-              style={{ maxWidth: '100%', height: height }}
-            />
-          )}
-        </div>
+      <main className="flex-1 flex flex-col items-center justify-center p-4 min-h-0 overflow-auto">
+        {needsUnlock && game && (
+          <div className="flex-1 flex items-center justify-center p-6 w-full">
+            <div className="rounded-2xl border p-6 max-w-md w-full text-center" style={{ background: cardBg, borderColor: border }}>
+              <h2 className="text-2xl font-bold mb-2" style={{ color: text }}>🔒 {game.title}</h2>
+              <p className="text-sm mb-6" style={{ color: textMuted }}>
+                Este juego necesita ser desbloqueado para poder jugarlo.
+              </p>
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    const { data: { session: s } } = await supabase.auth.getSession();
+                    if (!s) return;
+                    const res = await fetch('/api/mp/crear-preferencia', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${s.access_token}`,
+                      },
+                      body: JSON.stringify({
+                        gameId: game.id,
+                        userId: s.user.id,
+                        gameTitle: game.title,
+                        gamePrice: 5000,
+                      }),
+                    });
+                    const data = await res.json();
+                    if (data.init_point) {
+                      window.location.href = data.init_point;
+                    }
+                  } catch (err) {
+                    console.error('Error:', err);
+                  }
+                }}
+                className="vibe-btn-gradient w-full rounded-xl px-6 py-3 text-sm font-bold text-white mb-3"
+              >
+                🎮 Desbloquear — $5.000
+              </button>
+              <button
+                type="button"
+                onClick={() => router.push('/dashboard')}
+                className="w-full rounded-xl px-6 py-3 text-sm font-bold border transition-colors"
+                style={{ borderColor: border, color: textMuted, background: 'transparent' }}
+              >
+                ← Volver al catálogo
+              </button>
+            </div>
+          </div>
+        )}
+        {!needsUnlock && (
+          <div className="rounded-xl overflow-hidden border-2 border-[#2a2a3a] shadow-xl" style={{ width: width, maxWidth: '100%' }}>
+            {iframeSrc && (
+              <iframe
+                src={iframeSrc}
+                title={game.title || 'Juego'}
+                sandbox="allow-scripts"
+                width={width}
+                height={height}
+                className="block border-0 bg-black"
+                style={{ maxWidth: '100%', height: height }}
+              />
+            )}
+          </div>
+        )}
       </main>
     </div>
   );

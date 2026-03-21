@@ -29,7 +29,7 @@ export async function GET(request, context) {
   const { data: game, error: gameError } = await supabase
     .from('games')
     // Traemos también submitted_by para poder saber quién creó el juego
-    .select('id, file_url, status, submitted_by')
+    .select('id, file_url, status, submitted_by, unlocked_for_all')
     .eq('id', id)
     .single();
 
@@ -54,23 +54,28 @@ export async function GET(request, context) {
   const isCreator = game.submitted_by === user.id;
 
   if (!isAdmin && !isCreator) {
-    const today = new Date().toISOString().split('T')[0];
-    const { data: unlock } = await supabase
-      .from('game_unlocks')
-      .select('id')
-      .eq('user_id', user.id)
-      .eq('game_id', id)
-      .maybeSingle();
+    // Si está desbloqueado para todos, dar acceso directo
+    if (game.unlocked_for_all) {
+      // acceso permitido, no hacer nada
+    } else {
+      const today = new Date().toISOString().split('T')[0];
+      const { data: unlock } = await supabase
+        .from('game_unlocks')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('game_id', id)
+        .maybeSingle();
 
-    const { data: dailyFree } = await supabase
-      .from('daily_free_games')
-      .select('id')
-      .eq('game_id', id)
-      .eq('active_date', today)
-      .maybeSingle();
+      const { data: dailyFree } = await supabase
+        .from('daily_free_games')
+        .select('id')
+        .eq('game_id', id)
+        .eq('active_date', today)
+        .maybeSingle();
 
-    if (!unlock && !dailyFree) {
-      return NextResponse.json({ error: 'No tenés acceso a este juego' }, { status: 403 });
+      if (!unlock && !dailyFree) {
+        return NextResponse.json({ error: 'No tenés acceso a este juego', code: 'LOCKED' }, { status: 403 });
+      }
     }
   }
 
