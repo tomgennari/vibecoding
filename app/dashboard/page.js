@@ -127,7 +127,8 @@ export default function DashboardPage() {
   const [donatingAmount, setDonatingAmount] = useState(null);
   const [hoveredDonationAmount, setHoveredDonationAmount] = useState(null);
   const [gameAuthors, setGameAuthors] = useState({});
-  const [expandedGameId, setExpandedGameId] = useState(null);
+  const [hoveredGameId, setHoveredGameId] = useState(null);
+  const [tappedGameId, setTappedGameId] = useState(null);
 
   const isDark = theme === 'dark';
   const bg = isDark ? '#0a0a0f' : '#ffffff';
@@ -204,9 +205,7 @@ export default function DashboardPage() {
       let authorsMap = {};
       if (authorIds.length > 0) {
         const { data: authors } = await supabase
-          .from('profiles')
-          .select('id, first_name, last_name')
-          .in('id', authorIds);
+          .rpc('get_authors', { user_ids: authorIds });
         if (authors) {
           authors.forEach((a) => { authorsMap[a.id] = a; });
         }
@@ -563,10 +562,13 @@ export default function DashboardPage() {
               <div className="grid grid-cols-4 gap-4 min-w-0">
                 {dailyGames.map((game) => {
                   const house = HOUSES.find((h) => h.id === game.house) || HOUSES[0];
+                  const isExpanded = hoveredGameId === game.id || tappedGameId === game.id;
                   return (
                     <div
                       key={game.id}
-                      onClick={() => setExpandedGameId((prev) => (prev === game.id ? null : game.id))}
+                      onMouseEnter={() => setHoveredGameId(game.id)}
+                      onMouseLeave={() => setHoveredGameId(null)}
+                      onClick={() => setTappedGameId((prev) => (prev === game.id ? null : game.id))}
                       className={`${cardBase} p-4 flex flex-col cursor-pointer transition-all duration-200`}
                       style={cardStyle}
                     >
@@ -579,13 +581,13 @@ export default function DashboardPage() {
                           GRATIS HOY
                         </span>
                       </div>
-                      <h3 className={`font-bold text-lg ${expandedGameId === game.id ? '' : 'line-clamp-1'} min-w-0`} style={{ color: text }}>{game.title || 'Juego'}</h3>
+                      <h3 className={`font-bold text-lg ${isExpanded ? '' : 'line-clamp-1'} min-w-0`} style={{ color: text }}>{game.title || 'Juego'}</h3>
                       {game.show_author !== false && gameAuthors[game.submitted_by] && (
                         <p className="text-xs mt-0.5" style={{ color: textMuted }}>
                           por {gameAuthors[game.submitted_by]?.first_name} {gameAuthors[game.submitted_by]?.last_name}
                         </p>
                       )}
-                      <p className={`text-xs mt-1 ${expandedGameId === game.id ? '' : 'line-clamp-2'} min-w-0`} style={{ color: textMuted }}>{game.description || ''}</p>
+                      <p className={`text-xs mt-1 ${isExpanded ? '' : 'line-clamp-2'} min-w-0`} style={{ color: textMuted }}>{game.description || ''}</p>
                       <GameMetricsFull
                         game={game}
                         uniquePlayers={uniquePlayersByGame[game.id]}
@@ -618,10 +620,13 @@ export default function DashboardPage() {
             <div className="flex gap-4 overflow-x-auto overflow-y-hidden pb-2 -mx-1 scrollbar-hide" style={{ WebkitOverflowScrolling: 'touch' }}>
               {gamesToUnlock.map((game) => {
                 const house = HOUSES.find((h) => h.id === game.house) || HOUSES[0];
+                const isExpanded = hoveredGameId === game.id || tappedGameId === game.id;
                 return (
                   <div
                     key={game.id}
-                    onClick={() => setExpandedGameId((prev) => (prev === game.id ? null : game.id))}
+                    onMouseEnter={() => setHoveredGameId(game.id)}
+                    onMouseLeave={() => setHoveredGameId(null)}
+                    onClick={() => setTappedGameId((prev) => (prev === game.id ? null : game.id))}
                     className={`${cardBase} flex-shrink-0 w-[220px] p-4 flex flex-col cursor-pointer transition-all duration-200`}
                     style={cardStyle}
                   >
@@ -629,13 +634,13 @@ export default function DashboardPage() {
                       <Image src={house.image} alt={house.name} width={20} height={20} className="flex-shrink-0 object-contain" />
                       <span className="text-[10px] font-bold truncate" style={{ color: house.color }}>{house.name}</span>
                     </div>
-                    <h3 className={`font-bold text-sm ${expandedGameId === game.id ? '' : 'line-clamp-1'} min-w-0`} style={{ color: text }}>{game.title || 'Juego'}</h3>
+                    <h3 className={`font-bold text-sm ${isExpanded ? '' : 'line-clamp-1'} min-w-0`} style={{ color: text }}>{game.title || 'Juego'}</h3>
                     {game.show_author !== false && gameAuthors[game.submitted_by] && (
                       <p className="text-xs mt-0.5" style={{ color: textMuted }}>
                         por {gameAuthors[game.submitted_by]?.first_name} {gameAuthors[game.submitted_by]?.last_name}
                       </p>
                     )}
-                    <p className={`text-xs mt-1 ${expandedGameId === game.id ? '' : 'line-clamp-2'} min-w-0`} style={{ color: textMuted }}>{game.description || ''}</p>
+                    <p className={`text-xs mt-1 ${isExpanded ? '' : 'line-clamp-2'} min-w-0`} style={{ color: textMuted }}>{game.description || ''}</p>
                     <GameMetricsFull
                       game={game}
                       uniquePlayers={uniquePlayersByGame[game.id]}
@@ -709,10 +714,13 @@ export default function DashboardPage() {
               <div className="flex gap-4 overflow-x-auto overflow-y-hidden pb-2 -mx-1 scrollbar-hide flex-1 min-h-0" style={{ WebkitOverflowScrolling: 'touch' }}>
                 {unlockedGames.map((game) => {
                   const house = HOUSES.find((h) => h.id === game.house) || HOUSES[0];
+                  const isExpanded = hoveredGameId === game.id || tappedGameId === game.id;
                   return (
                     <div
                       key={game.id}
-                      onClick={() => setExpandedGameId((prev) => (prev === game.id ? null : game.id))}
+                      onMouseEnter={() => setHoveredGameId(game.id)}
+                      onMouseLeave={() => setHoveredGameId(null)}
+                      onClick={() => setTappedGameId((prev) => (prev === game.id ? null : game.id))}
                       className={`${cardBase} flex-shrink-0 w-[220px] p-4 flex flex-col cursor-pointer transition-all duration-200`}
                       style={cardStyle}
                     >
@@ -731,13 +739,13 @@ export default function DashboardPage() {
                           </span>
                         )}
                       </div>
-                      <h3 className={`font-bold text-sm ${expandedGameId === game.id ? '' : 'line-clamp-1'} min-w-0`} style={{ color: text }}>{game.title || 'Juego'}</h3>
+                      <h3 className={`font-bold text-sm ${isExpanded ? '' : 'line-clamp-1'} min-w-0`} style={{ color: text }}>{game.title || 'Juego'}</h3>
                       {game.show_author !== false && gameAuthors[game.submitted_by] && (
                         <p className="text-xs mt-0.5" style={{ color: textMuted }}>
                           por {gameAuthors[game.submitted_by]?.first_name} {gameAuthors[game.submitted_by]?.last_name}
                         </p>
                       )}
-                      <p className={`text-xs mt-1 ${expandedGameId === game.id ? '' : 'line-clamp-2'} min-w-0`} style={{ color: textMuted }}>{game.description || ''}</p>
+                      <p className={`text-xs mt-1 ${isExpanded ? '' : 'line-clamp-2'} min-w-0`} style={{ color: textMuted }}>{game.description || ''}</p>
                       <GameMetricsCompact
                         game={game}
                         uniquePlayers={uniquePlayersByGame[game.id]}
@@ -962,10 +970,13 @@ export default function DashboardPage() {
               <div className="flex gap-4 overflow-x-auto overflow-y-hidden pb-2 -mx-4 px-4 scrollbar-hide" style={{ WebkitOverflowScrolling: 'touch' }}>
                 {dailyGames.map((game) => {
                   const house = HOUSES.find((h) => h.id === game.house) || HOUSES[0];
+                  const isExpanded = hoveredGameId === game.id || tappedGameId === game.id;
                   return (
                     <div
                       key={game.id}
-                      onClick={() => setExpandedGameId((prev) => (prev === game.id ? null : game.id))}
+                      onMouseEnter={() => setHoveredGameId(game.id)}
+                      onMouseLeave={() => setHoveredGameId(null)}
+                      onClick={() => setTappedGameId((prev) => (prev === game.id ? null : game.id))}
                       className={`${cardBase} flex-shrink-0 p-4 flex flex-col cursor-pointer transition-all duration-200`}
                       style={{ width: '75vw', ...cardStyle }}
                     >
@@ -978,13 +989,13 @@ export default function DashboardPage() {
                           GRATIS HOY
                         </span>
                       </div>
-                      <h3 className={`font-bold text-sm ${expandedGameId === game.id ? '' : 'line-clamp-1'} min-w-0 flex-1`} style={{ color: text }}>{game.title || 'Juego'}</h3>
+                      <h3 className={`font-bold text-sm ${isExpanded ? '' : 'line-clamp-1'} min-w-0 flex-1`} style={{ color: text }}>{game.title || 'Juego'}</h3>
                       {game.show_author !== false && gameAuthors[game.submitted_by] && (
                         <p className="text-xs mt-0.5" style={{ color: textMuted }}>
                           por {gameAuthors[game.submitted_by]?.first_name} {gameAuthors[game.submitted_by]?.last_name}
                         </p>
                       )}
-                      <p className={`text-xs mt-1 ${expandedGameId === game.id ? '' : 'line-clamp-2'} min-w-0`} style={{ color: textMuted }}>{game.description || ''}</p>
+                      <p className={`text-xs mt-1 ${isExpanded ? '' : 'line-clamp-2'} min-w-0`} style={{ color: textMuted }}>{game.description || ''}</p>
                       <GameMetricsCompact
                         game={game}
                         uniquePlayers={uniquePlayersByGame[game.id]}
@@ -1034,10 +1045,13 @@ export default function DashboardPage() {
               <div className="flex gap-4 overflow-x-auto overflow-y-hidden pb-2 -mx-4 px-4 scrollbar-hide" style={{ WebkitOverflowScrolling: 'touch' }}>
                 {gamesToUnlock.map((game) => {
                   const house = HOUSES.find((h) => h.id === game.house) || HOUSES[0];
+                  const isExpanded = hoveredGameId === game.id || tappedGameId === game.id;
                   return (
                     <div
                       key={game.id}
-                      onClick={() => setExpandedGameId((prev) => (prev === game.id ? null : game.id))}
+                      onMouseEnter={() => setHoveredGameId(game.id)}
+                      onMouseLeave={() => setHoveredGameId(null)}
+                      onClick={() => setTappedGameId((prev) => (prev === game.id ? null : game.id))}
                       className={`${cardBase} flex-shrink-0 p-4 flex flex-col cursor-pointer transition-all duration-200`}
                       style={{ width: '75vw', ...cardStyle }}
                     >
@@ -1045,13 +1059,13 @@ export default function DashboardPage() {
                         <Image src={house.image} alt={house.name} width={20} height={20} className="flex-shrink-0 object-contain" />
                         <span className="text-[10px] font-bold truncate" style={{ color: house.color }}>{house.name}</span>
                       </div>
-                      <h3 className={`font-bold text-sm ${expandedGameId === game.id ? '' : 'line-clamp-1'} min-w-0`} style={{ color: text }}>{game.title || 'Juego'}</h3>
+                      <h3 className={`font-bold text-sm ${isExpanded ? '' : 'line-clamp-1'} min-w-0`} style={{ color: text }}>{game.title || 'Juego'}</h3>
                       {game.show_author !== false && gameAuthors[game.submitted_by] && (
                         <p className="text-xs mt-0.5" style={{ color: textMuted }}>
                           por {gameAuthors[game.submitted_by]?.first_name} {gameAuthors[game.submitted_by]?.last_name}
                         </p>
                       )}
-                      <p className={`text-xs mt-1 ${expandedGameId === game.id ? '' : 'line-clamp-2'} min-w-0`} style={{ color: textMuted }}>{game.description || ''}</p>
+                      <p className={`text-xs mt-1 ${isExpanded ? '' : 'line-clamp-2'} min-w-0`} style={{ color: textMuted }}>{game.description || ''}</p>
                       <GameMetricsFull
                         game={game}
                         uniquePlayers={uniquePlayersByGame[game.id]}
@@ -1094,10 +1108,13 @@ export default function DashboardPage() {
               <div className="grid grid-cols-2 gap-3 min-w-0">
                 {unlockedGames.map((game) => {
                   const house = HOUSES.find((h) => h.id === game.house) || HOUSES[0];
+                  const isExpanded = hoveredGameId === game.id || tappedGameId === game.id;
                   return (
                     <div
                       key={game.id}
-                      onClick={() => setExpandedGameId((prev) => (prev === game.id ? null : game.id))}
+                      onMouseEnter={() => setHoveredGameId(game.id)}
+                      onMouseLeave={() => setHoveredGameId(null)}
+                      onClick={() => setTappedGameId((prev) => (prev === game.id ? null : game.id))}
                       className={`${cardBase} p-4 flex flex-col cursor-pointer transition-all duration-200`}
                       style={cardStyle}
                     >
@@ -1116,13 +1133,13 @@ export default function DashboardPage() {
                           </span>
                         )}
                       </div>
-                      <h3 className={`font-bold text-sm ${expandedGameId === game.id ? '' : 'line-clamp-1'} min-w-0`} style={{ color: text }}>{game.title || 'Juego'}</h3>
+                      <h3 className={`font-bold text-sm ${isExpanded ? '' : 'line-clamp-1'} min-w-0`} style={{ color: text }}>{game.title || 'Juego'}</h3>
                       {game.show_author !== false && gameAuthors[game.submitted_by] && (
                         <p className="text-xs mt-0.5" style={{ color: textMuted }}>
                           por {gameAuthors[game.submitted_by]?.first_name} {gameAuthors[game.submitted_by]?.last_name}
                         </p>
                       )}
-                      <p className={`text-xs mt-1 ${expandedGameId === game.id ? '' : 'line-clamp-2'} min-w-0`} style={{ color: textMuted }}>{game.description || ''}</p>
+                      <p className={`text-xs mt-1 ${isExpanded ? '' : 'line-clamp-2'} min-w-0`} style={{ color: textMuted }}>{game.description || ''}</p>
                       <GameMetricsCompact
                         game={game}
                         uniquePlayers={uniquePlayersByGame[game.id]}

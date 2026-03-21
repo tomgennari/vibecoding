@@ -89,7 +89,8 @@ export default function JuegosPage() {
   const housesDropdownRefMobile = useRef(null);
   const [unlockingGameId, setUnlockingGameId] = useState(null);
   const [gameAuthors, setGameAuthors] = useState({});
-  const [expandedGameId, setExpandedGameId] = useState(null);
+  const [hoveredGameId, setHoveredGameId] = useState(null);
+  const [tappedGameId, setTappedGameId] = useState(null);
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -149,9 +150,7 @@ export default function JuegosPage() {
       let authorsMap = {};
       if (authorIds.length > 0) {
         const { data: authors } = await supabase
-          .from('profiles')
-          .select('id, first_name, last_name')
-          .in('id', authorIds);
+          .rpc('get_authors', { user_ids: authorIds });
         if (authors) {
           authors.forEach((a) => { authorsMap[a.id] = a; });
         }
@@ -500,6 +499,7 @@ export default function JuegosPage() {
         <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 min-w-0">
           {filteredAndSortedGames.map((game) => {
             const house = HOUSES.find((h) => h.id === game.house) || HOUSES[0];
+            const isExpanded = hoveredGameId === game.id || tappedGameId === game.id;
             const isUnlocked = unlockedIds.has(game.id);
             const isFreeToday = dailyIds.has(game.id);
             const canPlay = isUnlocked || isFreeToday;
@@ -507,7 +507,9 @@ export default function JuegosPage() {
             return (
               <div
                 key={game.id}
-                onClick={() => setExpandedGameId((prev) => (prev === game.id ? null : game.id))}
+                onMouseEnter={() => setHoveredGameId(game.id)}
+                onMouseLeave={() => setHoveredGameId(null)}
+                onClick={() => setTappedGameId((prev) => (prev === game.id ? null : game.id))}
                 className={`${cardBase} p-4 flex flex-col cursor-pointer transition-all duration-200`}
                 style={cardStyle}
               >
@@ -527,13 +529,13 @@ export default function JuegosPage() {
                     </span>
                   )}
                 </div>
-                <h2 className={`font-bold text-base ${expandedGameId === game.id ? '' : 'line-clamp-1'} min-w-0`} style={{ color: text }}>{game.title || 'Juego'}</h2>
+                <h2 className={`font-bold text-base ${isExpanded ? '' : 'line-clamp-1'} min-w-0`} style={{ color: text }}>{game.title || 'Juego'}</h2>
                 {game.show_author !== false && gameAuthors[game.submitted_by] && (
                   <p className="text-xs mt-0.5" style={{ color: textMuted }}>
                     por {gameAuthors[game.submitted_by]?.first_name} {gameAuthors[game.submitted_by]?.last_name}
                   </p>
                 )}
-                <p className={`text-xs mt-1 ${expandedGameId === game.id ? '' : 'line-clamp-2'} min-w-0 flex-1`} style={{ color: textMuted }}>{game.description || ''}</p>
+                <p className={`text-xs mt-1 ${isExpanded ? '' : 'line-clamp-2'} min-w-0 flex-1`} style={{ color: textMuted }}>{game.description || ''}</p>
                 {canPlay ? (
                   <GameMetricsCompact
                     game={game}
