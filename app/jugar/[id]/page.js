@@ -85,7 +85,14 @@ export default function JugarPage() {
 
       // Verificar si el usuario tiene acceso
       const isCreator = data.submitted_by === session.user.id;
-      if (!isCreator) {
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', session.user.id)
+        .single();
+      const isAdmin = !!profileData?.is_admin;
+
+      if (!isCreator && !isAdmin) {
         // Verificar unlocked_for_all
         const { data: gameAccess } = await supabase
           .from('games')

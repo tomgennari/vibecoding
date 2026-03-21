@@ -70,6 +70,7 @@ export default function PerfilPage() {
   const [credits, setCredits] = useState(null);
   const [showCreditsInfo, setShowCreditsInfo] = useState(false);
   const [playingGame, setPlayingGame] = useState(null); // { id, title, file_url }
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const isDark = theme === 'dark';
   const bg = isDark ? '#0a0a0f' : '#ffffff';
@@ -91,16 +92,18 @@ export default function PerfilPage() {
     const uid = session.user.id;
     setEmail(session.user?.email || '');
 
-    const [unlocksListRes, approvedRes, submittedRes] = await Promise.all([
+    const [unlocksListRes, approvedRes, submittedRes, profileAdminRes] = await Promise.all([
       supabase.from('game_unlocks').select('game_id').eq('user_id', uid).then((r) => ({ data: r.data ?? [] })).catch(() => ({ data: [] })),
       supabase.from('games').select('*').eq('status', 'approved').then((r) => ({ data: r.data ?? [] })).catch(() => ({ data: [] })),
       supabase.from('games').select('*').eq('submitted_by', uid).then((r) => ({ data: r.data ?? [] })).catch(() => ({ data: [] })),
+      supabase.from('profiles').select('is_admin').eq('id', uid).single().then((r) => ({ data: r.data })).catch(() => ({ data: null })),
     ]);
 
     const unlockedIds = (unlocksListRes.data || []).map((r) => r.game_id).filter(Boolean);
     const approved = approvedRes.data || [];
     setUnlockedGames(approved.filter((g) => g.id && unlockedIds.includes(g.id)));
     setMySubmittedGames(submittedRes.data || []);
+    setIsAdmin(!!profileAdminRes.data?.is_admin);
     setLoading(false);
   }, [router]);
 
@@ -255,7 +258,7 @@ export default function PerfilPage() {
 
   const displayName = profile ? [profile.first_name, profile.last_name].filter(Boolean).join(' ') || 'Usuario' : 'Usuario';
   const isAlumno = profile?.user_type === 'alumno';
-  const visibleTabs = isAlumno ? TABS : TABS.filter((t) => t.id !== 'subidos');
+  const visibleTabs = (isAlumno || isAdmin || mySubmittedGames.length > 0) ? TABS : TABS.filter((t) => t.id !== 'subidos');
 
   if (userLoading || loading) {
     return (
@@ -535,8 +538,8 @@ export default function PerfilPage() {
                 </div>
               )}
 
-              {/* Tab Mis juegos subidos (solo alumnos) */}
-              {activeTab === 'subidos' && isAlumno && (
+              {/* Tab Mis juegos subidos (alumnos, admins o quien tenga juegos subidos) */}
+              {activeTab === 'subidos' && (isAlumno || isAdmin || mySubmittedGames.length > 0) && (
                 <div className={`${cardBase} p-6`} style={cardStyle}>
                   <h2 className="text-lg font-bold mb-4" style={{ color: text }}>Mis juegos subidos</h2>
                   {mySubmittedGames.length === 0 ? (

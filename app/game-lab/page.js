@@ -333,6 +333,21 @@ export default function GameLabPage() {
               { role: 'andy', content: '🔧 Cargué tu juego para editarlo. ¿Qué le querés cambiar?' },
             ]);
             sessionStorage.setItem('gamelab_editing_id', editGameId);
+            // Guardar título y descripción originales para pre-cargar en moderación
+            sessionStorage.setItem('gamelab_editing_title', '');
+            sessionStorage.setItem('gamelab_editing_description', '');
+            // Cargar título y descripción originales del juego
+            supabase
+              .from('games')
+              .select('title, description')
+              .eq('id', editGameId)
+              .single()
+              .then(({ data: gameData }) => {
+                if (gameData) {
+                  sessionStorage.setItem('gamelab_editing_title', gameData.title || '');
+                  sessionStorage.setItem('gamelab_editing_description', gameData.description || '');
+                }
+              });
           } else {
             const randomMsg = ANDY_FIRST_MESSAGES[Math.floor(Math.random() * ANDY_FIRST_MESSAGES.length)];
             setMessages([{ role: 'andy', content: randomMsg }]);
@@ -1066,11 +1081,21 @@ export default function GameLabPage() {
   function openModeracionModal() {
     if (!currentHtml) return;
     setModeracionModalOpen(true);
-    setTituloModal('');
-    setDescripcionModal('');
+    const editingId = sessionStorage.getItem('gamelab_editing_id');
+    if (editingId) {
+      setTituloModal(sessionStorage.getItem('gamelab_editing_title') || '');
+      setDescripcionModal(sessionStorage.getItem('gamelab_editing_description') || '');
+    } else {
+      setTituloModal('');
+      setDescripcionModal('');
+    }
     setError('');
-    setSugiriendoTitulo(true);
-    fetchSugerenciaTitulo();
+    if (editingId) {
+      setSugiriendoTitulo(false);
+    } else {
+      setSugiriendoTitulo(true);
+      fetchSugerenciaTitulo();
+    }
   }
 
   async function confirmarEnviarAModeracion() {
@@ -1628,8 +1653,13 @@ export default function GameLabPage() {
               placeholder="Ej: Naves espaciales"
               className="w-full rounded-xl px-4 py-2.5 text-sm border mb-4 focus:outline-none focus:ring-2 focus:ring-[#7c3aed]"
               style={{ background: isDark ? '#0a0a0f' : '#fff', borderColor: border, color: text }}
-              disabled={sugiriendoTitulo}
+              disabled={sugiriendoTitulo || !!sessionStorage.getItem('gamelab_editing_id')}
             />
+            {sessionStorage.getItem('gamelab_editing_id') && (
+              <p className="text-[10px] mt-0.5 mb-3" style={{ color: textMuted }}>
+                El título no se puede cambiar al re-enviar una versión actualizada.
+              </p>
+            )}
             <label className="block text-sm font-medium mb-1.5" style={{ color: text }}>
               Descripción
             </label>
