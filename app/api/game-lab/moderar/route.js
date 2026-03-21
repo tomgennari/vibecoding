@@ -104,7 +104,6 @@ export async function POST(request) {
     // Notificar al admin que hay un juego actualizado para moderar
     const adminEmail = process.env.ADMIN_EMAIL;
     const resendApiKey = process.env.RESEND_API_KEY;
-    console.log('Notify admin:', { adminEmail: !!adminEmail, resendApiKey: !!resendApiKey });
     if (adminEmail && resendApiKey) {
       try {
         await fetch('https://api.resend.com/emails', {
