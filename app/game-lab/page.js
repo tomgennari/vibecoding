@@ -346,9 +346,11 @@ export default function GameLabPage() {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, sending]);
 
-  // Resetear estado de moderación cuando Andy genera un juego nuevo
+  // Resetear estado de moderación solo cuando hay HTML nuevo (no al vaciar tras enviar a moderación)
   useEffect(() => {
-    setEnviadoModeracion(false);
+    if (currentHtml) {
+      setEnviadoModeracion(false);
+    }
   }, [currentHtml]);
 
   // Persistir HTML del juego en sessionStorage
@@ -1066,7 +1068,12 @@ export default function GameLabPage() {
         throw new Error(data.error || `Error ${res.status}`);
       }
       setEnviadoModeracion(true);
+      setMessages((prev) => [...prev, { role: 'andy', content: '🎉 ¡Tu juego fue enviado a moderación! Cuando lo aprueben vas a poder compartirlo con tus amigos. Podés ver el estado y editarlo desde tu perfil en "Mis juegos subidos". ¿Querés crear otro juego?' }]);
       setModeracionModalOpen(false);
+      // Limpiar el juego actual del Game Lab — ya fue enviado
+      setCurrentHtml('');
+      sessionStorage.removeItem('gamelab_html');
+      sessionStorage.removeItem('gamelab_messages');
     } catch (err) {
       setError(err?.message || 'Error al enviar a moderación. Intentá de nuevo.');
     } finally {
@@ -1320,9 +1327,9 @@ export default function GameLabPage() {
                     Enviar
                   </button>
                 </div>
-                {currentHtml && (
+                {(currentHtml || enviadoModeracion) && (
                   <div className="flex flex-col gap-2 mt-3">
-                    {!isDesktop && (
+                    {!isDesktop && currentHtml && (
                       <button
                         type="button"
                         onClick={() => setMobileGameOpen(true)}
@@ -1332,9 +1339,22 @@ export default function GameLabPage() {
                       </button>
                     )}
                     {enviadoModeracion ? (
-                      <p className="text-sm font-medium text-center py-2" style={{ color: '#22c55e' }}>
-                        ✅ Enviado a moderación
-                      </p>
+                      <div className="flex flex-col gap-2 text-center py-2">
+                        <p className="text-sm font-medium" style={{ color: '#22c55e' }}>
+                          ✅ ¡Juego enviado a moderación!
+                        </p>
+                        <p className="text-xs" style={{ color: textMuted }}>
+                          Podés ver el estado de tu juego y editarlo desde tu perfil.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => router.push('/perfil')}
+                          className="text-xs font-bold py-2 rounded-lg transition-colors hover:opacity-80"
+                          style={{ color: accent }}
+                        >
+                          👤 Ir a mi perfil → Mis juegos subidos
+                        </button>
+                      </div>
                     ) : (
                       <button
                         type="button"

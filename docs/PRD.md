@@ -1,5 +1,5 @@
 # Campus San Andrés — Vibe Coding San Andrés
-## Product Requirements Document (PRD) v3.2
+## Product Requirements Document (PRD) v3.4
 
 **Fecha:** Marzo 2026  
 **Autor:** Tomás Gennari  
@@ -114,6 +114,7 @@ Los usuarios desbloquean juegos mediante pagos en pesos argentinos vía MercadoP
 - Login, logout y recuperación de contraseña
 - Perfil: nombre, apellido, tipo, house — SIN foto de perfil
 - Seguridad: Supabase Auth + Row Level Security en toda la DB
+- **Email transaccional:** Resend configurado como SMTP custom en Supabase Auth. Sender: `noreply@sass.vibecoding.ar`. Dominio `sass.vibecoding.ar` verificado en Resend con registros DNS en Vercel. Rate limit free tier: 100 emails/día — suficiente para MVP, escalar a plan pago en lanzamiento masivo.
 
 ### 4.2 Sistema de Juegos
 
@@ -218,6 +219,14 @@ El panel de admin está construido en Next.js en `/app/admin` con las siguientes
 - `POST /api/admin/daily-games` — programa un juego para mañana
 - `DELETE /api/admin/daily-games?gameId=` — quita un juego programado
 - Ambas rutas verifican sesión activa y rol `is_admin` antes de operar
+
+**Moderación de juegos — ✅ Implementado:**
+- Modal `GamePreviewModal` al hacer click en "Ver" en cualquier juego de la tabla
+- El modal carga el HTML del juego via `fetch` y lo renderiza en `<iframe srcdoc>` (evita problema de Content-Type de Supabase Storage que mostraba el código como texto plano)
+- Toggle "Ver código / Ver juego" para inspeccionar el HTML fuente antes de aprobar
+- Si el juego está pendiente, botones Aprobar y Rechazar disponibles dentro del modal
+- **Notificación al admin:** Edge Function `notify-new-game` + Database Webhook en Supabase. Cuando se inserta un juego con `status = 'pending'`, se envía un email automático al admin via Resend con título, descripción, house y link directo al panel de admin
+- **Problema de encoding conocido:** juegos generados en Safari/Mac pueden tener caracteres especiales corruptos (ej: `PresionÃ¡` en vez de `Presioná`). Andy tiene regla en `quality-rules.md` para usar unicode escapado (`\u00E1` etc.) y evitarlo. Si un juego llega corrupto, rechazarlo para que el alumno lo regenere.
 
 ---
 
@@ -380,6 +389,7 @@ Estilo gaming tipo Discord + Fortnite. Donde los usuarios pasan la mayor parte d
 | Game Lab — IA | Claude Sonnet 4.6 via Anthropic API | Streaming SSE, max 16K tokens, system prompt modular en `docs/andy/` |
 | Game Lab — Frameworks | Canvas 2D, p5.js, Kaplay | Librerías hosteadas en Supabase Storage (`libs/` bucket) |
 | MobileBottomNav | Componente reutilizable | Barra de navegación inferior mobile, presente en todas las páginas excepto /jugar |
+| Email transaccional | Resend | SMTP custom para Supabase Auth + Edge Functions. Dominio: `sass.vibecoding.ar`. Free tier: 3.000 emails/mes, 100/día |
 
 ### 7.2 Estructura de Base de Datos
 
@@ -387,7 +397,7 @@ Tablas principales (todas con RLS habilitado):
 
 | Tabla | Descripción | Columnas clave |
 |-------|-------------|----------------|
-| `profiles` | Datos de usuario | id, first_name, last_name, email, user_type, house, created_at |
+| `profiles` | Datos de usuario | id, first_name, last_name, email, user_type, house, tokens_used, tokens_limit, is_admin, is_blocked, created_at |
 | `games` | Juegos publicados | id, title, description, house, file_url, github_url, status, submitted_by, approved_at |
 | `game_sessions` | Sesiones de juego | id, user_id, game_id, started_at, ended_at, duration_seconds |
 | `game_scores` | Puntuaciones | id, user_id, game_id, score, played_at |
@@ -410,7 +420,7 @@ Tablas principales (todas con RLS habilitado):
 - **RLS:** habilitado en TODAS las tablas sin excepción
 - **Auth:** Supabase Auth — bcrypt para contraseñas, JWT con expiración, refresh tokens
 - **Variables de entorno:** NUNCA en el código. `.env.local` en local, Vercel Env Vars en producción. `.env.local` en `.gitignore`
-- **iframes:** `sandbox="allow-scripts"` únicamente. Sin allow-same-origin, sin allow-forms, sin allow-top-navigation
+- **iframes:** `sandbox="allow-scripts allow-same-origin"` — allow-same-origin necesario para touch events en mobile
 - **CSP:** Content Security Policy configurado en `next.config.js` para prevenir XSS
 - **Webhooks MercadoPago:** verificar firma HMAC-SHA256 antes de procesar cualquier pago
 - **Archivos subidos:** solo `.html`, máximo 500KB, revisión manual del admin obligatoria
@@ -482,13 +492,15 @@ Tablas principales (todas con RLS habilitado):
 | Servicio | Costo mensual | Notas |
 |----------|--------------|-------|
 | Cursor Pro | USD 20 | IDE con IA |
+| Anthropic API (Claude) | Variable ~USD 5-20 | Game Lab — costo por uso, depende de actividad de alumnos |
 | Supabase | Gratis / USD 25 | Free tier suficiente para MVP |
 | Vercel | Gratis / USD 20 | Free tier suficiente para MVP |
 | Dominio vibecoding.ar | ~ARS 5.000/año | NIC.ar — ya registrado |
 | MercadoPago | ~3% por pago | Sin costo fijo |
+| Resend | Gratis / USD 20 | Free tier: 3.000 emails/mes, 100/día — suficiente para MVP. Escalar antes del lanzamiento masivo |
 | Figma | Gratis | Mockups y diseño |
 | Sentry | Gratis | Logging de errores — Fase 2 |
-| **TOTAL MVP** | **USD 20/mes** | Solo Cursor Pro |
+| **TOTAL MVP** | **~USD 25-40/mes** | Cursor Pro + Anthropic API variable |
 
 ---
 
@@ -525,15 +537,18 @@ Tablas principales (todas con RLS habilitado):
 - Accesible desde el modal "Crea tu juego" existente
 - Es el espacio principal donde los alumnos describen y generan sus juegos con IA
 - [ ] El usuario describe el juego en lenguaje natural y Claude genera el HTML5 completo
-- [ ] Sistema de límite de tokens por usuario (columnas `tokens_used` y `tokens_limit` en profiles)
-- [ ] Límite sugerido: USD 1.00 por usuario — costo estimado ~$0.05 USD por juego generado, ~20 intercambios posibles
-- Límite de tokens por usuario: equivalente a USD 1.00 (~20 intercambios con Claude)
+- [x] Sistema de límite de tokens por usuario (columnas `tokens_used` y `tokens_limit` en profiles) — ✅ Implementado como "Créditos de Andy"
+- Límite de créditos por usuario: USD 1.00
 - Acceso al Game Lab:
-  - Alumnos: reciben USD 1.00 en tokens gratis al registrarse
-  - Padres: no reciben tokens gratis — obtienen USD 1.00 en tokens únicamente al desbloquear (comprar) su primer juego
-  - Administradores: acceso ilimitado sin consumo de tokens
-- El usuario puede recargar tokens generando más juegos: pagando el equivalente a USD 3.00 en ARS, recupera USD 1.00 en tokens (neto USD 2.00 para el campus)
-- Esta mecánica convierte el generador en un incentivo de compra: para seguir creando, primero hay que contribuir al fundraising
+  - Alumnos: reciben USD 1.00 en créditos gratis al registrarse (default de la columna)
+  - Padres: no reciben créditos gratis
+  - Todos: reciben USD 1.00 en créditos adicionales por cada juego que compran/desbloquean
+  - Administradores: acceso ilimitado sin consumo de créditos (bypass en backend)
+- Tracking de costos: el backend captura `input_tokens` y `output_tokens` del stream de Anthropic, calcula el costo (Sonnet 4.6: $3/M input + $15/M output), y actualiza `tokens_used` en la DB
+- El costo real por juego varía según complejidad: ~$0.03-0.05 para juegos simples, ~$0.15-0.50 para juegos complejos con auto-retry y auto-fix
+- Barra visual de créditos: visible en header del Game Lab y en la página de perfil
+- Tooltip explicativo (ícono i) que explica qué son los créditos y cómo recargar
+- Cuando los créditos se agotan: Andy muestra mensaje amigable invitando a desbloquear juegos del catálogo
 - Columnas en tabla `profiles`: `tokens_used` (DECIMAL, default 0) y `tokens_limit` (DECIMAL, default 1.00) — ambas en USD
 - El panel de admin permite ver consumo por usuario y ajustar límites individualmente
 - [ ] El juego generado va directo al flujo de moderación existente
@@ -605,10 +620,22 @@ Tablas principales (todas con RLS habilitado):
 - ✅ Emojis solo cuando quedan bien, formas procedurales para protagonistas y entidades dinámicas
 - ✅ Bottom nav oculto durante fullscreen del juego en mobile
 - ✅ Limpieza completa de Supabase: bucket kenney y RPC list_kenney_objects() eliminados
+- ✅ Créditos de Andy: sistema completo de tracking de costos, barra visual en Game Lab y perfil, tooltip explicativo, bypass para admins
+- ✅ Links a Términos y Condiciones y Política de Privacidad en página de perfil
+- ✅ Regla de caracteres especiales en `quality-rules.md`: Andy usa unicode escapado (`\u00E1`, `\u00A1`, etc.) para evitar corrupción de encoding en Safari/Mac
+- ✅ Panel admin: modal de previsualización de juegos con iframe `srcdoc` + toggle ver juego / ver código
+- ✅ Notificación por email al admin cuando hay juegos pendientes (Edge Function `notify-new-game` + Database Webhook + Resend)
 - ❌ Descartado: Phaser.js (juegos se truncaban, código demasiado largo)
 - ❌ Descartado: Excalibur.js (requiere TypeScript y bundler)
 - ❌ Descartado: Assets de Kenney (Andy no los usaba, consumían tokens innecesarios)
-- 🔲 Pendiente: Sistema de tokens (`tokens_used` / `tokens_limit` en profiles)
+- 🔲 Pendiente: Flujo post-moderación en Game Lab (limpiar sesión, redirigir a perfil)
+- 🔲 Pendiente: Perfil — jugar propio juego desde "Mis juegos subidos"
+- 🔲 Pendiente: Perfil — editar juego (llevar HTML a Andy en Game Lab)
+- 🔲 Pendiente: Re-envío a moderación (actualizar mismo juego, no crear duplicado)
+- 🔲 Pendiente: Desbloquear juego para todos ($50,000 ARS via MercadoPago)
+- 🔲 Pendiente: Compartir juego vía WhatsApp desde perfil
+- 🔲 Pendiente: Email de aprobación al alumno (con link a perfil, compartir, desbloquear para todos)
+- 🔲 Pendiente: Persistencia robusta en Supabase (reemplazar sessionStorage)
 
 ### Fase 3 — Gamificación (4-6 semanas)
 
@@ -693,6 +720,7 @@ Los valores son configurables por el admin.
 | Feb 2026 | Eliminación constraint `profiles_house_check` | Conflicto con valores del formulario |
 | Mar 2026 | Agregado columna `scheduled_for` (date, nullable) a `daily_free_games` | Permitir programar juegos para días futuros |
 | Mar 2026 | Agregado columna `auto_selected` (bool, default false) a `daily_free_games` | Distinguir selección manual del admin vs automática del cron |
+| Mar 2026 | Agregado columnas `tokens_used` (DECIMAL, default 0) y `tokens_limit` (DECIMAL, default 1.00) a `profiles` | Sistema de Créditos de Andy para el Game Lab |
 
 ---
 
