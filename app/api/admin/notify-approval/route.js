@@ -62,35 +62,58 @@ export async function POST(request) {
   if (!student?.email) return NextResponse.json({ error: 'Alumno sin email' }, { status: 404 });
 
   // Enviar email
-  const profileUrl = 'https://sass.vibecoding.ar/perfil';
   const shareText = encodeURIComponent(`¡Mirá el juego que creé en Campus San Andrés! 🎮 Jugalo acá: https://sass.vibecoding.ar/jugar/${game.id}`);
   const whatsappUrl = `https://wa.me/?text=${shareText}`;
 
   const emailHtml = `
-    <div style="font-family:Inter,Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px;background:#0a0a0f;border-radius:12px;color:#f1f5f9;">
-      <h1 style="font-size:24px;font-weight:900;color:#7c3aed;margin-bottom:16px;">🎮 ¡Tu juego fue aprobado!</h1>
-      <p style="font-size:14px;line-height:1.6;margin-bottom:8px;">
+    <div style="font-family:Inter,Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px;background:#f8fafc;border-radius:12px;">
+      <h2 style="color:#0f172a;margin:0 0 8px;">🎮 ¡Tu juego fue aprobado!</h2>
+      <p style="color:#64748b;font-size:14px;margin:0 0 20px;">Campus San Andrés — Game Lab</p>
+      
+      <p style="color:#0f172a;font-size:14px;line-height:1.6;margin:0 0 8px;">
         ¡Hola ${student.first_name || 'crack'}!
       </p>
-      <p style="font-size:14px;line-height:1.6;margin-bottom:16px;">
-        Tu juego <strong style="color:#06b6d4;">"${game.title}"</strong> fue aprobado y ya está disponible en Campus San Andrés. 🎉
+      <p style="color:#0f172a;font-size:14px;line-height:1.6;margin:0 0 20px;">
+        Tu juego <strong style="color:#7c3aed;">"${game.title}"</strong> fue aprobado y ya está disponible en la plataforma.
       </p>
-      <p style="font-size:14px;line-height:1.6;margin-bottom:24px;">
-        Ahora podés compartirlo con tus amigos para que lo jueguen, y si querés que esté disponible para todos los alumnos, podés desbloquearlo desde tu perfil.
+
+      <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
+        <tr>
+          <td style="padding:8px 0;color:#64748b;font-size:14px;">Juego</td>
+          <td style="padding:8px 0;color:#0f172a;font-size:14px;font-weight:600;">${game.title}</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 0;color:#64748b;font-size:14px;">Estado</td>
+          <td style="padding:8px 0;color:#22c55e;font-size:14px;font-weight:600;">✅ Aprobado</td>
+        </tr>
+      </table>
+
+      <p style="color:#0f172a;font-size:14px;line-height:1.6;margin:0 0 20px;">
+        Ahora podés compartirlo con tus amigos para que lo jueguen. ¡Cuantos más lo jueguen, más puntos sumás para tu House!
       </p>
-      <div style="margin-bottom:16px;">
-        <a href="${profileUrl}" style="display:inline-block;padding:12px 24px;background:linear-gradient(135deg,#7c3aed,#06b6d4);color:#fff;text-decoration:none;border-radius:8px;font-weight:700;font-size:14px;">
-          👤 Ver en mi perfil
+
+      <div style="text-align:center;margin-bottom:12px;">
+        <a href="https://sass.vibecoding.ar/perfil?tab=subidos" style="display:inline-block;background:linear-gradient(135deg,#7c3aed,#06b6d4);color:#ffffff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;">
+          Ver en mis juegos
         </a>
       </div>
-      <div style="margin-bottom:16px;">
-        <a href="${whatsappUrl}" style="display:inline-block;padding:12px 24px;background:#22c55e;color:#fff;text-decoration:none;border-radius:8px;font-weight:700;font-size:14px;">
-          📲 Compartir por WhatsApp
+      <div style="text-align:center;margin-bottom:12px;">
+        <a href="${whatsappUrl}" style="display:inline-block;background:#22c55e;color:#ffffff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;">
+          Compartir por WhatsApp
         </a>
       </div>
-      <hr style="border:none;border-top:1px solid #2a2a3a;margin:24px 0;" />
-      <p style="font-size:11px;color:#94a3b8;text-align:center;">
-        Campus San Andrés — sass.vibecoding.ar<br/>
+
+      <div style="margin-top:16px;padding:16px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;">
+        <p style="color:#0f172a;font-size:13px;line-height:1.5;margin:0 0 8px;">
+          <strong>🌟 ¿Querés que todos puedan jugarlo?</strong>
+        </p>
+        <p style="color:#64748b;font-size:12px;line-height:1.5;margin:0;">
+          Desde tu perfil podés desbloquearlo para todos los alumnos del colegio. ¡Así todos juegan tu creación!
+        </p>
+      </div>
+
+      <p style="margin-top:24px;color:#94a3b8;font-size:12px;text-align:center;">
+        Campus San Andrés — Vibe Coding San Andrés<br/>
         <em>Sic itur ad astra</em>
       </p>
     </div>

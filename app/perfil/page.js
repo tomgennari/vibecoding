@@ -116,6 +116,14 @@ export default function PerfilPage() {
   }, [profile]);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get('tab');
+    if (tab === 'subidos') {
+      setActiveTab('subidos');
+    }
+  }, []);
+
+  useEffect(() => {
     if (!userLoading && !profile) router.replace('/login');
   }, [userLoading, profile, router]);
 

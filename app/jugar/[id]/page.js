@@ -315,6 +315,7 @@ export default function JugarPage() {
                   try {
                     const { data: { session: s } } = await supabase.auth.getSession();
                     if (!s) return;
+                    console.log('Creando preferencia MP:', { gameId: game.id, userId: s.user.id, gameTitle: game.title });
                     const res = await fetch('/api/mp/crear-preferencia', {
                       method: 'POST',
                       headers: {
@@ -329,21 +330,27 @@ export default function JugarPage() {
                       }),
                     });
                     const data = await res.json();
+                    console.log('Respuesta MP:', data);
+                    if (data.error) {
+                      alert(data.error);
+                      return;
+                    }
                     if (data.init_point) {
                       window.location.href = data.init_point;
                     }
                   } catch (err) {
                     console.error('Error:', err);
+                    alert('Error al crear el pago. Intentá de nuevo.');
                   }
                 }}
-                className="vibe-btn-gradient w-full rounded-xl px-6 py-3 text-sm font-bold text-white mb-3"
+                className="vibe-btn-gradient w-full rounded-xl px-6 py-3 text-sm font-bold text-white mb-3 cursor-pointer"
               >
                 🎮 Desbloquear — $5.000
               </button>
               <button
                 type="button"
                 onClick={() => router.push('/dashboard')}
-                className="w-full rounded-xl px-6 py-3 text-sm font-bold border transition-colors"
+                className="w-full rounded-xl px-6 py-3 text-sm font-bold border transition-colors cursor-pointer"
                 style={{ borderColor: border, color: textMuted, background: 'transparent' }}
               >
                 ← Volver al catálogo
