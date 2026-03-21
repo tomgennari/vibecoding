@@ -567,7 +567,7 @@ export default function PerfilPage() {
                             <button
                               type="button"
                               onClick={() => setPlayingGame(game)}
-                              className="flex-1 rounded-lg px-3 py-2 text-xs font-bold border transition-colors hover:opacity-80"
+                              className="flex-1 cursor-pointer rounded-lg px-3 py-2 text-xs font-bold border transition-colors hover:opacity-80"
                               style={{ borderColor: accent, color: accent, background: 'transparent' }}
                             >
                               🎮 Jugar
@@ -579,7 +579,7 @@ export default function PerfilPage() {
                                 sessionStorage.setItem('gamelab_edit_url', game.file_url);
                                 router.push('/game-lab');
                               }}
-                              className="flex-1 rounded-lg px-3 py-2 text-xs font-bold border transition-colors hover:opacity-80"
+                              className="flex-1 cursor-pointer rounded-lg px-3 py-2 text-xs font-bold border transition-colors hover:opacity-80"
                               style={{ borderColor: border, color: textMuted, background: 'transparent' }}
                             >
                               ✏️ Editar
@@ -592,7 +592,7 @@ export default function PerfilPage() {
                                   const text = `¡Mirá el juego que creé en Campus San Andrés! 🎮 Jugalo acá: ${url}`;
                                   window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
                                 }}
-                                className="flex-1 rounded-lg px-3 py-2 text-xs font-bold border transition-colors hover:opacity-80"
+                                className="flex-1 cursor-pointer rounded-lg px-3 py-2 text-xs font-bold border transition-colors hover:opacity-80"
                                 style={{ borderColor: '#22c55e', color: '#22c55e', background: 'transparent' }}
                               >
                                 📲 Compartir
@@ -628,7 +628,7 @@ export default function PerfilPage() {
                                   console.error('Error creando preferencia:', err);
                                 }
                               }}
-                              className="w-full rounded-lg px-3 py-2 text-xs font-bold border transition-colors hover:opacity-80 mt-1"
+                              className="w-full cursor-pointer rounded-lg px-3 py-2 text-xs font-bold border transition-colors hover:opacity-80 mt-1"
                               style={{ borderColor: '#eab308', color: '#eab308', background: 'transparent' }}
                             >
                               🌟 Desbloquear para todos — $50.000
@@ -643,9 +643,18 @@ export default function PerfilPage() {
                       ))}
                     </ul>
                   )}
-                  <Link href="/juegos/subir" className="vibe-btn-gradient inline-block mt-4 rounded-xl px-4 py-2.5 text-sm font-bold text-white">
-                    🕹️ Subir mi juego
-                  </Link>
+                  <div className="flex gap-2 mt-4">
+                    <button
+                      type="button"
+                      onClick={() => router.push('/game-lab')}
+                      className="vibe-btn-gradient cursor-pointer flex-1 rounded-xl px-4 py-2.5 text-sm font-bold text-white"
+                    >
+                      🤖 Crear con Andy
+                    </button>
+                    <Link href="/juegos/subir" className="flex-1 cursor-pointer rounded-xl px-4 py-2.5 text-sm font-bold text-center border transition-colors hover:opacity-80" style={{ borderColor: border, color: textMuted }}>
+                      🕹️ Subir mi juego
+                    </Link>
+                  </div>
                 </div>
               )}
             </div>
