@@ -395,15 +395,20 @@ export default function SubirJuegoPage() {
               📋 Tu juego será revisado por un admin antes de publicarse. Normalmente tarda menos de 24hs.
             </div>
 
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={showAuthor}
-                onChange={(e) => setShowAuthor(e.target.checked)}
-                className="w-4 h-4 rounded border cursor-pointer accent-[#7c3aed]"
-              />
-              <span className="text-sm" style={{ color: text || '#f1f5f9' }}>Mostrar mi nombre como autor del juego</span>
-            </label>
+            <div className="mb-4 rounded-xl border p-3" style={{ borderColor: border, background: isDark ? '#0a0a0f' : '#f1f5f9' }}>
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showAuthor}
+                  onChange={(e) => setShowAuthor(e.target.checked)}
+                  className="w-5 h-5 mt-0.5 rounded border-2 cursor-pointer accent-[#7c3aed] shrink-0"
+                />
+                <div>
+                  <span className="text-sm font-bold block" style={{ color: text }}>Mostrar mi nombre como autor</span>
+                  <span className="text-xs block mt-0.5" style={{ color: textMuted }}>Si desactivás esto, tu juego aparece como "Autor anónimo"</span>
+                </div>
+              </label>
+            </div>
 
             <button
               type="submit"

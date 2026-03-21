@@ -607,6 +607,29 @@ export default function PerfilPage() {
                               </button>
                             )}
                           </div>
+                          <div className="flex items-center gap-2 mt-2 pt-2 border-t" style={{ borderColor: border }}>
+                            <label className="flex items-center gap-2 cursor-pointer text-xs" style={{ color: textMuted }}>
+                              <input
+                                type="checkbox"
+                                checked={game.show_author !== false}
+                                onChange={async (e) => {
+                                  const newValue = e.target.checked;
+                                  const { error } = await supabase
+                                    .from('games')
+                                    .update({ show_author: newValue })
+                                    .eq('id', game.id);
+                                  if (!error) {
+                                    // Actualizar la lista local
+                                    setMySubmittedGames((prev) =>
+                                      prev.map((g) => g.id === game.id ? { ...g, show_author: newValue } : g)
+                                    );
+                                  }
+                                }}
+                                className="w-4 h-4 rounded cursor-pointer accent-[#7c3aed]"
+                              />
+                              {game.show_author !== false ? 'Tu nombre aparece como autor' : 'Autor anónimo'}
+                            </label>
+                          </div>
                           {game.status === 'approved' && !game.unlocked_for_all && (
                             <button
                               type="button"
