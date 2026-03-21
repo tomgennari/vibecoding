@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 function getAuthUser(request) {
   const authHeader = request.headers.get('authorization');
@@ -32,6 +33,10 @@ export async function POST(request) {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
   }
 
+  const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+
   let body;
   try {
     body = await request.json();
@@ -52,14 +57,10 @@ export async function POST(request) {
     return NextResponse.json({ error: insertError.message }, { status: 400 });
   }
 
-  const { data: game } = await supabase.from('games').select('total_likes').eq('id', gameId).single();
-  const current = Number(game?.total_likes) || 0;
-  try {
-    await supabase.from('games').update({ total_likes: current + 1 }).eq('id', gameId);
-  } catch (_) {}
-
-  const { count } = await supabase.from('game_likes').select('*', { count: 'exact', head: true }).eq('game_id', gameId);
-  return NextResponse.json({ total_likes: count ?? current + 1 });
+  const { count } = await supabaseAdmin.from('game_likes').select('*', { count: 'exact', head: true }).eq('game_id', gameId);
+  const newTotal = count ?? 0;
+  await supabaseAdmin.from('games').update({ total_likes: newTotal }).eq('id', gameId);
+  return NextResponse.json({ total_likes: newTotal });
 }
 
 export async function DELETE(request) {
@@ -75,6 +76,10 @@ export async function DELETE(request) {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
   }
 
+  const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+
   const { searchParams } = new URL(request.url);
   const gameId = searchParams.get('gameId') ?? searchParams.get('game_id');
   if (!gameId) {
@@ -86,14 +91,8 @@ export async function DELETE(request) {
     return NextResponse.json({ error: deleteError.message }, { status: 400 });
   }
 
-  const { data: game } = await supabase.from('games').select('total_likes').eq('id', gameId).single();
-  const current = Number(game?.total_likes) || 0;
-  try {
-    if (current > 0) {
-      await supabase.from('games').update({ total_likes: Math.max(0, current - 1) }).eq('id', gameId);
-    }
-  } catch (_) {}
-
-  const { count } = await supabase.from('game_likes').select('*', { count: 'exact', head: true }).eq('game_id', gameId);
-  return NextResponse.json({ total_likes: count ?? Math.max(0, current - 1) });
+  const { count } = await supabaseAdmin.from('game_likes').select('*', { count: 'exact', head: true }).eq('game_id', gameId);
+  const newTotal = count ?? 0;
+  await supabaseAdmin.from('games').update({ total_likes: newTotal }).eq('id', gameId);
+  return NextResponse.json({ total_likes: newTotal });
 }
