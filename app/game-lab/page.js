@@ -314,6 +314,37 @@ export default function GameLabPage() {
   // Mensaje inicial de Andy al montar, o restaurar sesión anterior
   useEffect(() => {
     if (!profile) return;
+
+    // Verificar si viene de "Editar" en el perfil
+    const editGameId = sessionStorage.getItem('gamelab_edit_game_id');
+    const editUrl = sessionStorage.getItem('gamelab_edit_url');
+    if (editGameId && editUrl) {
+      sessionStorage.removeItem('gamelab_edit_game_id');
+      sessionStorage.removeItem('gamelab_edit_url');
+      sessionStorage.removeItem('gamelab_html');
+      sessionStorage.removeItem('gamelab_messages');
+
+      fetch(editUrl)
+        .then((res) => (res.ok ? res.text() : null))
+        .then((html) => {
+          if (html) {
+            setCurrentHtml(html);
+            setMessages([
+              { role: 'andy', content: '🔧 Cargué tu juego para editarlo. ¿Qué le querés cambiar?' },
+            ]);
+            sessionStorage.setItem('gamelab_editing_id', editGameId);
+          } else {
+            const randomMsg = ANDY_FIRST_MESSAGES[Math.floor(Math.random() * ANDY_FIRST_MESSAGES.length)];
+            setMessages([{ role: 'andy', content: randomMsg }]);
+          }
+        })
+        .catch(() => {
+          const randomMsg = ANDY_FIRST_MESSAGES[Math.floor(Math.random() * ANDY_FIRST_MESSAGES.length)];
+          setMessages([{ role: 'andy', content: randomMsg }]);
+        });
+      return;
+    }
+
     if (messages.length > 0) return;
 
     const savedMessages = sessionStorage.getItem('gamelab_messages');
