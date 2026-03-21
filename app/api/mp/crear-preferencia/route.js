@@ -35,6 +35,7 @@ export async function POST(request) {
   }
 
   const { gameId, userId, gameTitle, gamePrice } = body;
+  const unlockAll = body?.unlockAll === true;
   if (!gameId || !userId || gameTitle == null || gamePrice == null) {
     return NextResponse.json({ error: 'Faltan gameId, userId, gameTitle o gamePrice' }, { status: 400 });
   }
@@ -64,18 +65,24 @@ export async function POST(request) {
     return NextResponse.json({ error: 'El juego no está disponible para compra' }, { status: 400 });
   }
 
-  const { data: existing } = await supabase
-    .from('game_unlocks')
-    .select('id')
-    .eq('user_id', userId)
-    .eq('game_id', gameId)
-    .maybeSingle();
+  if (!unlockAll) {
+    const { data: existing } = await supabase
+      .from('game_unlocks')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('game_id', gameId)
+      .maybeSingle();
 
-  if (existing) {
-    return NextResponse.json({ error: 'Ya tenés este juego desbloqueado' }, { status: 400 });
+    if (existing) {
+      return NextResponse.json({ error: 'Ya tenés este juego desbloqueado' }, { status: 400 });
+    }
   }
 
-  const price = Number(gamePrice) || Number(game.price) || 5000;
+  const externalReference = unlockAll
+    ? `${userId}|${gameId}|unlock_all`
+    : `${userId}|${gameId}`;
+
+  const price = unlockAll ? 50000 : (Number(gamePrice) || Number(game.price) || 5000);
   if (price <= 0) {
     return NextResponse.json({ error: 'Precio inválido' }, { status: 400 });
   }
@@ -101,14 +108,16 @@ export async function POST(request) {
       body: {
         items: [{
           id: String(gameId),
-          title: `Desbloquear juego: ${String(cleanTitulo).slice(0, 200)}`,
+          title: unlockAll
+            ? `Desbloquear para todos: ${String(cleanTitulo).slice(0, 200)}`
+            : `Desbloquear juego: ${String(cleanTitulo).slice(0, 200)}`,
           quantity: 1,
           unit_price: price,
           currency_id: 'ARS',
         }],
         back_urls: backUrls,
         auto_return: 'approved',
-        external_reference: `${userId}|${gameId}`,
+        external_reference: externalReference,
         notification_url: `${BASE_URL}/api/mp/webhook`,
       },
     });

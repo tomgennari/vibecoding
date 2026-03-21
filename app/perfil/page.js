@@ -596,6 +596,46 @@ export default function PerfilPage() {
                               </button>
                             )}
                           </div>
+                          {game.status === 'approved' && !game.unlocked_for_all && (
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                try {
+                                  const { data: { session } } = await supabase.auth.getSession();
+                                  if (!session) return;
+                                  const res = await fetch('/api/mp/crear-preferencia', {
+                                    method: 'POST',
+                                    headers: {
+                                      'Content-Type': 'application/json',
+                                      Authorization: `Bearer ${session.access_token}`,
+                                    },
+                                    body: JSON.stringify({
+                                      gameId: game.id,
+                                      userId: session.user.id,
+                                      gameTitle: game.title,
+                                      gamePrice: 50000,
+                                      unlockAll: true,
+                                    }),
+                                  });
+                                  const data = await res.json();
+                                  if (data.init_point) {
+                                    window.location.href = data.init_point;
+                                  }
+                                } catch (err) {
+                                  console.error('Error creando preferencia:', err);
+                                }
+                              }}
+                              className="w-full rounded-lg px-3 py-2 text-xs font-bold border transition-colors hover:opacity-80 mt-1"
+                              style={{ borderColor: '#eab308', color: '#eab308', background: 'transparent' }}
+                            >
+                              🌟 Desbloquear para todos — $50.000
+                            </button>
+                          )}
+                          {game.unlocked_for_all && (
+                            <p className="text-xs text-center mt-1 font-medium" style={{ color: '#22c55e' }}>
+                              🌟 ¡Desbloqueado para todos!
+                            </p>
+                          )}
                         </li>
                       ))}
                     </ul>
