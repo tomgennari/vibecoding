@@ -47,6 +47,7 @@ export async function POST(request) {
 
   const title = typeof body?.title === 'string' ? body.title.trim() : '';
   const description = typeof body?.description === 'string' ? body.description.trim() : '';
+  const gameId = body?.gameId || null;
 
   const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
     auth: { autoRefreshToken: false, persistSession: false },
@@ -63,7 +64,9 @@ export async function POST(request) {
     return NextResponse.json({ error: 'No se pudo obtener tu perfil' }, { status: 500 });
   }
 
-  const filename = `game-lab-${user.id}-${Date.now()}.html`;
+  const filename = gameId
+    ? `game-lab-${user.id}-${gameId}-${Date.now()}.html`
+    : `game-lab-${user.id}-${Date.now()}.html`;
   const htmlBuffer = Buffer.from(html, 'utf-8');
 
   const { error: uploadError } = await supabaseAdmin.storage
@@ -77,6 +80,29 @@ export async function POST(request) {
 
   const { data: urlData } = supabaseAdmin.storage.from('games').getPublicUrl(filename);
   const fileUrl = urlData.publicUrl;
+
+  if (gameId) {
+    const { error: updateError } = await supabaseAdmin
+      .from('games')
+      .update({
+        title: title || 'Juego del Game Lab',
+        description: description || 'Generado con Andy en el Game Lab',
+        file_url: fileUrl,
+        status: 'pending',
+        rejection_reason: null,
+        approved_at: null,
+      })
+      .eq('id', gameId)
+      .eq('submitted_by', user.id);
+
+    if (updateError) {
+      console.error('Error actualizando juego:', updateError);
+      await supabaseAdmin.storage.from('games').remove([filename]).catch(() => {});
+      return NextResponse.json({ error: 'No se pudo actualizar el juego. Intentá de nuevo.' }, { status: 502 });
+    }
+
+    return NextResponse.json({ ok: true, gameId, updated: true });
+  }
 
   const { data: inserted, error: insertError } = await supabaseAdmin
     .from('games')

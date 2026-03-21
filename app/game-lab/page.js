@@ -1092,6 +1092,7 @@ export default function GameLabPage() {
           html: currentHtml,
           title: tituloModal.trim() || 'Juego del Game Lab',
           description: descripcionModal.trim() || 'Generado con Andy en el Game Lab',
+          gameId: sessionStorage.getItem('gamelab_editing_id') || null,
         }),
       });
       const data = await res.json().catch(() => ({}));
@@ -1105,6 +1106,7 @@ export default function GameLabPage() {
       setCurrentHtml('');
       sessionStorage.removeItem('gamelab_html');
       sessionStorage.removeItem('gamelab_messages');
+      sessionStorage.removeItem('gamelab_editing_id');
     } catch (err) {
       setError(err?.message || 'Error al enviar a moderación. Intentá de nuevo.');
     } finally {
