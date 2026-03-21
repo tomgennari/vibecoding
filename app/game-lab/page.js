@@ -1423,7 +1423,7 @@ export default function GameLabPage() {
                         className="w-full rounded-xl px-4 py-3 text-sm font-bold border disabled:opacity-50 disabled:cursor-not-allowed"
                         style={{ borderColor: accent, color: accent, background: 'transparent' }}
                       >
-                        📨 Enviar a moderación
+                        📨 ¡Listo! Enviar a moderación
                       </button>
                     )}
                     <button

@@ -240,6 +240,14 @@ export default function JugarPage() {
     } catch (_) {}
   }
 
+  function handleShare(mode) {
+    if (mode === 'whatsapp') {
+      handleShareWhatsApp();
+    } else if (mode === 'copy') {
+      void handleShareCopy('Link copiado');
+    }
+  }
+
   async function handleToggleLike() {
     if (liking || !id) return;
     const { data: { session } } = await supabase.auth.getSession();
@@ -327,35 +335,16 @@ export default function JugarPage() {
         </button>
         {shareOpen && (
           <div
-            className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 lg:bottom-auto lg:top-full lg:mb-0 lg:mt-2 lg:left-auto lg:right-0 lg:translate-x-0 z-30 rounded-xl border py-1.5 min-w-[200px] shadow-xl"
+            className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-[60] rounded-xl border py-1 min-w-[200px] shadow-xl"
             style={{ background: '#13131a', borderColor: '#2a2a3a' }}
           >
-            <button
-              type="button"
-              onClick={handleShareWhatsApp}
-              className="w-full flex items-center gap-3 px-4 py-2.5 text-left text-sm font-medium hover:bg-[#1e1e28] transition-colors rounded-lg"
-              style={{ color: '#f1f5f9' }}
-            >
-              <span className="text-lg" aria-hidden>💬</span>
-              <span>WhatsApp</span>
+            <button type="button" onClick={() => handleShare('whatsapp')}
+              className="w-full text-left text-sm px-3 py-2 rounded-lg hover:bg-[#1a1a2a] cursor-pointer" style={{ color: '#f1f5f9' }}>
+              📱 WhatsApp
             </button>
-            <button
-              type="button"
-              onClick={() => handleShareCopy('Link copiado para compartir en Instagram')}
-              className="w-full flex items-center gap-3 px-4 py-2.5 text-left text-sm font-medium hover:bg-[#1e1e28] transition-colors rounded-lg"
-              style={{ color: '#f1f5f9' }}
-            >
-              <span className="text-lg" aria-hidden>📷</span>
-              <span>Instagram</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => handleShareCopy('Link copiado para compartir en TikTok')}
-              className="w-full flex items-center gap-3 px-4 py-2.5 text-left text-sm font-medium hover:bg-[#1e1e28] transition-colors rounded-lg"
-              style={{ color: '#f1f5f9' }}
-            >
-              <span className="text-lg" aria-hidden>🎵</span>
-              <span>TikTok</span>
+            <button type="button" onClick={() => handleShare('copy')}
+              className="w-full text-left text-sm px-3 py-2 rounded-lg hover:bg-[#1a1a2a] cursor-pointer" style={{ color: '#f1f5f9' }}>
+              🔗 Copiar link
             </button>
           </div>
         )}
