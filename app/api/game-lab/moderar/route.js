@@ -101,6 +101,36 @@ export async function POST(request) {
       return NextResponse.json({ error: 'No se pudo actualizar el juego. Intentá de nuevo.' }, { status: 502 });
     }
 
+    // Notificar al admin que hay un juego actualizado para moderar
+    const adminEmail = process.env.ADMIN_EMAIL;
+    const resendApiKey = process.env.RESEND_API_KEY;
+    console.log('Notify admin:', { adminEmail: !!adminEmail, resendApiKey: !!resendApiKey });
+    if (adminEmail && resendApiKey) {
+      try {
+        await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${resendApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            from: 'Campus San Andrés <noreply@sass.vibecoding.ar>',
+            to: adminEmail,
+            subject: `Juego actualizado para moderar: ${title || 'Juego del Game Lab'}`,
+            html: `
+          <div style="font-family:Inter,Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px;background:#f8fafc;border-radius:12px;">
+            <h2 style="color:#7c3aed;margin-bottom:12px;">🔄 Juego actualizado</h2>
+            <p>El alumno actualizó el juego <strong>"${title || 'Juego del Game Lab'}"</strong> y lo re-envió a moderación.</p>
+            <p style="margin-top:12px;"><a href="https://sass.vibecoding.ar/admin" style="color:#7c3aed;font-weight:bold;">Ir al panel de admin →</a></p>
+          </div>
+        `,
+          }),
+        });
+      } catch (err) {
+        console.error('Error enviando email al admin:', err);
+      }
+    }
+
     return NextResponse.json({ ok: true, gameId, updated: true });
   }
 
