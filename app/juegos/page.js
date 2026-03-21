@@ -30,93 +30,48 @@ function normalizeGameProfiles(game) {
   return { ...game, profiles: Array.isArray(p) ? p[0] : p };
 }
 
-function GameMetricsFull({
-  game,
-  uniquePlayersByGame,
-  isDark,
-  accent,
-  textMuted,
-  showLikeButton,
-  liked,
-  onToggleLike,
-  likingGameId,
-}) {
-  const plays = uniquePlayersByGame?.[game.id] ?? game.total_plays ?? 0;
-  const bg = isDark ? '#1a1a2a' : '#f1f5f9';
-  const minPlayed = Math.round((game.total_time_played ?? 0) / 60);
+function GameMetricsFull({ game, uniquePlayers, showLikeButton, liked, onLike }) {
   return (
-    <div className="grid grid-cols-2 gap-2 mt-3">
-      <div className="rounded-lg p-2 text-center" style={{ background: bg }}>
-        <span className="text-base font-black block" style={{ color: accent }}>{plays}</span>
-        <span className="text-[10px]" style={{ color: textMuted }}>jugadores</span>
-      </div>
-      <div className="rounded-lg p-2 text-center" style={{ background: bg }}>
-        <div className="flex items-center justify-center gap-1 min-h-[1.25rem]">
-          {showLikeButton && (
-            <button
-              type="button"
-              onClick={() => onToggleLike(game.id)}
-              disabled={likingGameId === game.id}
-              className="inline-flex items-center justify-center rounded p-0.5 transition-transform duration-150 hover:scale-110 active:scale-[1.2] disabled:opacity-70"
-              aria-label={liked ? 'Quitar like' : 'Dar like'}
-            >
-              <span className="tabular-nums leading-none">{liked ? '❤️' : '🤍'}</span>
-            </button>
-          )}
-          <span className="text-base font-black tabular-nums" style={{ color: '#ef4444' }}>{game.total_likes ?? 0}</span>
-        </div>
-        <span className="text-[10px] block" style={{ color: textMuted }}>likes</span>
-      </div>
-      <div className="rounded-lg p-2 text-center" style={{ background: bg }}>
-        <span className="text-base font-black block" style={{ color: '#22c55e' }}>
-          ${(game.total_revenue ?? 0).toLocaleString('es-AR')}
-        </span>
-        <span className="text-[10px]" style={{ color: textMuted }}>recaudado</span>
-      </div>
-      <div className="rounded-lg p-2 text-center" style={{ background: bg }}>
-        <span className="text-base font-black block" style={{ color: '#06b6d4' }}>{minPlayed}</span>
-        <span className="text-[10px]" style={{ color: textMuted }}>min jugados</span>
-      </div>
+    <div className="flex items-center gap-3 mt-2 text-xs flex-wrap" style={{ color: '#94a3b8' }}>
+      <span className="flex items-center gap-1">
+        <span style={{ color: '#7c3aed' }} className="font-bold">{uniquePlayers ?? game.total_plays ?? 0}</span> jugadores
+      </span>
+      <span className="flex items-center gap-1">
+        {showLikeButton ? (
+          <button type="button" onClick={onLike} className="cursor-pointer hover:opacity-80">
+            {liked ? '❤️' : '🤍'}
+          </button>
+        ) : (
+          <span>❤️</span>
+        )}
+        <span style={{ color: '#ef4444' }} className="font-bold">{game.total_likes ?? 0}</span>
+      </span>
+      <span className="flex items-center gap-1">
+        <span style={{ color: '#22c55e' }} className="font-bold">${(game.total_revenue ?? 0).toLocaleString('es-AR')}</span>
+      </span>
+      <span className="flex items-center gap-1">
+        <span style={{ color: '#06b6d4' }} className="font-bold">{Math.round((game.total_time_played ?? 0) / 60)}</span> min
+      </span>
     </div>
   );
 }
 
-function GameMetricsCompact({
-  game,
-  uniquePlayersByGame,
-  isDark,
-  accent,
-  textMuted,
-  showLikeButton,
-  liked,
-  onToggleLike,
-  likingGameId,
-}) {
-  const plays = uniquePlayersByGame?.[game.id] ?? game.total_plays ?? 0;
-  const bg = isDark ? '#1a1a2a' : '#f1f5f9';
+function GameMetricsCompact({ game, uniquePlayers, showLikeButton, liked, onLike }) {
   return (
-    <div className="flex gap-2 mt-2">
-      <div className="flex-1 rounded-lg p-1.5 text-center" style={{ background: bg }}>
-        <span className="text-sm font-black block" style={{ color: accent }}>{plays}</span>
-        <span className="text-[9px]" style={{ color: textMuted }}>jugadores</span>
-      </div>
-      <div className="flex-1 rounded-lg p-1.5 text-center" style={{ background: bg }}>
-        <div className="flex items-center justify-center gap-0.5">
-          {showLikeButton && (
-            <button
-              type="button"
-              onClick={() => onToggleLike(game.id)}
-              disabled={likingGameId === game.id}
-              className="inline-flex items-center justify-center rounded p-0.5 transition-transform duration-150 hover:scale-110 active:scale-[1.2] disabled:opacity-70"
-              aria-label={liked ? 'Quitar like' : 'Dar like'}
-            >
-              <span className="tabular-nums text-xs leading-none">{liked ? '❤️' : '🤍'}</span>
-            </button>
-          )}
-          <span className="text-sm font-black tabular-nums" style={{ color: '#ef4444' }}>{game.total_likes ?? 0}</span>
-        </div>
-        <span className="text-[9px] block" style={{ color: textMuted }}>likes</span>
-      </div>
+    <div className="flex items-center gap-3 mt-2 text-xs" style={{ color: '#94a3b8' }}>
+      <span className="flex items-center gap-1">
+        <span style={{ color: '#7c3aed' }} className="font-bold">{uniquePlayers ?? game.total_plays ?? 0}</span> jugadores
+      </span>
+      <span className="flex items-center gap-1">
+        {showLikeButton ? (
+          <button type="button" onClick={onLike} className="cursor-pointer hover:opacity-80">
+            {liked ? '❤️' : '🤍'}
+          </button>
+        ) : (
+          <span>❤️</span>
+        )}
+        <span style={{ color: '#ef4444' }} className="font-bold">{game.total_likes ?? 0}</span>
+      </span>
     </div>
   );
 }
@@ -181,7 +136,7 @@ export default function JuegosPage() {
         unlocksRes,
         dailyRes,
       ] = await Promise.all([
-        supabase.from('games').select('*, profiles(first_name, last_name)').eq('status', 'approved').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
+        supabase.from('games').select('*, profiles!submitted_by(first_name, last_name)').eq('status', 'approved').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('game_sessions').select('game_id, user_id').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('game_likes').select('game_id').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('game_likes').select('game_id').eq('user_id', uid).then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
@@ -542,7 +497,7 @@ export default function JuegosPage() {
                   <Image src={house.image} alt={house.name} width={20} height={20} className="flex-shrink-0 object-contain" />
                   <span className="text-[10px] font-bold truncate" style={{ color: house.color }}>{house.name}</span>
                 </div>
-                <div className="flex flex-wrap gap-1.5 mb-2 min-w-0">
+                <div className="flex flex-wrap gap-1.5 mb-2 min-w-0 min-h-[24px]">
                   {isFreeToday && (
                     <span className="inline-block rounded-md px-2 py-0.5 text-[10px] font-bold uppercase" style={{ background: '#22c55e', color: '#fff' }}>
                       GRATIS HOY
@@ -554,44 +509,37 @@ export default function JuegosPage() {
                     </span>
                   )}
                 </div>
-                <h2 className="font-bold text-base break-words min-w-0" style={{ color: text }}>{game.title || 'Juego'}</h2>
+                <h2 className="font-bold text-base line-clamp-1 min-w-0" style={{ color: text }}>{game.title || 'Juego'}</h2>
                 {game.show_author !== false && game.profiles?.first_name && (
                   <p className="text-xs mt-0.5" style={{ color: textMuted }}>
                     por {game.profiles.first_name}
                   </p>
                 )}
-                <p className="text-xs mt-1 line-clamp-2 break-words min-w-0 flex-1" style={{ color: textMuted }}>{game.description || ''}</p>
-                <div className="md:hidden">
+                <p className="text-xs mt-1 line-clamp-2 min-w-0 flex-1" style={{ color: textMuted }}>{game.description || ''}</p>
+                {canPlay ? (
                   <GameMetricsCompact
                     game={game}
-                    uniquePlayersByGame={{}}
-                    isDark={isDark}
-                    accent={accent}
-                    textMuted={textMuted}
+                    uniquePlayers={game.total_plays}
                     showLikeButton={canPlay}
                     liked={userLikedIds.has(game.id)}
-                    onToggleLike={handleToggleLike}
-                    likingGameId={likingGameId}
+                    onLike={() => handleToggleLike(game.id)}
                   />
-                </div>
-                <div className="hidden md:block">
+                ) : (
                   <GameMetricsFull
                     game={game}
-                    uniquePlayersByGame={{}}
-                    isDark={isDark}
-                    accent={accent}
-                    textMuted={textMuted}
-                    showLikeButton={canPlay}
+                    uniquePlayers={game.total_plays}
+                    showLikeButton={false}
                     liked={userLikedIds.has(game.id)}
-                    onToggleLike={handleToggleLike}
-                    likingGameId={likingGameId}
+                    onLike={() => handleToggleLike(game.id)}
                   />
-                </div>
-                {!canPlay && (
-                  <p className="text-lg font-black tabular-nums mt-2 flex-shrink-0" style={{ color: accent }}>
-                    ${formatArs(Number(game.price) || 5000)} ARS
-                  </p>
                 )}
+                <div className="min-h-[28px] flex items-end">
+                  {!canPlay && (
+                    <p className="text-lg font-black tabular-nums mt-2 flex-shrink-0" style={{ color: accent }}>
+                      ${formatArs(Number(game.price) || 5000)} ARS
+                    </p>
+                  )}
+                </div>
                 <div className="mt-3 flex-shrink-0">
                   {canPlay ? (
                     <Link href={`/jugar/${game.id}`} className="vibe-btn-gradient block w-full rounded-xl py-2.5 font-bold text-white text-sm text-center">
