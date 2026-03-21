@@ -32,7 +32,7 @@ function GameMetricsFull({ game, uniquePlayers, showLikeButton, liked, onLike })
       </span>
       <span className="flex items-center gap-1">
         {showLikeButton ? (
-          <button type="button" onClick={onLike} className="cursor-pointer hover:opacity-80">
+          <button type="button" onClick={(e) => { e.stopPropagation(); onLike(); }} className="cursor-pointer hover:opacity-80">
             {liked ? '❤️' : '🤍'}
           </button>
         ) : (
@@ -58,7 +58,7 @@ function GameMetricsCompact({ game, uniquePlayers, showLikeButton, liked, onLike
       </span>
       <span className="flex items-center gap-1">
         {showLikeButton ? (
-          <button type="button" onClick={onLike} className="cursor-pointer hover:opacity-80">
+          <button type="button" onClick={(e) => { e.stopPropagation(); onLike(); }} className="cursor-pointer hover:opacity-80">
             {liked ? '❤️' : '🤍'}
           </button>
         ) : (
@@ -89,6 +89,7 @@ export default function JuegosPage() {
   const housesDropdownRefMobile = useRef(null);
   const [unlockingGameId, setUnlockingGameId] = useState(null);
   const [gameAuthors, setGameAuthors] = useState({});
+  const [expandedGameId, setExpandedGameId] = useState(null);
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -504,7 +505,12 @@ export default function JuegosPage() {
             const canPlay = isUnlocked || isFreeToday;
 
             return (
-              <div key={game.id} className={`${cardBase} p-4 flex flex-col`} style={cardStyle}>
+              <div
+                key={game.id}
+                onClick={() => setExpandedGameId((prev) => (prev === game.id ? null : game.id))}
+                className={`${cardBase} p-4 flex flex-col cursor-pointer transition-all duration-200`}
+                style={cardStyle}
+              >
                 <div className="flex items-center gap-1.5 mb-2 min-w-0">
                   <Image src={house.image} alt={house.name} width={20} height={20} className="flex-shrink-0 object-contain" />
                   <span className="text-[10px] font-bold truncate" style={{ color: house.color }}>{house.name}</span>
@@ -521,13 +527,13 @@ export default function JuegosPage() {
                     </span>
                   )}
                 </div>
-                <h2 className="font-bold text-base line-clamp-1 min-w-0" style={{ color: text }}>{game.title || 'Juego'}</h2>
+                <h2 className={`font-bold text-base ${expandedGameId === game.id ? '' : 'line-clamp-1'} min-w-0`} style={{ color: text }}>{game.title || 'Juego'}</h2>
                 {game.show_author !== false && gameAuthors[game.submitted_by] && (
                   <p className="text-xs mt-0.5" style={{ color: textMuted }}>
                     por {gameAuthors[game.submitted_by]?.first_name} {gameAuthors[game.submitted_by]?.last_name}
                   </p>
                 )}
-                <p className="text-xs mt-1 line-clamp-2 min-w-0 flex-1" style={{ color: textMuted }}>{game.description || ''}</p>
+                <p className={`text-xs mt-1 ${expandedGameId === game.id ? '' : 'line-clamp-2'} min-w-0 flex-1`} style={{ color: textMuted }}>{game.description || ''}</p>
                 {canPlay ? (
                   <GameMetricsCompact
                     game={game}
@@ -554,13 +560,13 @@ export default function JuegosPage() {
                 </div>
                 <div className="mt-3 flex-shrink-0">
                   {canPlay ? (
-                    <Link href={`/jugar/${game.id}`} className="vibe-btn-gradient block w-full rounded-xl py-2.5 font-bold text-white text-sm text-center">
+                    <Link href={`/jugar/${game.id}`} onClick={(e) => e.stopPropagation()} className="vibe-btn-gradient block w-full rounded-xl py-2.5 font-bold text-white text-sm text-center">
                       {isFreeToday ? 'Jugar gratis' : 'Jugar'}
                     </Link>
                   ) : (
                     <button
                       type="button"
-                      onClick={() => handleDesbloquear(game)}
+                      onClick={(e) => { e.stopPropagation(); handleDesbloquear(game); }}
                       disabled={unlockingGameId === game.id}
                       className="vibe-btn-gradient w-full rounded-xl py-2.5 font-bold text-white text-sm disabled:opacity-70 disabled:pointer-events-none"
                     >

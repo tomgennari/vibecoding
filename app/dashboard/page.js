@@ -62,7 +62,7 @@ function GameMetricsFull({ game, uniquePlayers, showLikeButton, liked, onLike })
       </span>
       <span className="flex items-center gap-1">
         {showLikeButton ? (
-          <button type="button" onClick={onLike} className="cursor-pointer hover:opacity-80">
+          <button type="button" onClick={(e) => { e.stopPropagation(); onLike(); }} className="cursor-pointer hover:opacity-80">
             {liked ? '❤️' : '🤍'}
           </button>
         ) : (
@@ -88,7 +88,7 @@ function GameMetricsCompact({ game, uniquePlayers, showLikeButton, liked, onLike
       </span>
       <span className="flex items-center gap-1">
         {showLikeButton ? (
-          <button type="button" onClick={onLike} className="cursor-pointer hover:opacity-80">
+          <button type="button" onClick={(e) => { e.stopPropagation(); onLike(); }} className="cursor-pointer hover:opacity-80">
             {liked ? '❤️' : '🤍'}
           </button>
         ) : (
@@ -127,6 +127,7 @@ export default function DashboardPage() {
   const [donatingAmount, setDonatingAmount] = useState(null);
   const [hoveredDonationAmount, setHoveredDonationAmount] = useState(null);
   const [gameAuthors, setGameAuthors] = useState({});
+  const [expandedGameId, setExpandedGameId] = useState(null);
 
   const isDark = theme === 'dark';
   const bg = isDark ? '#0a0a0f' : '#ffffff';
@@ -563,7 +564,12 @@ export default function DashboardPage() {
                 {dailyGames.map((game) => {
                   const house = HOUSES.find((h) => h.id === game.house) || HOUSES[0];
                   return (
-                    <div key={game.id} className={`${cardBase} p-4 flex flex-col`} style={cardStyle}>
+                    <div
+                      key={game.id}
+                      onClick={() => setExpandedGameId((prev) => (prev === game.id ? null : game.id))}
+                      className={`${cardBase} p-4 flex flex-col cursor-pointer transition-all duration-200`}
+                      style={cardStyle}
+                    >
                       <div className="flex items-center gap-1.5 mb-2 min-w-0">
                         <Image src={house.image} alt={house.name} width={20} height={20} className="flex-shrink-0 object-contain" />
                         <span className="text-[10px] font-bold truncate" style={{ color: house.color }}>{house.name}</span>
@@ -573,13 +579,13 @@ export default function DashboardPage() {
                           GRATIS HOY
                         </span>
                       </div>
-                      <h3 className="font-bold text-lg line-clamp-1 min-w-0" style={{ color: text }}>{game.title || 'Juego'}</h3>
+                      <h3 className={`font-bold text-lg ${expandedGameId === game.id ? '' : 'line-clamp-1'} min-w-0`} style={{ color: text }}>{game.title || 'Juego'}</h3>
                       {game.show_author !== false && gameAuthors[game.submitted_by] && (
                         <p className="text-xs mt-0.5" style={{ color: textMuted }}>
                           por {gameAuthors[game.submitted_by]?.first_name} {gameAuthors[game.submitted_by]?.last_name}
                         </p>
                       )}
-                      <p className="text-xs mt-1 line-clamp-2 min-w-0" style={{ color: textMuted }}>{game.description || ''}</p>
+                      <p className={`text-xs mt-1 ${expandedGameId === game.id ? '' : 'line-clamp-2'} min-w-0`} style={{ color: textMuted }}>{game.description || ''}</p>
                       <GameMetricsFull
                         game={game}
                         uniquePlayers={uniquePlayersByGame[game.id]}
@@ -587,7 +593,7 @@ export default function DashboardPage() {
                         liked={userLikedIds.has(game.id)}
                         onLike={() => handleToggleLike(game.id)}
                       />
-                      <Link href={`/jugar/${game.id}`} className="vibe-btn-gradient mt-4 w-full rounded-xl py-3.5 font-bold text-white text-center block">
+                      <Link href={`/jugar/${game.id}`} onClick={(e) => e.stopPropagation()} className="vibe-btn-gradient mt-4 w-full rounded-xl py-3.5 font-bold text-white text-center block">
                         Jugar
                       </Link>
                     </div>
@@ -613,18 +619,23 @@ export default function DashboardPage() {
               {gamesToUnlock.map((game) => {
                 const house = HOUSES.find((h) => h.id === game.house) || HOUSES[0];
                 return (
-                  <div key={game.id} className="flex-shrink-0 w-[220px] rounded-xl border p-4 flex flex-col min-w-0 overflow-hidden" style={cardStyle}>
+                  <div
+                    key={game.id}
+                    onClick={() => setExpandedGameId((prev) => (prev === game.id ? null : game.id))}
+                    className={`${cardBase} flex-shrink-0 w-[220px] p-4 flex flex-col cursor-pointer transition-all duration-200`}
+                    style={cardStyle}
+                  >
                     <div className="flex items-center gap-1.5 mb-2 min-w-0">
                       <Image src={house.image} alt={house.name} width={20} height={20} className="flex-shrink-0 object-contain" />
                       <span className="text-[10px] font-bold truncate" style={{ color: house.color }}>{house.name}</span>
                     </div>
-                    <h3 className="font-bold text-sm line-clamp-1 min-w-0" style={{ color: text }}>{game.title || 'Juego'}</h3>
+                    <h3 className={`font-bold text-sm ${expandedGameId === game.id ? '' : 'line-clamp-1'} min-w-0`} style={{ color: text }}>{game.title || 'Juego'}</h3>
                     {game.show_author !== false && gameAuthors[game.submitted_by] && (
                       <p className="text-xs mt-0.5" style={{ color: textMuted }}>
                         por {gameAuthors[game.submitted_by]?.first_name} {gameAuthors[game.submitted_by]?.last_name}
                       </p>
                     )}
-                    <p className="text-xs mt-1 line-clamp-2 min-w-0" style={{ color: textMuted }}>{game.description || ''}</p>
+                    <p className={`text-xs mt-1 ${expandedGameId === game.id ? '' : 'line-clamp-2'} min-w-0`} style={{ color: textMuted }}>{game.description || ''}</p>
                     <GameMetricsFull
                       game={game}
                       uniquePlayers={uniquePlayersByGame[game.id]}
@@ -637,7 +648,7 @@ export default function DashboardPage() {
                     </p>
                     <button
                       type="button"
-                      onClick={() => handleDesbloquear(game)}
+                      onClick={(e) => { e.stopPropagation(); handleDesbloquear(game); }}
                       disabled={unlockingGameId === game.id}
                       className="vibe-btn-gradient mt-3 w-full rounded-xl py-2.5 font-bold text-white text-sm text-center block disabled:opacity-70 disabled:pointer-events-none"
                     >
@@ -699,7 +710,12 @@ export default function DashboardPage() {
                 {unlockedGames.map((game) => {
                   const house = HOUSES.find((h) => h.id === game.house) || HOUSES[0];
                   return (
-                    <div key={game.id} className="flex-shrink-0 w-[220px] rounded-xl border p-4 flex flex-col min-w-0 overflow-hidden" style={cardStyle}>
+                    <div
+                      key={game.id}
+                      onClick={() => setExpandedGameId((prev) => (prev === game.id ? null : game.id))}
+                      className={`${cardBase} flex-shrink-0 w-[220px] p-4 flex flex-col cursor-pointer transition-all duration-200`}
+                      style={cardStyle}
+                    >
                       <div className="flex items-center gap-1.5 mb-2 min-w-0">
                         <Image src={house.image} alt={house.name} width={20} height={20} className="flex-shrink-0 object-contain" />
                         <span className="text-[10px] font-bold truncate" style={{ color: house.color }}>{house.name}</span>
@@ -715,13 +731,13 @@ export default function DashboardPage() {
                           </span>
                         )}
                       </div>
-                      <h3 className="font-bold text-sm line-clamp-1 min-w-0" style={{ color: text }}>{game.title || 'Juego'}</h3>
+                      <h3 className={`font-bold text-sm ${expandedGameId === game.id ? '' : 'line-clamp-1'} min-w-0`} style={{ color: text }}>{game.title || 'Juego'}</h3>
                       {game.show_author !== false && gameAuthors[game.submitted_by] && (
                         <p className="text-xs mt-0.5" style={{ color: textMuted }}>
                           por {gameAuthors[game.submitted_by]?.first_name} {gameAuthors[game.submitted_by]?.last_name}
                         </p>
                       )}
-                      <p className="text-xs mt-1 line-clamp-2 min-w-0" style={{ color: textMuted }}>{game.description || ''}</p>
+                      <p className={`text-xs mt-1 ${expandedGameId === game.id ? '' : 'line-clamp-2'} min-w-0`} style={{ color: textMuted }}>{game.description || ''}</p>
                       <GameMetricsCompact
                         game={game}
                         uniquePlayers={uniquePlayersByGame[game.id]}
@@ -729,7 +745,7 @@ export default function DashboardPage() {
                         liked={userLikedIds.has(game.id)}
                         onLike={() => handleToggleLike(game.id)}
                       />
-                      <Link href={`/jugar/${game.id}`} className="vibe-btn-gradient mt-3 w-full rounded-xl py-2.5 font-bold text-white text-sm text-center block">Jugar</Link>
+                      <Link href={`/jugar/${game.id}`} onClick={(e) => e.stopPropagation()} className="vibe-btn-gradient mt-3 w-full rounded-xl py-2.5 font-bold text-white text-sm text-center block">Jugar</Link>
                     </div>
                   );
                 })}
@@ -947,7 +963,12 @@ export default function DashboardPage() {
                 {dailyGames.map((game) => {
                   const house = HOUSES.find((h) => h.id === game.house) || HOUSES[0];
                   return (
-                    <div key={game.id} className="flex-shrink-0 rounded-xl border p-4 flex flex-col min-w-0 overflow-hidden" style={{ width: '75vw', ...cardStyle }}>
+                    <div
+                      key={game.id}
+                      onClick={() => setExpandedGameId((prev) => (prev === game.id ? null : game.id))}
+                      className={`${cardBase} flex-shrink-0 p-4 flex flex-col cursor-pointer transition-all duration-200`}
+                      style={{ width: '75vw', ...cardStyle }}
+                    >
                       <div className="flex items-center gap-1.5 mb-2 min-w-0">
                         <Image src={house.image} alt={house.name} width={20} height={20} className="flex-shrink-0 object-contain" />
                         <span className="text-[10px] font-bold truncate" style={{ color: house.color }}>{house.name}</span>
@@ -957,13 +978,13 @@ export default function DashboardPage() {
                           GRATIS HOY
                         </span>
                       </div>
-                      <h3 className="font-bold text-sm line-clamp-1 min-w-0 flex-1" style={{ color: text }}>{game.title || 'Juego'}</h3>
+                      <h3 className={`font-bold text-sm ${expandedGameId === game.id ? '' : 'line-clamp-1'} min-w-0 flex-1`} style={{ color: text }}>{game.title || 'Juego'}</h3>
                       {game.show_author !== false && gameAuthors[game.submitted_by] && (
                         <p className="text-xs mt-0.5" style={{ color: textMuted }}>
                           por {gameAuthors[game.submitted_by]?.first_name} {gameAuthors[game.submitted_by]?.last_name}
                         </p>
                       )}
-                      <p className="text-xs mt-1 line-clamp-2 min-w-0" style={{ color: textMuted }}>{game.description || ''}</p>
+                      <p className={`text-xs mt-1 ${expandedGameId === game.id ? '' : 'line-clamp-2'} min-w-0`} style={{ color: textMuted }}>{game.description || ''}</p>
                       <GameMetricsCompact
                         game={game}
                         uniquePlayers={uniquePlayersByGame[game.id]}
@@ -971,7 +992,7 @@ export default function DashboardPage() {
                         liked={userLikedIds.has(game.id)}
                         onLike={() => handleToggleLike(game.id)}
                       />
-                      <Link href={`/jugar/${game.id}`} className="vibe-btn-gradient mt-3 w-full rounded-xl py-3 font-bold text-white text-sm text-center block">Jugar</Link>
+                      <Link href={`/jugar/${game.id}`} onClick={(e) => e.stopPropagation()} className="vibe-btn-gradient mt-3 w-full rounded-xl py-3 font-bold text-white text-sm text-center block">Jugar</Link>
                     </div>
                   );
                 })}
@@ -1014,18 +1035,23 @@ export default function DashboardPage() {
                 {gamesToUnlock.map((game) => {
                   const house = HOUSES.find((h) => h.id === game.house) || HOUSES[0];
                   return (
-                    <div key={game.id} className="flex-shrink-0 rounded-xl border p-4 flex flex-col min-w-0 overflow-hidden" style={{ width: '75vw', ...cardStyle }}>
+                    <div
+                      key={game.id}
+                      onClick={() => setExpandedGameId((prev) => (prev === game.id ? null : game.id))}
+                      className={`${cardBase} flex-shrink-0 p-4 flex flex-col cursor-pointer transition-all duration-200`}
+                      style={{ width: '75vw', ...cardStyle }}
+                    >
                       <div className="flex items-center gap-1.5 mb-2 min-w-0">
                         <Image src={house.image} alt={house.name} width={20} height={20} className="flex-shrink-0 object-contain" />
                         <span className="text-[10px] font-bold truncate" style={{ color: house.color }}>{house.name}</span>
                       </div>
-                      <h3 className="font-bold text-sm line-clamp-1 min-w-0" style={{ color: text }}>{game.title || 'Juego'}</h3>
+                      <h3 className={`font-bold text-sm ${expandedGameId === game.id ? '' : 'line-clamp-1'} min-w-0`} style={{ color: text }}>{game.title || 'Juego'}</h3>
                       {game.show_author !== false && gameAuthors[game.submitted_by] && (
                         <p className="text-xs mt-0.5" style={{ color: textMuted }}>
                           por {gameAuthors[game.submitted_by]?.first_name} {gameAuthors[game.submitted_by]?.last_name}
                         </p>
                       )}
-                      <p className="text-xs mt-1 line-clamp-2 min-w-0" style={{ color: textMuted }}>{game.description || ''}</p>
+                      <p className={`text-xs mt-1 ${expandedGameId === game.id ? '' : 'line-clamp-2'} min-w-0`} style={{ color: textMuted }}>{game.description || ''}</p>
                       <GameMetricsFull
                         game={game}
                         uniquePlayers={uniquePlayersByGame[game.id]}
@@ -1038,7 +1064,7 @@ export default function DashboardPage() {
                       </p>
                       <button
                         type="button"
-                        onClick={() => handleDesbloquear(game)}
+                        onClick={(e) => { e.stopPropagation(); handleDesbloquear(game); }}
                         disabled={unlockingGameId === game.id}
                         className="vibe-btn-gradient mt-3 w-full rounded-xl py-2.5 font-bold text-white text-sm text-center block disabled:opacity-70 disabled:pointer-events-none"
                       >
@@ -1069,7 +1095,12 @@ export default function DashboardPage() {
                 {unlockedGames.map((game) => {
                   const house = HOUSES.find((h) => h.id === game.house) || HOUSES[0];
                   return (
-                    <div key={game.id} className="rounded-xl border p-4 flex flex-col min-w-0 overflow-hidden" style={cardStyle}>
+                    <div
+                      key={game.id}
+                      onClick={() => setExpandedGameId((prev) => (prev === game.id ? null : game.id))}
+                      className={`${cardBase} p-4 flex flex-col cursor-pointer transition-all duration-200`}
+                      style={cardStyle}
+                    >
                       <div className="flex items-center gap-1.5 mb-2 min-w-0">
                         <Image src={house.image} alt={house.name} width={20} height={20} className="flex-shrink-0 object-contain" />
                         <span className="text-[10px] font-bold truncate" style={{ color: house.color }}>{house.name}</span>
@@ -1085,13 +1116,13 @@ export default function DashboardPage() {
                           </span>
                         )}
                       </div>
-                      <h3 className="font-bold text-sm line-clamp-1 min-w-0" style={{ color: text }}>{game.title || 'Juego'}</h3>
+                      <h3 className={`font-bold text-sm ${expandedGameId === game.id ? '' : 'line-clamp-1'} min-w-0`} style={{ color: text }}>{game.title || 'Juego'}</h3>
                       {game.show_author !== false && gameAuthors[game.submitted_by] && (
                         <p className="text-xs mt-0.5" style={{ color: textMuted }}>
                           por {gameAuthors[game.submitted_by]?.first_name} {gameAuthors[game.submitted_by]?.last_name}
                         </p>
                       )}
-                      <p className="text-xs mt-1 line-clamp-2 min-w-0" style={{ color: textMuted }}>{game.description || ''}</p>
+                      <p className={`text-xs mt-1 ${expandedGameId === game.id ? '' : 'line-clamp-2'} min-w-0`} style={{ color: textMuted }}>{game.description || ''}</p>
                       <GameMetricsCompact
                         game={game}
                         uniquePlayers={uniquePlayersByGame[game.id]}
@@ -1099,7 +1130,7 @@ export default function DashboardPage() {
                         liked={userLikedIds.has(game.id)}
                         onLike={() => handleToggleLike(game.id)}
                       />
-                      <Link href={`/jugar/${game.id}`} className="vibe-btn-gradient mt-3 w-full rounded-xl py-2.5 font-bold text-white text-sm text-center block">Jugar</Link>
+                      <Link href={`/jugar/${game.id}`} onClick={(e) => e.stopPropagation()} className="vibe-btn-gradient mt-3 w-full rounded-xl py-2.5 font-bold text-white text-sm text-center block">Jugar</Link>
                     </div>
                   );
                 })}
