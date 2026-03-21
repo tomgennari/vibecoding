@@ -496,10 +496,12 @@ export default function GameLabPage() {
     if (!profile) return;
     async function loadCredits() {
       try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user?.id) return;
         const { data } = await supabase
           .from('profiles')
           .select('tokens_used, tokens_limit')
-          .eq('id', profile.id)
+          .eq('id', session.user.id)
           .single();
         if (data) {
           const used = data.tokens_used || 0;
