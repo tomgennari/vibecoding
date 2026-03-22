@@ -517,15 +517,18 @@ export default function JuegosPage() {
                   <Image src={house.image} alt={house.name} width={20} height={20} className="flex-shrink-0 object-contain" />
                   <span className="text-[10px] font-bold truncate" style={{ color: house.color }}>{house.name}</span>
                 </div>
-                <div className="flex flex-wrap gap-1.5 mb-2 min-w-0 min-h-[24px]">
-                  {isFreeToday && (
-                    <span className="inline-block rounded-md px-2 py-0.5 text-[10px] font-bold uppercase" style={{ background: '#22c55e', color: '#fff' }}>
+                <div className="h-7 flex items-center mb-1">
+                  {isFreeToday ? (
+                    <span className="text-[11px] font-bold px-2.5 py-1 rounded-md leading-none" style={{ background: '#22c55e20', color: '#22c55e' }}>
                       GRATIS HOY
                     </span>
-                  )}
-                  {isUnlocked && !isFreeToday && (
-                    <span className="inline-block rounded-md px-2 py-0.5 text-[10px] font-bold uppercase" style={{ background: accent, color: '#fff' }}>
+                  ) : isUnlocked ? (
+                    <span className="text-[11px] font-bold px-2.5 py-1 rounded-md leading-none" style={{ background: '#7c3aed20', color: '#7c3aed' }}>
                       DESBLOQUEADO
+                    </span>
+                  ) : (
+                    <span className="text-sm font-black" style={{ color: '#7c3aed' }}>
+                      ${formatArs(Number(game.price) || 5000)} ARS
                     </span>
                   )}
                 </div>
@@ -553,13 +556,6 @@ export default function JuegosPage() {
                     onLike={() => handleToggleLike(game.id)}
                   />
                 )}
-                <div className="min-h-[28px] flex items-end">
-                  {!canPlay && (
-                    <p className="text-lg font-black tabular-nums mt-2 flex-shrink-0" style={{ color: accent }}>
-                      ${formatArs(Number(game.price) || 5000)} ARS
-                    </p>
-                  )}
-                </div>
                 <div className="mt-3 flex-shrink-0">
                   {canPlay ? (
                     <Link href={`/jugar/${game.id}`} onClick={(e) => e.stopPropagation()} className="vibe-btn-gradient block w-full rounded-xl py-2.5 font-bold text-white text-sm text-center">
