@@ -1,5 +1,5 @@
 # Campus San Andrés — Vibe Coding San Andrés
-## Product Requirements Document (PRD) v3.4
+## Product Requirements Document (PRD) v3.5
 
 **Fecha:** Marzo 2026  
 **Autor:** Tomás Gennari  
@@ -398,7 +398,7 @@ Tablas principales (todas con RLS habilitado):
 | Tabla | Descripción | Columnas clave |
 |-------|-------------|----------------|
 | `profiles` | Datos de usuario | id, first_name, last_name, email, user_type, house, tokens_used, tokens_limit, is_admin, is_blocked, created_at |
-| `games` | Juegos publicados | id, title, description, house, file_url, github_url, status, submitted_by, approved_at |
+| `games` | Juegos publicados | id, title, description, house, file_url, github_url, status, submitted_by, approved_at, show_author, unlocked_for_all, unlocked_for_all_by, unlocked_for_all_at, total_likes, total_revenue, total_plays |
 | `game_sessions` | Sesiones de juego | id, user_id, game_id, started_at, ended_at, duration_seconds |
 | `game_scores` | Puntuaciones | id, user_id, game_id, score, played_at |
 | `game_likes` | Likes | id, user_id, game_id, created_at |
@@ -522,12 +522,13 @@ Tablas principales (todas con RLS habilitado):
 
 - [x] Panel para que alumnos suban juegos HTML5
 - [x] Panel de moderación para el admin
-- [ ] Sistema de likes
-- [ ] Emails automáticos: bienvenida, aprobación/rechazo, notificaciones
+- [x] Sistema de likes — con fix de sincronización via service role
+- [x] Emails automáticos: aprobación de juegos al alumno (Resend), notificación al admin de juegos nuevos y actualizados
+- [x] Botón compartir por WhatsApp — en perfil y en email de aprobación
 - [ ] Dashboard de recaudación por edificio con barras de progreso
-- [ ] Botón compartir por WhatsApp
 - [ ] Activación de paquetes de juegos
 - [ ] Sentry para logging de errores
+- [ ] Emails automáticos: bienvenida, rechazo
 
 ### Fase 2.5 — Generador de Juegos con IA (2-3 semanas)
 
@@ -625,24 +626,39 @@ Tablas principales (todas con RLS habilitado):
 - ✅ Regla de caracteres especiales en `quality-rules.md`: Andy usa unicode escapado (`\u00E1`, `\u00A1`, etc.) para evitar corrupción de encoding en Safari/Mac
 - ✅ Panel admin: modal de previsualización de juegos con iframe `srcdoc` + toggle ver juego / ver código
 - ✅ Notificación por email al admin cuando hay juegos pendientes (Edge Function `notify-new-game` + Database Webhook + Resend)
+- ✅ Flujo post-moderación en Game Lab: al enviar a moderación, se limpia la sesión y se redirige al perfil con link a "Mis juegos subidos"
+- ✅ Perfil — jugar propio juego desde "Mis juegos subidos" con fullscreen overlay
+- ✅ Perfil — editar juego: carga el HTML en el Game Lab para que Andy lo modifique
+- ✅ Re-envío a moderación: actualiza el mismo juego en vez de crear duplicado. Título bloqueado al re-enviar.
+- ✅ Desbloquear juego para todos ($50,000 ARS via MercadoPago): columnas `unlocked_for_all`, `unlocked_for_all_by`, `unlocked_for_all_at` en `games`
+- ✅ Compartir juego vía WhatsApp desde perfil (solo juegos aprobados)
+- ✅ Email de aprobación al alumno via Resend: link a perfil, compartir por WhatsApp, invitación a desbloquear para todos
+- ✅ Notificación email al admin cuando un juego se re-envía a moderación (actualización)
+- ✅ Créditos de Andy por compra: +$1.00 USD al comprar/desbloquear cualquier juego (individual o para todos)
+- ✅ Pantalla de desbloqueo cuando usuario accede a juego bloqueado via URL directa (ej: link de WhatsApp)
+- ✅ Verificación `unlocked_for_all` en API de acceso a juegos
+- ✅ Highscores por juego: Top 10 con modal, guardado automático via postMessage GAME_SCORE
+- ✅ Fullscreen en PC: botón "Expandir" usando Fullscreen API del browser
+- ✅ Rediseño layout de /jugar/[id]: header mínimo, barra de acciones abajo (Me gusta, Top 10, Compartir)
+- ✅ Fix likes: service role para actualizar total_likes, sincronización con count real de game_likes
+- ✅ Opción show_author: alumno elige si mostrar su nombre al publicar. Toggle en Game Lab, subida HTML y perfil.
+- ✅ Tarjetas de juegos rediseñadas: nombre del autor, métricas inline (jugadores, likes, recaudado, min jugados), título y descripción con line-clamp, expansión hover/tap
+- ✅ RPC `get_authors()` en Supabase para cargar autores respetando RLS restrictivo de profiles
+- ✅ Tarjeta "Crea tu juego" en carrusel de Juegos del día (desktop y mobile)
+- ✅ Bottom nav: botón Juegos lleva a /juegos, botón Ver todos en mobile para desbloquear
+- ✅ Pestaña "Mis juegos subidos" visible para alumnos, admins y padres que crearon juegos
 - ❌ Descartado: Phaser.js (juegos se truncaban, código demasiado largo)
 - ❌ Descartado: Excalibur.js (requiere TypeScript y bundler)
 - ❌ Descartado: Assets de Kenney (Andy no los usaba, consumían tokens innecesarios)
-- 🔲 Pendiente: Flujo post-moderación en Game Lab (limpiar sesión, redirigir a perfil)
-- 🔲 Pendiente: Perfil — jugar propio juego desde "Mis juegos subidos"
-- 🔲 Pendiente: Perfil — editar juego (llevar HTML a Andy en Game Lab)
-- 🔲 Pendiente: Re-envío a moderación (actualizar mismo juego, no crear duplicado)
-- 🔲 Pendiente: Desbloquear juego para todos ($50,000 ARS via MercadoPago)
-- 🔲 Pendiente: Compartir juego vía WhatsApp desde perfil
-- 🔲 Pendiente: Email de aprobación al alumno (con link a perfil, compartir, desbloquear para todos)
 - 🔲 Pendiente: Persistencia robusta en Supabase (reemplazar sessionStorage)
+- 🔲 Pendiente: Métrica total_time_played en tabla games (actualmente se calcula al vuelo desde game_sessions)
 
 ### Fase 3 — Gamificación (4-6 semanas)
 
 - [ ] Sistema de puntos individuales y por House
 - [ ] Leaderboards entre Houses
-- [ ] Script de detección y captura de puntajes HTML5
-- [ ] High scores por juego
+- [x] High scores por juego — Top 10 por juego con modal, guardado automático via postMessage
+- [x] Script de detección y captura de puntajes HTML5 — game_scores se inserta al recibir GAME_SCORE postMessage
 - [ ] Soporte para juegos de Secundaria vía GitHub
 - [ ] Insignias y logros
 - [ ] Donaciones directas de padres para edificios
@@ -721,6 +737,9 @@ Los valores son configurables por el admin.
 | Mar 2026 | Agregado columna `scheduled_for` (date, nullable) a `daily_free_games` | Permitir programar juegos para días futuros |
 | Mar 2026 | Agregado columna `auto_selected` (bool, default false) a `daily_free_games` | Distinguir selección manual del admin vs automática del cron |
 | Mar 2026 | Agregado columnas `tokens_used` (DECIMAL, default 0) y `tokens_limit` (DECIMAL, default 1.00) a `profiles` | Sistema de Créditos de Andy para el Game Lab |
+| Mar 2026 | Agregado columnas `unlocked_for_all` (bool), `unlocked_for_all_by` (uuid), `unlocked_for_all_at` (timestamptz) a `games` | Desbloquear juego para todos los usuarios |
+| Mar 2026 | Agregado columna `show_author` (bool, default true) a `games` | Opción de privacidad para autores |
+| Mar 2026 | Creada función RPC `get_authors(user_ids UUID[])` con SECURITY DEFINER | Cargar nombres de autores respetando RLS restrictivo de profiles |
 
 ---
 

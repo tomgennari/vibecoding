@@ -212,9 +212,10 @@ export default function DashboardPage() {
       }
       setGameAuthors(authorsMap);
 
+      const isUnlocked = (g) => unlockedIds.includes(g.id) || g.unlocked_for_all === true;
       setDailyGames(approvedGames.filter((g) => g.id && dailyIds.includes(g.id)));
-      setGamesToUnlock(approvedGames.filter((g) => g.id && !unlockedIds.includes(g.id) && !dailyIds.includes(g.id)));
-      setUnlockedGames(approvedGames.filter((g) => g.id && unlockedIds.includes(g.id)));
+      setGamesToUnlock(approvedGames.filter((g) => g.id && !isUnlocked(g) && !dailyIds.includes(g.id)));
+      setUnlockedGames(approvedGames.filter((g) => g.id && isUnlocked(g)));
       setUserLikedIds(new Set((userLikesRes.data || []).map((r) => r.game_id).filter(Boolean)));
 
       setBuildings(buildingsRes.data || []);

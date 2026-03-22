@@ -500,7 +500,7 @@ export default function JuegosPage() {
           {filteredAndSortedGames.map((game) => {
             const house = HOUSES.find((h) => h.id === game.house) || HOUSES[0];
             const isExpanded = hoveredGameId === game.id || tappedGameId === game.id;
-            const isUnlocked = unlockedIds.has(game.id);
+            const isUnlocked = unlockedIds.has(game.id) || game.unlocked_for_all === true;
             const isFreeToday = dailyIds.has(game.id);
             const canPlay = isUnlocked || isFreeToday;
 
