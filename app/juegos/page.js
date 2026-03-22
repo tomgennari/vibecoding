@@ -50,26 +50,6 @@ function GameMetricsFull({ game, uniquePlayers, showLikeButton, liked, onLike })
   );
 }
 
-function GameMetricsCompact({ game, uniquePlayers, showLikeButton, liked, onLike }) {
-  return (
-    <div className="flex items-center gap-3 mt-2 text-xs" style={{ color: '#94a3b8' }}>
-      <span className="flex items-center gap-1">
-        <span style={{ color: '#7c3aed' }} className="font-bold">{uniquePlayers ?? game.total_plays ?? 0}</span> jugadores
-      </span>
-      <span className="flex items-center gap-1">
-        {showLikeButton ? (
-          <button type="button" onClick={(e) => { e.stopPropagation(); onLike(); }} className="cursor-pointer hover:opacity-80">
-            {liked ? '❤️' : '🤍'}
-          </button>
-        ) : (
-          <span>❤️</span>
-        )}
-        <span style={{ color: '#ef4444' }} className="font-bold">{game.total_likes ?? 0}</span>
-      </span>
-    </div>
-  );
-}
-
 export default function JuegosPage() {
   const router = useRouter();
   const [theme, toggleTheme] = useDashboardTheme();
@@ -539,23 +519,13 @@ export default function JuegosPage() {
                   </p>
                 )}
                 <p className={`text-xs mt-1 ${isExpanded ? '' : 'line-clamp-2'} min-w-0 flex-1`} style={{ color: textMuted }}>{game.description || ''}</p>
-                {canPlay ? (
-                  <GameMetricsCompact
-                    game={game}
-                    uniquePlayers={game.total_plays}
-                    showLikeButton={canPlay}
-                    liked={userLikedIds.has(game.id)}
-                    onLike={() => handleToggleLike(game.id)}
-                  />
-                ) : (
-                  <GameMetricsFull
-                    game={game}
-                    uniquePlayers={game.total_plays}
-                    showLikeButton={false}
-                    liked={userLikedIds.has(game.id)}
-                    onLike={() => handleToggleLike(game.id)}
-                  />
-                )}
+                <GameMetricsFull
+                  game={game}
+                  uniquePlayers={game.total_plays}
+                  showLikeButton={canPlay}
+                  liked={userLikedIds.has(game.id)}
+                  onLike={() => handleToggleLike(game.id)}
+                />
                 <div className="mt-3 flex-shrink-0">
                   {canPlay ? (
                     <Link href={`/jugar/${game.id}`} onClick={(e) => e.stopPropagation()} className="vibe-btn-gradient block w-full rounded-xl py-2.5 font-bold text-white text-sm text-center">
