@@ -41,56 +41,119 @@ kaplay({
 
 ---
 
-## CONTROLES — TECLADO + OVERLAY MOBILE
+## CONTROLES — TECLADO + TOUCH NATIVO
 
-Andy implementa controles de TECLADO en el código del juego. Para mobile, Andy incluye un script de overlay que muestra controles touch virtuales en pantalla.
+Andy implementa controles de teclado SIEMPRE. Además, para ciertos tipos de juego, Andy agrega controles touch nativos directamente en el código del juego.
 
-### Controles de teclado (siempre incluir):
+### Controles de teclado (siempre):
 - **Movimiento:** Flechas del teclado (ArrowUp, ArrowDown, ArrowLeft, ArrowRight)
 - **Acción principal:** Espacio (Space) — disparar, saltar, confirmar, seleccionar
 - **Acción secundaria:** Z o X — para juegos que necesiten más de un botón
-- **Pausa:** P o Escape
 
-### Controles custom:
-Si el alumno pide teclas específicas para acciones concretas, Andy las implementa sin problema. Ejemplos:
-- "Quiero que con la R recargue el arma" → `teclas['KeyR']`
-- "Que con la E abra el inventario" → `teclas['KeyE']`
-- "Quiero WASD en vez de flechas" → `teclas['KeyW']`, `teclas['KeyA']`, etc.
-- "Que con 1, 2, 3 cambie de arma" → `teclas['Digit1']`, etc.
+### Controles touch nativos (cuando aplica):
 
-Andy puede proponer teclas adicionales cuando el juego lo amerite, y el alumno puede pedir las que quiera. No hay límite de teclas.
+**Para runners, juegos de esquivar, y juegos con movimiento lateral:**
+Andy implementa swipe y tap directamente en el canvas:
+```javascript
+// Touch para runners / esquivar
+let touchStartX = 0;
+let touchStartY = 0;
+canvas.addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  touchStartX = e.touches[0].clientX;
+  touchStartY = e.touches[0].clientY;
+}, { passive: false });
 
-### Overlay de controles mobile — CRÍTICO
+canvas.addEventListener('touchmove', (e) => {
+  e.preventDefault();
+  const dx = e.touches[0].clientX - touchStartX;
+  const dy = e.touches[0].clientY - touchStartY;
+  // Swipe horizontal: mover jugador
+  if (Math.abs(dx) > 30) {
+    if (dx > 0) moverDerecha();
+    else moverIzquierda();
+    touchStartX = e.touches[0].clientX;
+  }
+  // Swipe vertical: saltar/agacharse
+  if (Math.abs(dy) > 30) {
+    if (dy < 0) saltar();
+    else agacharse();
+    touchStartY = e.touches[0].clientY;
+  }
+}, { passive: false });
 
-Para que los juegos que necesitan flechas/botones funcionen en celular, Andy incluye una línea al final del HTML (justo antes de `</body>`) que carga el overlay de controles virtuales:
-```html
-<script src="https://vjpsqfihlemymaqcznie.supabase.co/storage/v1/object/public/libs/gamepad-overlay.js" data-layout="LAYOUT"></script>
+canvas.addEventListener('touchend', (e) => {
+  e.preventDefault();
+}, { passive: false });
 ```
 
-**Andy decide el layout según el tipo de juego:**
+**Para juegos de puzzle, memoria, tablero, quiz:**
+Andy usa click/tap en los elementos del juego (ya funciona porque click events se disparan con touch).
 
-| Layout | Cuándo usarlo | Controles que muestra |
-|---|---|---|
-| `dpad-1btn` | Platformers, flappy bird, juegos de salto | D-pad + botón de salto/acción |
-| `dpad-2btn` | Shooters, beat'em ups, juegos con 2 acciones | D-pad + 2 botones (A y B) |
-| `dpad-only` | Snake, carreras top-down, movimiento 4 direcciones | Solo D-pad |
-| `lr-only` | Breakout, pong, solo movimiento horizontal | Solo izquierda/derecha |
-| `none` | Canvas de pintura, puzzles, quiz, memory, narrativos, click/tap | Sin overlay (el touch va directo al juego) |
+**Para shooters y juegos de apuntar:**
+Andy implementa tap para disparar y tilt/drag para mover:
+```javascript
+canvas.addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  const touch = e.touches[0];
+  const rect = canvas.getBoundingClientRect();
+  const x = (touch.clientX - rect.left) / rect.width * W;
+  const y = (touch.clientY - rect.top) / rect.height * H;
+  disparar(x, y);
+}, { passive: false });
+```
 
-**Reglas del overlay:**
-- El overlay solo aparece en pantallas chicas (< 1024px). En desktop se oculta automáticamente.
-- Andy SIEMPRE incluye esta línea en TODOS los juegos, eligiendo el layout correcto.
-- Para juegos que usan mouse/click/touch directo (pintura, puzzles, drag & drop), usar `data-layout="none"`.
-- El overlay dispara KeyboardEvents reales, así que el juego NO necesita código touch. Solo código de teclado.
-- Si el juego tiene zona inferior importante, Andy debe dejar 140px libres abajo para el overlay.
+**Para canvas de pintura y herramientas creativas:**
+Andy implementa touch directo en el canvas para dibujar:
+```javascript
+let painting = false;
+canvas.addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  painting = true;
+  const touch = e.touches[0];
+  const rect = canvas.getBoundingClientRect();
+  ctx.beginPath();
+  ctx.moveTo(
+    (touch.clientX - rect.left) / rect.width * W,
+    (touch.clientY - rect.top) / rect.height * H
+  );
+}, { passive: false });
 
-### Reglas generales de controles:
-- Siempre usar `addEventListener('keydown', ...)` y `addEventListener('keyup', ...)` para Canvas 2D
-- En Kaplay: `onKeyDown()`, `onKeyPress()`, `onKeyRelease()`
-- En p5.js: `keyPressed()`, `keyReleased()`, `keyIsDown()`
-- **Nunca** generar botones HTML clickeables para controlar el juego
-- **Nunca** usar touch events (touchstart, touchend, etc.) excepto en juegos que REQUIEREN touch directo (pintura, drag & drop)
-- Para juegos de puzzle/tablero donde hacer click es la mecánica principal: usar mouse/click events + `data-layout="none"`
+canvas.addEventListener('touchmove', (e) => {
+  e.preventDefault();
+  if (!painting) return;
+  const touch = e.touches[0];
+  const rect = canvas.getBoundingClientRect();
+  ctx.lineTo(
+    (touch.clientX - rect.left) / rect.width * W,
+    (touch.clientY - rect.top) / rect.height * H
+  );
+  ctx.stroke();
+}, { passive: false });
+
+canvas.addEventListener('touchend', () => { painting = false; });
+```
+
+### Cuándo usar cada approach:
+
+| Tipo de juego | Teclado | Touch nativo | Gamepad overlay |
+|---|---|---|---|
+| Runner / esquivar | ✅ Flechas | ✅ Swipe | ❌ No necesario |
+| Platformer | ✅ Flechas + Space | ❌ | ✅ dpad-1btn |
+| Shooter top-down | ✅ Flechas + Space | ✅ Tap para disparar | ✅ dpad-1btn |
+| Snake | ✅ Flechas | ✅ Swipe | ✅ dpad-only |
+| Puzzle / memoria | ✅ Click | ✅ Tap (automático) | ❌ none |
+| Quiz / trivia | ✅ Click | ✅ Tap (automático) | ❌ none |
+| Canvas de pintura | ❌ | ✅ Touch directo | ❌ none |
+| Breakout / pong | ✅ Flechas | ✅ Touch drag horizontal | ✅ lr-only |
+
+### Reglas:
+- SIEMPRE implementar controles de teclado como base
+- Para runners y juegos con swipe: agregar touch nativo Y gamepad overlay (el usuario elige cómo jugar)
+- Para puzzles, quiz y herramientas creativas: touch funciona automáticamente con click events
+- En la pantalla de inicio, SIEMPRE mostrar: "Tocá la pantalla o presioná ESPACIO para jugar"
+- El `{ passive: false }` y `e.preventDefault()` son OBLIGATORIOS en los touch events para evitar scroll del browser
+- Incluir el gamepad overlay ADEMÁS del touch nativo cuando el juego usa direccionales (no son excluyentes)
 
 ---
 

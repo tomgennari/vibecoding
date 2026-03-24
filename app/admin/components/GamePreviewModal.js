@@ -47,7 +47,7 @@ export default function GamePreviewModal({
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-lg rounded-xl border-2 p-5 shadow-xl flex flex-col max-h-[95vh]"
+        className="relative w-full max-w-lg rounded-xl border-2 p-5 shadow-xl flex flex-col max-h-[90vh] overflow-y-auto"
         style={{ background: ADMIN_THEME.card, borderColor: ADMIN_THEME.border }}
         onClick={(e) => e.stopPropagation()}
       >
