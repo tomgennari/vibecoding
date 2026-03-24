@@ -103,19 +103,57 @@ Si no podés determinar la variable de score, usá "0" como scoreVariable.`;
     }
 
     const scoreVar = analysis.scoreVariable || '0';
-    const postMessageLine = `\nwindow.parent.postMessage({ type: 'GAME_SCORE', score: ${scoreVar} }, '*');\n`;
 
-    // Insertar el postMessage justo antes de </script> más cercano al final
-    let fixedHtml = html;
-    const lastScriptClose = fixedHtml.lastIndexOf('</script>');
-    if (lastScriptClose > -1) {
-      fixedHtml = fixedHtml.substring(0, lastScriptClose) + postMessageLine + fixedHtml.substring(lastScriptClose);
-    } else {
-      // Si no hay </script>, insertar antes de </body>
-      const bodyClose = fixedHtml.lastIndexOf('</body>');
-      if (bodyClose > -1) {
-        fixedHtml = fixedHtml.substring(0, bodyClose) + '<script>' + postMessageLine + '</script>\n' + fixedHtml.substring(bodyClose);
+    // Script que reporta el score de múltiples formas para cubrir todos los casos
+    const scoreScript = `
+<script>
+// Score reporting para Campus San Andrés
+(function() {
+  var lastReportedScore = -1;
+  
+  // Intentar enviar el score cada 5 segundos
+  setInterval(function() {
+    try {
+      var currentScore = ${scoreVar};
+      if (typeof currentScore === 'number' && currentScore > lastReportedScore) {
+        window.parent.postMessage({ type: 'GAME_SCORE', score: currentScore }, '*');
+        lastReportedScore = currentScore;
       }
+    } catch(e) {}
+  }, 5000);
+  
+  // Enviar al perder visibilidad (usuario sale del juego)
+  document.addEventListener('visibilitychange', function() {
+    if (document.hidden) {
+      try {
+        var currentScore = ${scoreVar};
+        if (typeof currentScore === 'number' && currentScore > 0) {
+          window.parent.postMessage({ type: 'GAME_SCORE', score: currentScore }, '*');
+        }
+      } catch(e) {}
+    }
+  });
+  
+  // Enviar antes de cerrar
+  window.addEventListener('beforeunload', function() {
+    try {
+      var currentScore = ${scoreVar};
+      if (typeof currentScore === 'number' && currentScore > 0) {
+        window.parent.postMessage({ type: 'GAME_SCORE', score: currentScore }, '*');
+      }
+    } catch(e) {}
+  });
+})();
+</script>`;
+
+    // Insertar justo antes de </body>
+    let fixedHtml = html;
+    const bodyClose = fixedHtml.lastIndexOf('</body>');
+    if (bodyClose > -1) {
+      fixedHtml = fixedHtml.substring(0, bodyClose) + scoreScript + '\n' + fixedHtml.substring(bodyClose);
+    } else {
+      // Si no hay </body>, insertar al final
+      fixedHtml = fixedHtml + scoreScript;
     }
 
     // Verificar que se insertó
