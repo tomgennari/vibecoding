@@ -11,6 +11,7 @@ import { HousesSection } from '@/components/landing/HousesSection.js';
 import { CommunitySection } from '@/components/landing/CommunitySection.js';
 import { CTASection } from '@/components/landing/CTASection.js';
 import { LandingFooter } from '@/components/landing/LandingFooter.js';
+import { DisclaimerModal } from '@/components/landing/DisclaimerModal.js';
 
 export const dynamic = 'force-dynamic';
 
@@ -73,6 +74,7 @@ export default async function Home() {
         </FadeIn>
       </main>
       <LandingFooter />
+      <DisclaimerModal />
     </div>
   );
 }
