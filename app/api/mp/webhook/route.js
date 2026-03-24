@@ -164,41 +164,110 @@ export async function POST(request) {
       return NextResponse.json({ ok: true }, { status: 200 });
     }
 
-    // Packs: pack10_<uuid>, pack30_<uuid>, allaccess_<uuid>
-    if (externalRef.startsWith('pack10_')) {
-      const userId = externalRef.slice('pack10_'.length);
+    // Packs: pack10_<uuid> | pack10_<uuid>_<gameId> (idem pack30, allaccess)
+    const pack10Match = externalRef.match(/^pack10_([0-9a-f-]{36})(?:_([0-9a-f-]{36}))?$/i);
+    if (pack10Match) {
+      const userId = pack10Match[1];
+      const gameIdOpt = pack10Match[2] || null;
+
+      let creditsToAdd = 10;
+      let shouldInsertUnlock = false;
+
+      if (gameIdOpt) {
+        const { data: already } = await supabase
+          .from('game_unlocks')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('game_id', gameIdOpt)
+          .maybeSingle();
+        if (already) {
+          creditsToAdd = 10;
+        } else {
+          const { data: g } = await supabase.from('games').select('id').eq('id', gameIdOpt).maybeSingle();
+          if (g) {
+            creditsToAdd = 9;
+            shouldInsertUnlock = true;
+          }
+        }
+      }
+
       await insertPackPurchase(supabase, {
         user_id: userId,
         pack_type: 'pack_10',
-        credits_granted: 10,
+        credits_granted: creditsToAdd,
         amount_paid: amountPaid,
         payment_id: paymentIdStr,
       });
       const { data: prof } = await supabase.from('profiles').select('unlock_credits').eq('id', userId).single();
       const cur = Number(prof?.unlock_credits) || 0;
-      await supabase.from('profiles').update({ unlock_credits: cur + 10 }).eq('id', userId);
+      await supabase.from('profiles').update({ unlock_credits: cur + creditsToAdd }).eq('id', userId);
+
+      if (shouldInsertUnlock) {
+        await supabase.from('game_unlocks').insert({
+          user_id: userId,
+          game_id: gameIdOpt,
+          amount_paid: 0,
+          payment_id: paymentIdStr,
+        });
+      }
+
       await grantAndyTokens(supabase, userId);
       return NextResponse.json({ ok: true }, { status: 200 });
     }
 
-    if (externalRef.startsWith('pack30_')) {
-      const userId = externalRef.slice('pack30_'.length);
+    const pack30Match = externalRef.match(/^pack30_([0-9a-f-]{36})(?:_([0-9a-f-]{36}))?$/i);
+    if (pack30Match) {
+      const userId = pack30Match[1];
+      const gameIdOpt = pack30Match[2] || null;
+
+      let creditsToAdd = 30;
+      let shouldInsertUnlock = false;
+
+      if (gameIdOpt) {
+        const { data: already } = await supabase
+          .from('game_unlocks')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('game_id', gameIdOpt)
+          .maybeSingle();
+        if (already) {
+          creditsToAdd = 30;
+        } else {
+          const { data: g } = await supabase.from('games').select('id').eq('id', gameIdOpt).maybeSingle();
+          if (g) {
+            creditsToAdd = 29;
+            shouldInsertUnlock = true;
+          }
+        }
+      }
+
       await insertPackPurchase(supabase, {
         user_id: userId,
         pack_type: 'pack_30',
-        credits_granted: 30,
+        credits_granted: creditsToAdd,
         amount_paid: amountPaid,
         payment_id: paymentIdStr,
       });
       const { data: prof } = await supabase.from('profiles').select('unlock_credits').eq('id', userId).single();
       const cur = Number(prof?.unlock_credits) || 0;
-      await supabase.from('profiles').update({ unlock_credits: cur + 30 }).eq('id', userId);
+      await supabase.from('profiles').update({ unlock_credits: cur + creditsToAdd }).eq('id', userId);
+
+      if (shouldInsertUnlock) {
+        await supabase.from('game_unlocks').insert({
+          user_id: userId,
+          game_id: gameIdOpt,
+          amount_paid: 0,
+          payment_id: paymentIdStr,
+        });
+      }
+
       await grantAndyTokens(supabase, userId);
       return NextResponse.json({ ok: true }, { status: 200 });
     }
 
-    if (externalRef.startsWith('allaccess_')) {
-      const userId = externalRef.slice('allaccess_'.length);
+    const allAccessMatch = externalRef.match(/^allaccess_([0-9a-f-]{36})(?:_([0-9a-f-]{36}))?$/i);
+    if (allAccessMatch) {
+      const userId = allAccessMatch[1];
       await insertPackPurchase(supabase, {
         user_id: userId,
         pack_type: 'all_access',

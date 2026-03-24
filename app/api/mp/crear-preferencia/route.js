@@ -163,6 +163,21 @@ export async function POST(request) {
         );
       }
 
+      const packGameIdRaw = body?.gameId;
+      const packGameId =
+        typeof packGameIdRaw === 'string' && packGameIdRaw.trim() ? packGameIdRaw.trim() : null;
+
+      if (packGameId) {
+        const { data: packGame, error: packGameErr } = await supabase
+          .from('games')
+          .select('id, status')
+          .eq('id', packGameId)
+          .single();
+        if (packGameErr || !packGame || packGame.status !== 'approved') {
+          return NextResponse.json({ error: 'Juego no válido para este pack' }, { status: 400 });
+        }
+      }
+
       let price;
       let externalReference;
       let itemTitle;
@@ -170,25 +185,35 @@ export async function POST(request) {
 
       if (packType === 'pack_10') {
         price = PRICING.PACK_10;
-        externalReference = `pack10_${userId}`;
+        externalReference = packGameId ? `pack10_${userId}_${packGameId}` : `pack10_${userId}`;
         itemTitle = 'Pack 10 juegos - Campus San Andres';
         packQuery = 'pack_10';
       } else if (packType === 'pack_30') {
         price = PRICING.PACK_30;
-        externalReference = `pack30_${userId}`;
+        externalReference = packGameId ? `pack30_${userId}_${packGameId}` : `pack30_${userId}`;
         itemTitle = 'Pack 30 juegos - Campus San Andres';
         packQuery = 'pack_30';
       } else {
         price = PRICING.ALL_ACCESS;
-        externalReference = `allaccess_${userId}`;
+        externalReference = packGameId ? `allaccess_${userId}_${packGameId}` : `allaccess_${userId}`;
         itemTitle = 'ALL ACCESS - Campus San Andres';
         packQuery = 'all_access';
       }
 
+      const successUrl = packGameId
+        ? `${BASE_URL}/jugar/${encodeURIComponent(packGameId)}?pack=${encodeURIComponent(packQuery)}`
+        : `${BASE_URL}/pago/exitoso?pack=${encodeURIComponent(packQuery)}`;
+      const failPack = `${BASE_URL}/pago/fallido?pack=${encodeURIComponent(packQuery)}${
+        packGameId ? `&gameId=${encodeURIComponent(packGameId)}` : ''
+      }`;
+      const pendPack = `${BASE_URL}/pago/pendiente?pack=${encodeURIComponent(packQuery)}${
+        packGameId ? `&gameId=${encodeURIComponent(packGameId)}` : ''
+      }`;
+
       const backUrls = {
-        success: `${BASE_URL}/pago/exitoso?pack=${encodeURIComponent(packQuery)}`,
-        failure: `${BASE_URL}/pago/fallido?pack=${encodeURIComponent(packQuery)}`,
-        pending: `${BASE_URL}/pago/pendiente?pack=${encodeURIComponent(packQuery)}`,
+        success: successUrl,
+        failure: failPack,
+        pending: pendPack,
       };
 
       const client = new MercadoPagoConfig({ accessToken: mpAccessToken });

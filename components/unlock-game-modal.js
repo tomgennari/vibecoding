@@ -131,6 +131,7 @@ export function UnlockGameModal({
           : {
               userId: session.user.id,
               pack_type: packType,
+              gameId: game.id,
             };
       const res = await fetch('/api/mp/crear-preferencia', {
         method: 'POST',
