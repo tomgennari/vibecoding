@@ -63,6 +63,7 @@ export default function SubirJuegoPage() {
   const [orientation, setOrientation] = useState('horizontal');
   const [dragOver, setDragOver] = useState(false);
   const [showAuthor, setShowAuthor] = useState(true);
+  const [showGuide, setShowGuide] = useState(false);
   const inputRef = useRef(null);
 
   const isDark = theme === 'dark';
@@ -268,6 +269,115 @@ export default function SubirJuegoPage() {
                   <> · Casa <span style={{ color: accent }}>{formatHouseName(profile.house)}</span></>
                 )}
               </p>
+            )}
+          </div>
+
+          <div className="mb-6">
+            <button
+              type="button"
+              onClick={() => setShowGuide(!showGuide)}
+              className="w-full flex items-center justify-between rounded-xl border p-4 cursor-pointer transition-colors hover:opacity-90"
+              style={{ borderColor: border, background: isDark ? '#0f0f14' : '#fff' }}
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-lg">📖</span>
+                <span className="text-sm font-bold" style={{ color: text }}>
+                  Guía para subir tu juego
+                </span>
+              </div>
+              <span className="text-sm" style={{ color: textMuted }}>
+                {showGuide ? '▲ Cerrar' : '▼ Ver consejos'}
+              </span>
+            </button>
+
+            {showGuide && (
+              <div className="mt-3 rounded-xl border p-5 space-y-5" style={{ borderColor: border, background: isDark ? '#0f0f14' : '#fff' }}>
+
+                <div>
+                  <h3 className="text-sm font-bold mb-2 flex items-center gap-2" style={{ color: text }}>
+                    🎮 ¿Cómo crear tu juego?
+                  </h3>
+                  <p className="text-xs leading-relaxed" style={{ color: textMuted }}>
+                    Podés crear tu juego con cualquier herramienta de IA (como ChatGPT, Claude, Gemini, o nuestro Game Lab con Andy).
+                    Pedile que te genere un juego HTML5 en un solo archivo .html y después subilo acá.
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-bold mb-2 flex items-center gap-2" style={{ color: text }}>
+                    📏 Tamaño de pantalla
+                  </h3>
+                  <p className="text-xs leading-relaxed" style={{ color: textMuted }}>
+                    Tu juego puede tener cualquier tamaño. Si querés que se vea bien en celulares, te recomendamos 480×640 (vertical)
+                    o 640×480 (horizontal). Pero si hacés un juego para PC, podés usar el tamaño que quieras.
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-bold mb-2 flex items-center gap-2" style={{ color: text }}>
+                    🕹️ Controles
+                  </h3>
+                  <p className="text-xs leading-relaxed" style={{ color: textMuted }}>
+                    Asegurate de que tu juego funcione tanto con teclado (flechas + espacio) como con touch en celulares.
+                    Pedile a la IA que agregue controles touch si tu juego necesita moverse o saltar.
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-bold mb-2 flex items-center gap-2" style={{ color: text }}>
+                    🏆 Ranking y puntajes
+                  </h3>
+                  <div className="text-xs leading-relaxed" style={{ color: textMuted }}>
+                    <p className="mb-2">
+                      Para que tu juego tenga ranking en la plataforma, necesitás agregar esta línea de código
+                      cuando termina la partida (game over):
+                    </p>
+                    <div className="rounded-lg p-3 font-mono text-[11px] overflow-x-auto" style={{ background: isDark ? '#1a1a2a' : '#f1f5f9', color: isDark ? '#06b6d4' : '#7c3aed' }}>
+                      {`window.parent.postMessage({ type: 'GAME_SCORE', score: tuPuntaje }, '*');`}
+                    </div>
+                    <p className="mt-2">
+                      Reemplazá <strong>tuPuntaje</strong> por la variable que tiene el puntaje en tu juego.
+                      Si usaste una IA para crear el juego, pedile: &quot;agregá score reporting con postMessage para la plataforma Campus San Andrés&quot;.
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-bold mb-2 flex items-center gap-2" style={{ color: text }}>
+                    📚 Librerías disponibles
+                  </h3>
+                  <p className="text-xs leading-relaxed mb-2" style={{ color: textMuted }}>
+                    Si tu juego usa librerías de JavaScript, podés usar estas que ya están hosteadas en nuestra plataforma
+                    (así cargan más rápido desde Argentina):
+                  </p>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2 text-[11px]" style={{ color: textMuted }}>
+                      <span className="font-bold" style={{ color: text }}>p5.js</span> — juegos artísticos y creativos
+                    </div>
+                    <div className="flex items-center gap-2 text-[11px]" style={{ color: textMuted }}>
+                      <span className="font-bold" style={{ color: text }}>Kaplay</span> — plataformers y juegos de acción
+                    </div>
+                    <div className="flex items-center gap-2 text-[11px]" style={{ color: textMuted }}>
+                      <span className="font-bold" style={{ color: text }}>Three.js</span> — juegos 3D
+                    </div>
+                  </div>
+                  <p className="text-xs mt-2" style={{ color: textMuted }}>
+                    También podés usar cualquier otra librería cargada desde un CDN externo.
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-bold mb-2 flex items-center gap-2" style={{ color: text }}>
+                    ⚠️ Reglas de contenido
+                  </h3>
+                  <p className="text-xs leading-relaxed" style={{ color: textMuted }}>
+                    Tu juego será revisado antes de publicarse. Está permitido: disparos, explosiones, zombies, peleas tipo videojuego.
+                    No está permitido: insultos, contenido sexual, violencia excesiva, discriminación.
+                    Si el juego no cumple las reglas, te vamos a avisar qué cambiar para que lo puedas corregir y volver a enviar.
+                  </p>
+                </div>
+
+              </div>
             )}
           </div>
 
