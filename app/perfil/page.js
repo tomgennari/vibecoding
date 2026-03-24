@@ -314,11 +314,31 @@ export default function PerfilPage() {
               <div className="inline-flex items-center gap-2 mt-2 px-3 py-1.5 rounded-lg border" style={{ borderColor: userHouseMeta.color, background: `${userHouseMeta.color}15` }}>
                 <span className="text-sm font-bold" style={{ color: userHouseMeta.color }}>{userHouseMeta.name}</span>
               </div>
-              {profile?.has_all_access ? (
-                <p className="mt-3 text-sm font-bold" style={{ color: '#eab308' }}>🌟 ALL ACCESS — acceso a todos los juegos</p>
-              ) : (profile?.unlock_credits ?? 0) > 0 ? (
-                <p className="mt-3 text-sm font-bold" style={{ color: accent }}>🎮 {profile.unlock_credits} créditos de desbloqueo disponibles</p>
-              ) : null}
+              <div className="w-full mt-4 rounded-xl border p-4 text-left" style={{ borderColor: border, background: isDark ? 'rgba(124,58,237,0.08)' : 'rgba(124,58,237,0.06)' }}>
+                {profile?.has_all_access ? (
+                  <>
+                    <p className="text-xs font-bold uppercase tracking-wider mb-1" style={{ color: '#eab308' }}>Acceso total</p>
+                    <p className="text-base font-black" style={{ color: text }}>🌟 ALL ACCESS</p>
+                    {profile.all_access_at && (
+                      <p className="text-xs mt-1" style={{ color: textMuted }}>Desde {formatDate(profile.all_access_at)}</p>
+                    )}
+                  </>
+                ) : (profile?.unlock_credits ?? 0) > 0 ? (
+                  <>
+                    <p className="text-xs font-bold uppercase tracking-wider mb-1" style={{ color: accent }}>Créditos de desbloqueo</p>
+                    <p className="text-2xl font-black tabular-nums" style={{ color: accent }}>{profile.unlock_credits}</p>
+                    <p className="text-xs mt-1 leading-relaxed" style={{ color: textMuted }}>Usalos en el catálogo al elegir Desbloquear en un juego.</p>
+                  </>
+                ) : (
+                  <p className="text-xs leading-relaxed" style={{ color: textMuted }}>
+                    Comprá packs en el{' '}
+                    <Link href="/juegos" className="font-bold underline" style={{ color: accent }}>
+                      catálogo de juegos
+                    </Link>{' '}
+                    para sumar créditos y apoyar el Campus.
+                  </p>
+                )}
+              </div>
               <p className="mt-2 text-sm" style={{ color: textMuted }}>{profile.user_type === 'padre' ? 'Padre' : 'Alumno'}</p>
               <p className="text-xs mt-1" style={{ color: textMuted }}>Miembro desde {formatDate(profile.created_at)}</p>
               <hr className="my-4" style={{ borderColor: border }} />

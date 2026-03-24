@@ -528,7 +528,7 @@ Tablas principales (todas con RLS habilitado):
 - [x] Sistema de juegos gratuitos del día — programación manual y automática
 - [x] Panel de admin con dashboard, rankings de Houses, gestión de juegos del día
 - [x] API routes de admin protegidas por sesión y rol is_admin
-- [ ] Integración MercadoPago — precio fijo $5.000 por juego
+- [x] Integración MercadoPago — precio fijo $6.000 por juego (packs y ALL ACCESS según catálogo)
 - [x] Scoreboard básico
 - [ ] Deploy estable en sass.vibecoding.ar
 

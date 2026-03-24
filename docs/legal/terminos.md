@@ -53,10 +53,10 @@ No está permitido crear múltiples cuentas para un mismo usuario. vibecoding.ar
 
 ### 4.1 Precios
 Los precios vigentes para desbloquear contenido son:
-- Juego individual: $5.000 ARS
-- Paquete de 10 juegos: $30.000 ARS
-- Paquete de 50 juegos: $100.000 ARS (disponible cuando corresponda)
-- Acceso total (ALL ACCESS): $250.000 ARS (disponible cuando corresponda)
+- Juego individual: $6.000 ARS
+- Pack de 10 juegos: $40.000 ARS
+- Pack de 30 juegos: $100.000 ARS (disponible cuando haya 50 o más juegos aprobados en el catálogo)
+- Acceso total (ALL ACCESS): $300.000 ARS (disponible cuando haya 100 o más juegos aprobados en el catálogo)
 
 Los precios pueden actualizarse periódicamente. Las actualizaciones se informarán con anticipación razonable en la Plataforma.
 

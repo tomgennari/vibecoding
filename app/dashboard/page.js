@@ -9,6 +9,7 @@ import { useDashboardTheme } from '@/lib/use-dashboard-theme.js';
 import { useUser } from '@/lib/user-context.js';
 import { DashboardNavbar } from '@/components/dashboard-navbar.js';
 import { MobileBottomNav } from '@/components/mobile-bottom-nav.js';
+import { UnlockGameModal } from '@/components/unlock-game-modal.js';
 
 const HOUSES = [
   { id: 'william_brown', name: 'William Brown', color: '#3b82f6', image: '/images/houses/house-brown.png' },
@@ -112,7 +113,7 @@ export default function DashboardPage() {
   const [totalRaised, setTotalRaised] = useState(0);
   const [campusOpen, setCampusOpen] = useState(false);
   const [mobileTab, setMobileTab] = useState('juegos');
-  const [unlockingGameId, setUnlockingGameId] = useState(null);
+  const [unlockModalGame, setUnlockModalGame] = useState(null);
   const [userLikedIds, setUserLikedIds] = useState(new Set());
   const [likingGameId, setLikingGameId] = useState(null);
   const [uniquePlayersByGame, setUniquePlayersByGame] = useState({});
@@ -274,36 +275,8 @@ export default function DashboardPage() {
     }
   }
 
-  async function handleDesbloquear(game) {
-    if (unlockingGameId) return;
-    setUnlockingGameId(game.id);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        router.replace('/login');
-        return;
-      }
-      const gamePrice = Number(game.price) || 6000;
-      const res = await fetch('/api/mp/crear-preferencia', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({
-          gameId: game.id,
-          userId: session.user.id,
-          gameTitle: encodeURIComponent(game.title || 'Juego'),
-          gamePrice,
-        }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setUnlockingGameId(null);
-        return;
-      }
-      if (data.init_point) window.location.href = data.init_point;
-      else setUnlockingGameId(null);
-    } catch {
-      setUnlockingGameId(null);
-    }
+  function openUnlockModal(game) {
+    setUnlockModalGame(game);
   }
 
   async function handleDonationAmount(amount) {
@@ -680,21 +653,10 @@ export default function DashboardPage() {
                     </p>
                     <button
                       type="button"
-                      onClick={(e) => { e.stopPropagation(); handleDesbloquear(game); }}
-                      disabled={unlockingGameId === game.id}
-                      className="vibe-btn-gradient mt-3 w-full rounded-xl py-2.5 font-bold text-white text-sm text-center block disabled:opacity-70 disabled:pointer-events-none"
+                      onClick={(e) => { e.stopPropagation(); openUnlockModal(game); }}
+                      className="vibe-btn-gradient mt-3 w-full rounded-xl py-2.5 font-bold text-white text-sm text-center block"
                     >
-                      {unlockingGameId === game.id ? (
-                        <span className="inline-flex items-center justify-center gap-2">
-                          <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                          </svg>
-                          Redirigiendo...
-                        </span>
-                      ) : (
-                        'Desbloquear'
-                      )}
+                      Desbloquear
                     </button>
                   </div>
                 );
@@ -1144,21 +1106,10 @@ export default function DashboardPage() {
                       </p>
                       <button
                         type="button"
-                        onClick={(e) => { e.stopPropagation(); handleDesbloquear(game); }}
-                        disabled={unlockingGameId === game.id}
-                        className="vibe-btn-gradient mt-3 w-full rounded-xl py-2.5 font-bold text-white text-sm text-center block disabled:opacity-70 disabled:pointer-events-none"
+                        onClick={(e) => { e.stopPropagation(); openUnlockModal(game); }}
+                        className="vibe-btn-gradient mt-3 w-full rounded-xl py-2.5 font-bold text-white text-sm text-center block"
                       >
-                        {unlockingGameId === game.id ? (
-                          <span className="inline-flex items-center justify-center gap-2">
-                            <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                            </svg>
-                            Redirigiendo...
-                          </span>
-                        ) : (
-                          'Desbloquear'
-                        )}
+                        Desbloquear
                       </button>
                     </div>
                   );
@@ -1458,6 +1409,20 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+
+      <UnlockGameModal
+        isOpen={!!unlockModalGame}
+        onClose={() => setUnlockModalGame(null)}
+        game={unlockModalGame}
+        userCredits={profile?.unlock_credits ?? 0}
+        hasAllAccess={!!profile?.has_all_access}
+        isDark={isDark}
+        onUnlockSuccess={(g) => {
+          setGamesToUnlock((prev) => prev.filter((x) => x.id !== g.id));
+          setUnlockedGames((prev) => (prev.some((x) => x.id === g.id) ? prev : [...prev, g]));
+          setUnlockModalGame(null);
+        }}
+      />
 
       <MobileBottomNav
         theme={theme}

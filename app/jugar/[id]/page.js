@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/utils/supabase/client.js';
+import { UnlockGameModal } from '@/components/unlock-game-modal.js';
 
 const BASE_URL = typeof window !== 'undefined' && window.location.origin ? window.location.origin : 'https://sass.vibecoding.ar';
 
@@ -17,7 +18,6 @@ function IconShare() {
 
 const DEFAULT_WIDTH = 800;
 const DEFAULT_HEIGHT = 600;
-const PRICE_INDIVIDUAL_ARS = 6000;
 
 export default function JugarPage() {
   const router = useRouter();
@@ -42,9 +42,8 @@ export default function JugarPage() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [highScores, setHighScores] = useState([]);
   const [showHighScores, setShowHighScores] = useState(false);
-  const [approvedGamesCount, setApprovedGamesCount] = useState(0);
   const [unlockCredits, setUnlockCredits] = useState(0);
-  const [unlockBusy, setUnlockBusy] = useState(false);
+  const [userHasAllAccess, setUserHasAllAccess] = useState(false);
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -149,12 +148,8 @@ export default function JugarPage() {
         .single();
       const isAdmin = !!profileData?.is_admin;
       const hasAllAccess = !!profileData?.has_all_access;
+      setUserHasAllAccess(hasAllAccess);
       setUnlockCredits(Number(profileData?.unlock_credits) || 0);
-
-      fetch('/api/games/count')
-        .then((r) => r.json())
-        .then((d) => setApprovedGamesCount(typeof d.count === 'number' ? d.count : 0))
-        .catch(() => {});
 
       if (!isCreator && !isAdmin && !hasAllAccess) {
         // Verificar unlocked_for_all
@@ -459,163 +454,16 @@ export default function JugarPage() {
 
       {/* Contenido principal */}
       <main className={`flex-1 flex flex-col min-h-0 overflow-hidden relative ${!needsUnlock ? 'pb-[5.5rem] lg:pb-0' : ''}`}>
-        {/* Pantalla de desbloqueo */}
         {needsUnlock && game && (
-          <div className="flex-1 flex items-center justify-center p-6 w-full overflow-auto">
-            <div className="rounded-2xl border p-6 max-w-lg w-full text-center space-y-3" style={{ background: '#13131a', borderColor: '#2a2a3a' }}>
-              <h2 className="text-2xl font-bold mb-1" style={{ color: '#f1f5f9' }}>🔒 {game.title}</h2>
-              <p className="text-sm mb-4" style={{ color: '#94a3b8' }}>Este juego necesita ser desbloqueado para poder jugarlo.</p>
-
-              {unlockCredits > 0 && (
-                <button
-                  type="button"
-                  disabled={unlockBusy}
-                  onClick={async () => {
-                    try {
-                      setUnlockBusy(true);
-                      const { data: { session: s } } = await supabase.auth.getSession();
-                      if (!s) return;
-                      const res = await fetch('/api/games/unlock-with-credits', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${s.access_token}` },
-                        body: JSON.stringify({ gameId: game.id }),
-                      });
-                      const data = await res.json().catch(() => ({}));
-                      if (!res.ok) {
-                        alert(data.error || 'No se pudo desbloquear con crédito.');
-                        return;
-                      }
-                      window.location.reload();
-                    } catch (e) {
-                      console.error(e);
-                      alert('Error al desbloquear. Intentá de nuevo.');
-                    } finally {
-                      setUnlockBusy(false);
-                    }
-                  }}
-                  className="vibe-btn-gradient w-full rounded-xl px-6 py-3.5 text-sm font-bold text-white cursor-pointer disabled:opacity-60"
-                >
-                  {unlockBusy ? 'Procesando…' : `Desbloquear con crédito (te quedan ${unlockCredits})`}
-                </button>
-              )}
-
-              <button
-                type="button"
-                onClick={async () => {
-                  try {
-                    const { data: { session: s } } = await supabase.auth.getSession();
-                    if (!s) return;
-                    const res = await fetch('/api/mp/crear-preferencia', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${s.access_token}` },
-                      body: JSON.stringify({
-                        gameId: game.id,
-                        userId: s.user.id,
-                        gameTitle: game.title,
-                        gamePrice: PRICE_INDIVIDUAL_ARS,
-                      }),
-                    });
-                    const data = await res.json();
-                    if (data.error) { alert(data.error); return; }
-                    if (data.init_point) window.location.href = data.init_point;
-                  } catch (err) {
-                    console.error('Error:', err);
-                    alert('Error al crear el pago. Intentá de nuevo.');
-                  }
-                }}
-                className="w-full rounded-xl px-6 py-3 text-sm font-bold border transition-colors cursor-pointer"
-                style={{ borderColor: '#7c3aed', color: '#e9d5ff', background: 'rgba(124,58,237,0.15)' }}
-              >
-                Desbloquear este juego — ${PRICE_INDIVIDUAL_ARS.toLocaleString('es-AR')} ARS
-              </button>
-
-              <button
-                type="button"
-                onClick={async () => {
-                  try {
-                    const { data: { session: s } } = await supabase.auth.getSession();
-                    if (!s) return;
-                    const res = await fetch('/api/mp/crear-preferencia', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${s.access_token}` },
-                      body: JSON.stringify({ userId: s.user.id, pack_type: 'pack_10' }),
-                    });
-                    const data = await res.json();
-                    if (data.error) { alert(data.error); return; }
-                    if (data.init_point) window.location.href = data.init_point;
-                  } catch (err) {
-                    console.error('Error:', err);
-                    alert('Error al crear el pago. Intentá de nuevo.');
-                  }
-                }}
-                className="w-full rounded-xl px-6 py-3 text-sm font-bold border transition-colors cursor-pointer"
-                style={{ borderColor: '#2a2a3a', color: '#f1f5f9', background: '#1a1a24' }}
-              >
-                Pack 10 juegos — $40.000 ($4.000 c/u)
-              </button>
-
-              {approvedGamesCount >= 50 && (
-                <button
-                  type="button"
-                  onClick={async () => {
-                    try {
-                      const { data: { session: s } } = await supabase.auth.getSession();
-                      if (!s) return;
-                      const res = await fetch('/api/mp/crear-preferencia', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${s.access_token}` },
-                        body: JSON.stringify({ userId: s.user.id, pack_type: 'pack_30' }),
-                      });
-                      const data = await res.json();
-                      if (data.error) { alert(data.error); return; }
-                      if (data.init_point) window.location.href = data.init_point;
-                    } catch (err) {
-                      console.error('Error:', err);
-                      alert('Error al crear el pago. Intentá de nuevo.');
-                    }
-                  }}
-                  className="w-full rounded-xl px-6 py-3 text-sm font-bold border transition-colors cursor-pointer"
-                  style={{ borderColor: '#2a2a3a', color: '#f1f5f9', background: '#1a1a24' }}
-                >
-                  Pack 30 juegos — $100.000 (~$3.333 c/u)
-                </button>
-              )}
-
-              {approvedGamesCount >= 100 && (
-                <button
-                  type="button"
-                  onClick={async () => {
-                    try {
-                      const { data: { session: s } } = await supabase.auth.getSession();
-                      if (!s) return;
-                      const res = await fetch('/api/mp/crear-preferencia', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${s.access_token}` },
-                        body: JSON.stringify({ userId: s.user.id, pack_type: 'all_access' }),
-                      });
-                      const data = await res.json();
-                      if (data.error) { alert(data.error); return; }
-                      if (data.init_point) window.location.href = data.init_point;
-                    } catch (err) {
-                      console.error('Error:', err);
-                      alert('Error al crear el pago. Intentá de nuevo.');
-                    }
-                  }}
-                  className="w-full rounded-xl px-6 py-3 text-sm font-bold border transition-colors cursor-pointer"
-                  style={{ borderColor: '#eab308', color: '#fef08a', background: 'rgba(234,179,8,0.12)' }}
-                >
-                  ALL ACCESS — $300.000
-                </button>
-              )}
-
-              <button type="button" onClick={() => router.push('/juegos')}
-                className="w-full rounded-xl px-6 py-3 text-sm font-bold border transition-colors cursor-pointer mt-2"
-                style={{ borderColor: '#2a2a3a', color: '#94a3b8', background: 'transparent' }}
-              >
-                ← Volver al catálogo
-              </button>
-            </div>
-          </div>
+          <UnlockGameModal
+            isOpen={needsUnlock}
+            onClose={() => router.push('/juegos')}
+            game={{ id: game.id, title: game.title }}
+            userCredits={unlockCredits}
+            hasAllAccess={userHasAllAccess}
+            isDark
+            onUnlockSuccess={() => window.location.reload()}
+          />
         )}
 
         {/* Juego */}

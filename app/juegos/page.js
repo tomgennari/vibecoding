@@ -9,6 +9,7 @@ import { useDashboardTheme } from '@/lib/use-dashboard-theme.js';
 import { DashboardNavbar } from '@/components/dashboard-navbar.js';
 import { MobileBottomNav } from '@/components/mobile-bottom-nav.js';
 import { useUser } from '@/lib/user-context.js';
+import { UnlockGameModal } from '@/components/unlock-game-modal.js';
 
 const HOUSES = [
   { id: 'william_brown', name: 'William Brown', color: '#3b82f6', image: '/images/houses/house-brown.png' },
@@ -67,7 +68,7 @@ export default function JuegosPage() {
   const [housesDropdownOpen, setHousesDropdownOpen] = useState(false);
   const housesDropdownRefDesktop = useRef(null);
   const housesDropdownRefMobile = useRef(null);
-  const [unlockingGameId, setUnlockingGameId] = useState(null);
+  const [unlockModalGame, setUnlockModalGame] = useState(null);
   const [gameAuthors, setGameAuthors] = useState({});
   const [hoveredGameId, setHoveredGameId] = useState(null);
   const [tappedGameId, setTappedGameId] = useState(null);
@@ -192,36 +193,8 @@ export default function JuegosPage() {
     return sorted;
   }, [gamesWithMetrics, searchQuery, sortBy, houseFilter]);
 
-  async function handleDesbloquear(game) {
-    if (unlockingGameId) return;
-    setUnlockingGameId(game.id);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        router.replace('/login');
-        return;
-      }
-      const gamePrice = Number(game.price) || 6000;
-      const res = await fetch('/api/mp/crear-preferencia', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({
-          gameId: game.id,
-          userId: session.user.id,
-          gameTitle: encodeURIComponent(game.title || 'Juego'),
-          gamePrice,
-        }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setUnlockingGameId(null);
-        return;
-      }
-      if (data.init_point) window.location.href = data.init_point;
-      else setUnlockingGameId(null);
-    } catch {
-      setUnlockingGameId(null);
-    }
+  function openUnlockModal(game) {
+    setUnlockModalGame(game);
   }
 
   function formatArs(n) {
@@ -480,7 +453,7 @@ export default function JuegosPage() {
           {filteredAndSortedGames.map((game) => {
             const house = HOUSES.find((h) => h.id === game.house) || HOUSES[0];
             const isExpanded = hoveredGameId === game.id || tappedGameId === game.id;
-            const isUnlocked = unlockedIds.has(game.id) || game.unlocked_for_all === true;
+            const isUnlocked = unlockedIds.has(game.id) || game.unlocked_for_all === true || profile?.has_all_access === true;
             const isFreeToday = dailyIds.has(game.id);
             const canPlay = isUnlocked || isFreeToday;
 
@@ -534,21 +507,10 @@ export default function JuegosPage() {
                   ) : (
                     <button
                       type="button"
-                      onClick={(e) => { e.stopPropagation(); handleDesbloquear(game); }}
-                      disabled={unlockingGameId === game.id}
-                      className="vibe-btn-gradient w-full rounded-xl py-2.5 font-bold text-white text-sm disabled:opacity-70 disabled:pointer-events-none"
+                      onClick={(e) => { e.stopPropagation(); openUnlockModal(game); }}
+                      className="vibe-btn-gradient w-full rounded-xl py-2.5 font-bold text-white text-sm"
                     >
-                      {unlockingGameId === game.id ? (
-                        <span className="inline-flex items-center justify-center gap-2">
-                          <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                          </svg>
-                          Redirigiendo...
-                        </span>
-                      ) : (
-                        'Desbloquear'
-                      )}
+                      Desbloquear
                     </button>
                   )}
                 </div>
@@ -563,6 +525,19 @@ export default function JuegosPage() {
           </p>
         )}
       </div>
+
+      <UnlockGameModal
+        isOpen={!!unlockModalGame}
+        onClose={() => setUnlockModalGame(null)}
+        game={unlockModalGame}
+        userCredits={profile?.unlock_credits ?? 0}
+        hasAllAccess={!!profile?.has_all_access}
+        isDark={isDark}
+        onUnlockSuccess={(g) => {
+          setUnlockedIds((prev) => new Set([...prev, g.id]));
+          setUnlockModalGame(null);
+        }}
+      />
 
       <MobileBottomNav theme={theme} activeTabId="juegos-dia" />
     </div>
