@@ -257,3 +257,11 @@ onKeyPress("space", () => {
 - `onKeyPress("space", fn)` — se dispara UNA vez al presionar (ideal para saltar, disparar)
 - `onKeyDown("left", fn)` — se dispara CADA FRAME mientras se mantiene (ideal para moverse)
 No confundirlos. Usar `onKeyDown` para saltar hace que el jugador salte múltiples veces.
+
+**Google Fonts en Kaplay — NO usar font en text():**
+NUNCA usar `text("Hola", { size: 24, font: "Russo One" })` — esto causa "Error: Font not found" porque Kaplay busca una fuente cargada con loadFont(), no una Google Font.
+La forma correcta es:
+1. Cargar la fuente en el <head> con <link> de Google Fonts
+2. Aplicar en CSS: `canvas { font-family: 'Russo One', sans-serif; }`
+3. Usar text() SIN parámetro font: `text("Hola", { size: 24 })`
+Kaplay hereda la fuente del CSS automáticamente.
