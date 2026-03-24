@@ -1,10 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ADMIN_THEME } from '../constants.js';
 
-export default function RejectGameModal({ gameTitle, onConfirm, onClose }) {
+export default function RejectGameModal({ gameTitle, defaultReason, onConfirm, onClose }) {
   const [reason, setReason] = useState('');
+
+  useEffect(() => {
+    setReason(defaultReason?.trim() ? defaultReason : '');
+  }, [defaultReason, gameTitle]);
 
   const style = {
     overlay: { background: 'rgba(0,0,0,0.7)' },

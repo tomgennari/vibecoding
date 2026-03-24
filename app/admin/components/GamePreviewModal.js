@@ -4,7 +4,16 @@ import { useState, useEffect } from 'react';
 import { X, Loader2, Code, Gamepad2 } from 'lucide-react';
 import { ADMIN_THEME } from '../constants.js';
 
-export default function GamePreviewModal({ game, authorName, onApprove, onReject, onClose }) {
+export default function GamePreviewModal({
+  game,
+  authorName,
+  onApprove,
+  onReject,
+  onClose,
+  analyzing = false,
+  analysisResult = null,
+  onAnalyze,
+}) {
   const [htmlContent, setHtmlContent] = useState(null);
   const [loadError, setLoadError] = useState(false);
   const [verCodigo, setVerCodigo] = useState(false);
@@ -121,24 +130,74 @@ export default function GamePreviewModal({ game, authorName, onApprove, onReject
         </div>
 
         {isPending && (
-          <div className="flex gap-2 mt-4 justify-end">
-            <button
-              type="button"
-              onClick={() => onApprove(game.id)}
-              className="px-4 py-2 rounded-lg text-sm font-medium text-white"
-              style={{ background: '#22c55e' }}
-            >
-              Aprobar
-            </button>
-            <button
-              type="button"
-              onClick={() => onReject({ id: game.id, title: game.title })}
-              className="px-4 py-2 rounded-lg text-sm font-medium text-white"
-              style={{ background: '#ef4444' }}
-            >
-              Rechazar
-            </button>
-          </div>
+          <>
+            {typeof onAnalyze === 'function' && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => htmlContent && onAnalyze(htmlContent)}
+                  disabled={analyzing || !htmlContent}
+                  className="w-full rounded-xl px-4 py-2.5 text-sm font-bold border cursor-pointer transition-colors mb-3 disabled:opacity-60 disabled:cursor-not-allowed"
+                  style={{ borderColor: '#06b6d4', color: '#06b6d4', background: 'transparent' }}
+                >
+                  {analyzing ? '🔄 Analizando...' : '🤖 Analizar con IA'}
+                </button>
+
+                {analysisResult && (
+                  <div
+                    className="rounded-xl border p-4 mb-3 text-sm"
+                    style={{
+                      borderColor: analysisResult.contentApproved ? '#22c55e' : '#ef4444',
+                      background: analysisResult.contentApproved ? '#22c55e10' : '#ef444410',
+                    }}
+                  >
+                    <p className="font-bold mb-2" style={{ color: analysisResult.contentApproved ? '#22c55e' : '#ef4444' }}>
+                      {analysisResult.contentApproved ? '✅ Contenido apropiado' : '⚠️ Problemas de contenido detectados'}
+                    </p>
+                    {analysisResult.contentIssues?.length > 0 && (
+                      <ul className="list-disc pl-4 mb-2 text-xs" style={{ color: '#ef4444' }}>
+                        {analysisResult.contentIssues.map((issue, i) => (
+                          <li key={i}>{issue}</li>
+                        ))}
+                      </ul>
+                    )}
+                    {analysisResult.rejectionMessage && (
+                      <div className="mt-2 p-2 rounded-lg text-xs" style={{ background: '#ef444420', color: '#ef4444' }}>
+                        <p className="font-bold mb-1">Mensaje sugerido para rechazo:</p>
+                        <p>{analysisResult.rejectionMessage}</p>
+                      </div>
+                    )}
+                    <div className="mt-2 pt-2 border-t" style={{ borderColor: '#2a2a3a' }}>
+                      <p className="font-bold mb-1" style={{ color: analysisResult.hasScoreReporting ? '#22c55e' : '#eab308' }}>
+                        {analysisResult.hasScoreReporting ? '✅ Score reporting incluido' : '⚠️ Sin score reporting'}
+                      </p>
+                      {analysisResult.scoreFixSuggestion && (
+                        <p className="text-xs" style={{ color: '#94a3b8' }}>{analysisResult.scoreFixSuggestion}</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+            <div className="flex gap-2 mt-4 justify-end">
+              <button
+                type="button"
+                onClick={() => onApprove(game.id)}
+                className="px-4 py-2 rounded-lg text-sm font-medium text-white"
+                style={{ background: '#22c55e' }}
+              >
+                Aprobar
+              </button>
+              <button
+                type="button"
+                onClick={() => onReject({ id: game.id, title: game.title })}
+                className="px-4 py-2 rounded-lg text-sm font-medium text-white"
+                style={{ background: '#ef4444' }}
+              >
+                Rechazar
+              </button>
+            </div>
+          </>
         )}
       </div>
     </div>

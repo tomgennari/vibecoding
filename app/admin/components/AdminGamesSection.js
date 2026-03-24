@@ -36,6 +36,8 @@ export default function AdminGamesSection() {
   const [editGame, setEditGame] = useState(null);
   const [deleteGame, setDeleteGame] = useState(null);
   const [previewGame, setPreviewGame] = useState(null);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState(null);
 
   const fetchGames = useCallback(async () => {
     setLoading(true);
@@ -64,6 +66,34 @@ export default function AdminGamesSection() {
     fetchGames();
   }, [fetchGames]);
 
+  useEffect(() => {
+    setAnalysisResult(null);
+  }, [previewGame]);
+
+  async function handleAnalyze(gameHtml) {
+    setAnalyzing(true);
+    setAnalysisResult(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) return;
+      const res = await fetch('/api/admin/analyze-game', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ html: gameHtml }),
+      });
+      const data = await res.json();
+      if (data.analysis) {
+        setAnalysisResult(data.analysis);
+      }
+    } catch (err) {
+      console.error('Error analizando:', err);
+    }
+    setAnalyzing(false);
+  }
+
   async function handleApprove(gameId) {
     const { error } = await supabase.from('games').update({ status: 'approved', approved_at: new Date().toISOString() }).eq('id', gameId);
     if (!error) {
@@ -91,7 +121,21 @@ export default function AdminGamesSection() {
     if (reason && reason.trim()) update.rejection_reason = reason.trim();
     const { error } = await supabase.from('games').update(update).eq('id', rejectModal.id);
     if (!error) {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        await fetch('/api/admin/notify-rejection', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ gameId: rejectModal.id, reason: reason?.trim() || '' }),
+        });
+      } catch (err) {
+        console.error('Error enviando email de rechazo:', err);
+      }
       setRejectModal(null);
+      setAnalysisResult(null);
       fetchGames();
     }
   }
@@ -262,6 +306,7 @@ export default function AdminGamesSection() {
       {rejectModal && (
         <RejectGameModal
           gameTitle={rejectModal.title}
+          defaultReason={rejectModal.defaultReason}
           onConfirm={handleReject}
           onClose={() => setRejectModal(null)}
         />
@@ -285,8 +330,14 @@ export default function AdminGamesSection() {
           game={previewGame}
           authorName={authors[previewGame.submitted_by]}
           onApprove={(id) => { handleApprove(id); setPreviewGame(null); }}
-          onReject={(data) => { setPreviewGame(null); setRejectModal(data); }}
+          onReject={(data) => {
+            setPreviewGame(null);
+            setRejectModal({ ...data, defaultReason: analysisResult?.rejectionMessage });
+          }}
           onClose={() => setPreviewGame(null)}
+          analyzing={analyzing}
+          analysisResult={analysisResult}
+          onAnalyze={handleAnalyze}
         />
       )}
     </div>
