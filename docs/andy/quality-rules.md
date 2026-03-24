@@ -538,10 +538,10 @@ Para juegos donde cada nivel tiene mecánicas REALMENTE diferentes (no solo dist
 - ❌ `fetch()` ni `XMLHttpRequest`
 - ❌ `alert()` ni `prompt()` ni `confirm()`
 - ❌ TypeScript
-- ❌ Librerías externas que no sean p5.js o Kaplay hosteados en Supabase (`libs/`)
+- ❌ Librerías externas que no sean p5.js, Kaplay o Three.js hosteados en Supabase (`libs/`)
 - ❌ CDNs externos (unpkg, jsdelivr, cdnjs, etc.) — solo URLs de Supabase
 - ❌ URLs de assets inventadas
-- ❌ Controles touch / botones en pantalla
+- ❌ Botones HTML clickeables para controlar el juego (usar touch events nativos o gamepad overlay en su lugar)
 - ❌ Más de un archivo HTML
 - ❌ `document.write()`
 - ❌ Inline event handlers en HTML (`onclick="..."`)

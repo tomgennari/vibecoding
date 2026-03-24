@@ -97,26 +97,6 @@ export default function AdminGamesSection() {
   async function handleApprove(gameId) {
     const updateData = { status: 'approved', approved_at: new Date().toISOString() };
 
-    if (analysisResult && !analysisResult.hasScoreReporting && previewGame?.id === gameId) {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        const fixRes = await fetch('/api/admin/fix-score-reporting', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({ gameId }),
-        });
-        const fixData = await fixRes.json();
-        if (fixData.ok) {
-          console.log('Score reporting agregado automáticamente');
-        }
-      } catch (err) {
-        console.error('Error agregando score reporting:', err);
-      }
-    }
-
     const { error } = await supabase.from('games').update(updateData).eq('id', gameId);
     if (!error) {
       try {

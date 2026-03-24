@@ -38,6 +38,7 @@ export default function GamePreviewModal({
   if (!game) return null;
 
   const isPending = game.status === 'pending';
+  const createdWithAndy = game.file_url?.includes('game-lab-');
   const loading = game.file_url && htmlContent === null && !loadError;
 
   return (
@@ -79,6 +80,16 @@ export default function GamePreviewModal({
             </button>
           )}
         </div>
+
+        <span
+          className="text-[11px] font-bold px-2 py-0.5 rounded-md mb-2 inline-block"
+          style={{
+            background: createdWithAndy ? '#7c3aed20' : '#eab30820',
+            color: createdWithAndy ? '#7c3aed' : '#eab308',
+          }}
+        >
+          {createdWithAndy ? '🤖 Creado con Andy' : '📄 Subido como HTML'}
+        </span>
 
         <div
           className="relative w-full rounded-lg overflow-hidden border flex-shrink-0"
@@ -131,7 +142,7 @@ export default function GamePreviewModal({
 
         {isPending && (
           <>
-            {typeof onAnalyze === 'function' && (
+            {typeof onAnalyze === 'function' && !createdWithAndy && (
               <>
                 <button
                   type="button"
@@ -178,6 +189,11 @@ export default function GamePreviewModal({
                   </div>
                 )}
               </>
+            )}
+            {createdWithAndy && (
+              <p className="text-xs text-center mb-3" style={{ color: '#94a3b8' }}>
+                🤖 Creado con Andy — las reglas de contenido ya fueron aplicadas
+              </p>
             )}
             <div className="flex gap-2 mt-4 justify-end">
               <button

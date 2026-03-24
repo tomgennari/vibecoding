@@ -2,7 +2,7 @@
 
 ## CONTEXTO
 
-Andy tiene 3 frameworks disponibles para generar juegos. La elección es INTERNA — el alumno nunca ve ni elige el framework. Andy decide según la naturaleza del juego.
+Andy tiene 4 frameworks disponibles para generar juegos. La elección es INTERNA — el alumno nunca ve ni elige el framework. Andy decide según la naturaleza del juego.
 
 ---
 
@@ -47,6 +47,17 @@ Andy tiene 3 frameworks disponibles para generar juegos. La elección es INTERNA
 **Ventajas:** API expresiva y corta (un platformer en 80 líneas), física incorporada, sistema de componentes, ASCII maps para niveles, ideal para acción
 **Cuándo NO usarlo:** Juegos puramente de tablero/puzzle sin física, herramientas creativas, juegos de texto
 
+### 4. Three.js (r128)
+**URL:** `https://vjpsqfihlemymaqcznie.supabase.co/storage/v1/object/public/libs/three.min.js`
+**Ideal para:**
+- Juegos con perspectiva 3D real (runners tipo Subway Surfers, juegos de vuelo)
+- Visualizaciones 3D interactivas
+- Juegos donde la profundidad visual es parte central de la experiencia
+
+**Ventajas:** Verdadero 3D en el browser, muy conocido, enorme comunidad
+**Cuándo NO usarlo:** Para la gran mayoría de los juegos. Si el juego puede hacerse en 2D, hacelo en 2D. Three.js es mucho más complejo y genera código más largo.
+**IMPORTANTE:** Andy SOLO elige Three.js si el alumno pide EXPLÍCITAMENTE algo en 3D. Andy NUNCA sugiere 3D por su cuenta ni elige Three.js por default.
+
 ---
 
 ## REGLAS DE DECISIÓN
@@ -70,6 +81,10 @@ Andy sigue esta lógica en orden:
    - Si tiene efectos visuales llamativos → **p5.js**
    - Para todo lo demás → **Canvas 2D**
 
+5. **¿El alumno pide explícitamente algo en 3D?**
+   - SÍ → **Three.js** (pero confirmar que realmente necesita 3D)
+   - NO → Nunca usar Three.js
+
 ---
 
 ## EJEMPLOS DE DECISIÓN
@@ -92,6 +107,10 @@ Andy sigue esta lógica en orden:
 | Juego de ritmo visual | p5.js | Sincronización visual con efectos |
 | Generador de fractales | p5.js | Matemáticas visuales |
 | Pixel art editor | p5.js | Herramienta de dibujo pixel a pixel |
+| Runner 3D tipo Subway Surfers | Three.js | Perspectiva 3D es la mecánica central |
+| Juego de vuelo 3D | Three.js | Necesita profundidad real |
+| "Quiero un juego 3D" | Three.js | Pedido explícito del alumno |
+| Platformer "tipo 3D" | Kaplay o Canvas 2D | Efecto parallax alcanza, no necesita Three.js |
 
 ---
 
@@ -104,6 +123,8 @@ Andy sigue esta lógica en orden:
 - Si Andy elige Kaplay, usa la versión global (no módulos ES): `<script src="https://vjpsqfihlemymaqcznie.supabase.co/storage/v1/object/public/libs/kaplay.js"></script>`
 - Si Andy elige p5.js: `<script src="https://vjpsqfihlemymaqcznie.supabase.co/storage/v1/object/public/libs/p5.min.js"></script>`
 - Si Andy elige Canvas 2D: no necesita ningún `<script>` externo
+- Andy NUNCA usa Three.js a menos que el alumno pida algo explícitamente 3D
+- Si Andy elige Three.js: `<script src="https://vjpsqfihlemymaqcznie.supabase.co/storage/v1/object/public/libs/three.min.js"></script>`
 
 ### ¿Por qué hosteamos las librerías en Supabase?
 Las librerías están alojadas en nuestro propio bucket de Supabase (`libs/`) para evitar dependencia de CDNs externos que pueden caerse, estar lentos desde Argentina, o cambiar versiones sin aviso. Esto garantiza que los juegos siempre carguen rápido y sin problemas.
