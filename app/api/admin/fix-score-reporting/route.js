@@ -58,19 +58,18 @@ export async function POST(request) {
     return NextResponse.json({ error: 'Error cargando HTML' }, { status: 502 });
   }
 
-  const prompt = `Este es el HTML de un juego. Necesito que agregues score reporting para la plataforma Campus San Andrés.
+  // Approach eficiente: pedir a la IA solo la línea a insertar y la variable de score
+  const analysisPrompt = `Analizá este código de juego HTML y decime:
+1. ¿Cuál es la variable que contiene el puntaje/score del jugador?
+2. ¿En qué función o evento se detecta el game over / fin de partida?
 
-Agregá esta línea en el lugar correcto (cuando termina la partida / game over):
-window.parent.postMessage({ type: 'GAME_SCORE', score: VARIABLE_DE_SCORE }, '*');
+Respondé SOLO en formato JSON exacto (sin markdown, sin backticks):
+{
+  "scoreVariable": "nombre de la variable de score",
+  "gameOverFunction": "nombre de la función donde ocurre el game over"
+}
 
-Reemplazá VARIABLE_DE_SCORE por la variable real que contiene el puntaje del jugador en este juego.
-
-REGLAS:
-- Solo agregá la línea del postMessage, NO cambies NADA más del juego
-- Encontrá la variable de score correcta analizando el código
-- Si hay múltiples puntos de game over, agregalo en todos
-- Devolvé el HTML COMPLETO del juego con la línea agregada
-- No agregues comentarios ni explicaciones, solo el HTML`;
+Si no podés determinar la variable de score, usá "0" como scoreVariable.`;
 
   try {
     const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
@@ -82,9 +81,9 @@ REGLAS:
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 16000,
+        max_tokens: 200,
         messages: [
-          { role: 'user', content: prompt + '\n\n' + html.substring(0, 100000) },
+          { role: 'user', content: analysisPrompt + '\n\nCÓDIGO (primeros 30000 caracteres):\n' + html.substring(0, 30000) },
         ],
       }),
     });
@@ -94,15 +93,37 @@ REGLAS:
     }
 
     const aiData = await aiRes.json();
-    let fixedHtml = aiData.content?.[0]?.text || '';
+    const text = aiData.content?.[0]?.text || '';
 
-    const htmlMatch = fixedHtml.match(/```html\s*([\s\S]*?)```/);
-    if (htmlMatch) fixedHtml = htmlMatch[1].trim();
-
-    if (!fixedHtml.includes('GAME_SCORE')) {
-      return NextResponse.json({ error: 'La IA no pudo agregar el score' }, { status: 500 });
+    let analysis;
+    try {
+      analysis = JSON.parse(text.replace(/```json|```/g, '').trim());
+    } catch {
+      analysis = { scoreVariable: '0', gameOverFunction: null };
     }
 
+    const scoreVar = analysis.scoreVariable || '0';
+    const postMessageLine = `\nwindow.parent.postMessage({ type: 'GAME_SCORE', score: ${scoreVar} }, '*');\n`;
+
+    // Insertar el postMessage justo antes de </script> más cercano al final
+    let fixedHtml = html;
+    const lastScriptClose = fixedHtml.lastIndexOf('</script>');
+    if (lastScriptClose > -1) {
+      fixedHtml = fixedHtml.substring(0, lastScriptClose) + postMessageLine + fixedHtml.substring(lastScriptClose);
+    } else {
+      // Si no hay </script>, insertar antes de </body>
+      const bodyClose = fixedHtml.lastIndexOf('</body>');
+      if (bodyClose > -1) {
+        fixedHtml = fixedHtml.substring(0, bodyClose) + '<script>' + postMessageLine + '</script>\n' + fixedHtml.substring(bodyClose);
+      }
+    }
+
+    // Verificar que se insertó
+    if (!fixedHtml.includes('GAME_SCORE')) {
+      return NextResponse.json({ error: 'No se pudo insertar el score reporting' }, { status: 500 });
+    }
+
+    // Subir el HTML fijado a Supabase Storage
     const filename = `game-fix-${gameId}-${Date.now()}.html`;
     const htmlBuffer = Buffer.from(fixedHtml, 'utf-8');
 
@@ -116,12 +137,13 @@ REGLAS:
 
     const { data: urlData } = supabaseAdmin.storage.from('games').getPublicUrl(filename);
 
+    // Actualizar el file_url del juego
     await supabaseAdmin
       .from('games')
       .update({ file_url: urlData.publicUrl })
       .eq('id', gameId);
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, scoreVariable: scoreVar });
   } catch (err) {
     return NextResponse.json({ error: 'Error: ' + err.message }, { status: 500 });
   }

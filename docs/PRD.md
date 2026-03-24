@@ -647,6 +647,12 @@ Tablas principales (todas con RLS habilitado):
 - ✅ Tarjeta "Crea tu juego" en carrusel de Juegos del día (desktop y mobile)
 - ✅ Bottom nav: botón Juegos lleva a /juegos, botón Ver todos en mobile para desbloquear
 - ✅ Pestaña "Mis juegos subidos" visible para alumnos, admins y padres que crearon juegos
+- ✅ Iframe de juegos carga via srcdoc en vez de src URL (fix Content-Type text/plain en mobile)
+- ✅ Three.js hosteado en Supabase Storage (bucket libs/) para juegos 3D
+- ✅ Controles touch nativos en quality-rules: swipe, tap, drag según tipo de juego
+- ✅ Moderación con IA: botón "Analizar con IA" en panel admin, verifica contenido apropiado y score reporting
+- ✅ Fix automático de score reporting: al aprobar un juego sin postMessage, la IA lo agrega al HTML
+- ✅ Email de rechazo al alumno con motivo y link a editar
 - ❌ Descartado: Phaser.js (juegos se truncaban, código demasiado largo)
 - ❌ Descartado: Excalibur.js (requiere TypeScript y bundler)
 - ❌ Descartado: Assets de Kenney (Andy no los usaba, consumían tokens innecesarios)
