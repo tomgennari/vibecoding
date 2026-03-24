@@ -160,6 +160,17 @@ Los usuarios crean juegos con ayuda de la IA dentro de la plataforma y por cuent
 | ALL ACCESS | $300.000 ARS | Cuando haya 100+ juegos |
 | Juego individual - Desbloqueo para todos los usuarios | $50.000 ARS | Desde el día 1 |
 
+**Sistema de packs y créditos — ✅ Implementado:**
+- **Juego individual:** desbloquea 1 juego específico al pagar. Se registra en `game_unlocks`.
+- **Pack 10 / Pack 30:** al pagar, se acreditan N créditos en `profiles.unlock_credits`. El usuario luego elige qué juegos desbloquear uno por uno desde la pantalla de desbloqueo, sin pagar de nuevo.
+- **ALL ACCESS:** setea `profiles.has_all_access = true` permanentemente. Acceso a todos los juegos actuales y futuros sin necesidad de desbloquear individualmente.
+- Los créditos se acumulan: un usuario puede comprar múltiples packs y sumar créditos.
+- El desbloqueo con crédito se hace via endpoint `/api/games/unlock-with-credits` con protección de race condition.
+- Pack 30 solo visible si hay 50+ juegos aprobados; ALL ACCESS solo si hay 100+ juegos aprobados (conteo dinámico via `/api/games/count`).
+- Todas las compras se registran en tabla `pack_purchases` para historial y auditoría.
+- Indicador de créditos disponibles visible en navbar y perfil. Badge "ALL ACCESS" si aplica.
+- Créditos de Andy: +$1.00 USD al comprar cualquier paquete (individual, pack o ALL ACCESS).
+
 **Donaciones directas (solo padres):**
 - Monto elegido por el padre: $20.000 ARS | $100.000 ARS | $200.000 ARS | $500.000 ARS |
 - Los alumnos NO pueden donar — solo compartir por WhatsApp para pedir a sus padres
@@ -399,12 +410,13 @@ Tablas principales (todas con RLS habilitado):
 
 | Tabla | Descripción | Columnas clave |
 |-------|-------------|----------------|
-| `profiles` | Datos de usuario | id, first_name, last_name, email, user_type, house, tokens_used, tokens_limit, is_admin, is_blocked, created_at |
+| `profiles` | Datos de usuario | id, first_name, last_name, email, user_type, house, tokens_used, tokens_limit, unlock_credits, has_all_access, all_access_at, is_admin, is_blocked, created_at |
 | `games` | Juegos publicados | id, title, description, house, file_url, github_url, status, submitted_by, approved_at, show_author, unlocked_for_all, unlocked_for_all_by, unlocked_for_all_at, total_likes, total_revenue, total_plays |
 | `game_sessions` | Sesiones de juego | id, user_id, game_id, started_at, ended_at, duration_seconds |
 | `game_scores` | Puntuaciones | id, user_id, game_id, score, played_at |
 | `game_likes` | Likes | id, user_id, game_id, created_at |
 | `game_unlocks` | Desbloqueos | id, user_id, game_id, amount_paid, payment_id, unlocked_at |
+| `pack_purchases` | Historial de compras de packs | id, user_id, pack_type ('individual'\|'pack_10'\|'pack_30'\|'all_access'), credits_granted, amount_paid, payment_id, purchased_at |
 | `donations` | Donaciones directas | id, user_id, building_id, amount, payment_id, donated_at |
 | `buildings` | Edificios | id, name, target_amount, current_amount, unlock_type |
 | `daily_free_games` | Juegos gratuitos del día | id, game_id, active_date (date\|null), scheduled_for (date\|null), auto_selected (bool) |
@@ -658,6 +670,16 @@ Tablas principales (todas con RLS habilitado):
 - ✅ Email de rechazo al alumno con motivo y link a editar
 - ✅ Guía colapsable de buenas prácticas en página Subir mi juego (controles, score, librerías, reglas)
 - ✅ Botón Expandir movido a barra de acciones junto a Me gusta, Top 10, Compartir
+- ✅ Sistema de packs de desbloqueo: Pack 10 ($40k), Pack 30 ($100k), ALL ACCESS ($300k) con créditos acumulables en `profiles.unlock_credits`
+- ✅ ALL ACCESS permanente: `has_all_access` en profiles, acceso a todos los juegos actuales y futuros
+- ✅ Endpoint `/api/games/unlock-with-credits`: desbloqueo con crédito, protección de race condition
+- ✅ Endpoint `/api/games/count`: conteo de juegos aprobados para activación de packs
+- ✅ Pantalla de desbloqueo con opciones de packs: individual, Pack 10, Pack 30, ALL ACCESS (según umbrales)
+- ✅ Tabla `pack_purchases` para historial de todas las compras (individual + packs)
+- ✅ Badge de créditos/ALL ACCESS en navbar y perfil via UserContext
+- ✅ Página `/pago/exitoso` con flujo diferenciado para packs (redirige a catálogo)
+- ✅ Precio juego individual actualizado de $5.000 a $6.000 ARS
+- ✅ Webhook MercadoPago actualizado: parsea `pack10_`, `pack30_`, `allaccess_` en external_reference, backward compatible con formato legacy
 - ❌ Descartado: Phaser.js (juegos se truncaban, código demasiado largo)
 - ❌ Descartado: Excalibur.js (requiere TypeScript y bundler)
 - ❌ Descartado: Assets de Kenney (Andy no los usaba, consumían tokens innecesarios)
@@ -709,6 +731,15 @@ Tablas principales (todas con RLS habilitado):
 
 Los precios se revisan trimestralmente según inflación.
 
+**Reglas de packs:**
+- Los packs otorgan créditos de desbloqueo en `profiles.unlock_credits` que se gastan uno a uno al elegir juegos
+- ALL ACCESS otorga acceso permanente a todos los juegos actuales y futuros (`profiles.has_all_access = true`)
+- Los créditos se acumulan sin límite: un usuario puede comprar múltiples packs
+- Un usuario con ALL ACCESS no necesita créditos — tiene acceso directo
+- La verificación de acceso sigue este orden: `has_all_access` → `game_unlocks` → `unlocked_for_all` → juego gratuito del día
+- Los umbrales de activación (50+ y 100+ juegos) se validan dinámicamente al crear la preference de MercadoPago
+- El `external_reference` de MercadoPago codifica el tipo: `unlock_userId_gameId` (individual), `pack10_userId`, `pack30_userId`, `allaccess_userId`
+
 ### 9.3 Puntos por House
 
 | Acción | Puntos House |
@@ -752,6 +783,8 @@ Los valores son configurables por el admin.
 | Mar 2026 | Agregado columnas `unlocked_for_all` (bool), `unlocked_for_all_by` (uuid), `unlocked_for_all_at` (timestamptz) a `games` | Desbloquear juego para todos los usuarios |
 | Mar 2026 | Agregado columna `show_author` (bool, default true) a `games` | Opción de privacidad para autores |
 | Mar 2026 | Creada función RPC `get_authors(user_ids UUID[])` con SECURITY DEFINER | Cargar nombres de autores respetando RLS restrictivo de profiles |
+| Mar 2026 | Agregado columnas `unlock_credits` (integer, default 0), `has_all_access` (boolean, default false), `all_access_at` (timestamptz, null) a `profiles` | Sistema de packs de desbloqueo de juegos |
+| Mar 2026 | Creada tabla `pack_purchases` (id, user_id, pack_type, credits_granted, amount_paid, payment_id, purchased_at) con RLS | Historial de compras de packs individuales y grupales |
 
 ---
 
