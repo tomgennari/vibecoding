@@ -4,14 +4,26 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/utils/supabase/client.js';
 import { useUser } from '@/lib/user-context.js';
+import { PRICING } from '@/lib/pricing.js';
 
-const PRICE_INDIVIDUAL = 6000;
 const MIN_PACK_30 = 50;
 const MIN_ALL_ACCESS = 100;
 
+/** Tema oscuro fijo del modal (legible siempre, independiente del modo de la página). */
+const DM = {
+  card: '#13131a',
+  cardInner: '#0f0f14',
+  border: '#2a2a3a',
+  text: '#f1f5f9',
+  textMuted: '#94a3b8',
+  accent: '#a78bfa',
+  gold: '#fde047',
+  goldMuted: '#facc15',
+};
+
 /**
  * Modal de desbloqueo: créditos, individual, packs (MercadoPago).
- * @param {{ isOpen: boolean, onClose: () => void, game: { id: string, title?: string } | null, userCredits: number, hasAllAccess: boolean, isDark?: boolean, onUnlockSuccess?: (game: { id: string, title?: string }) => void }} props
+ * @param {{ isOpen: boolean, onClose: () => void, game: { id: string, title?: string } | null, userCredits: number, hasAllAccess: boolean, onUnlockSuccess?: (game: { id: string, title?: string }) => void }} props
  */
 export function UnlockGameModal({
   isOpen,
@@ -19,7 +31,6 @@ export function UnlockGameModal({
   game,
   userCredits,
   hasAllAccess,
-  isDark = true,
   onUnlockSuccess,
 }) {
   const router = useRouter();
@@ -29,12 +40,6 @@ export function UnlockGameModal({
   const [mpLoading, setMpLoading] = useState(null);
   const [creditLoading, setCreditLoading] = useState(false);
   const [toast, setToast] = useState('');
-
-  const cardBg = isDark ? 'var(--vibe-card)' : '#f8fafc';
-  const border = 'var(--vibe-border)';
-  const text = 'var(--vibe-text)';
-  const textMuted = 'var(--vibe-text-muted)';
-  const accent = 'var(--vibe-accent)';
 
   const loadCount = useCallback(async () => {
     setCountLoading(true);
@@ -120,7 +125,7 @@ export function UnlockGameModal({
               gameId: game.id,
               userId: session.user.id,
               gameTitle: game.title || 'Juego',
-              gamePrice: PRICE_INDIVIDUAL,
+              gamePrice: PRICING.INDIVIDUAL,
               pack_type: 'individual',
             }
           : {
@@ -147,10 +152,12 @@ export function UnlockGameModal({
 
   if (!isOpen || !game) return null;
 
+  const fmt = (n) => PRICING[n] != null ? PRICING[n].toLocaleString('es-AR') : '';
+
   return (
     <div
       className="fixed inset-0 z-[100] flex items-center justify-center p-4"
-      style={{ background: 'rgba(0,0,0,0.75)' }}
+      style={{ background: 'rgba(0,0,0,0.78)' }}
       role="dialog"
       aria-modal="true"
       aria-labelledby="unlock-modal-title"
@@ -158,18 +165,18 @@ export function UnlockGameModal({
       <button type="button" className="absolute inset-0 cursor-default" aria-label="Cerrar" onClick={onClose} />
       <div
         className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl border p-5 shadow-2xl"
-        style={{ background: cardBg, borderColor: border }}
+        style={{ background: DM.card, borderColor: DM.border }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-2 mb-4">
-          <h2 id="unlock-modal-title" className="text-lg font-bold pr-2" style={{ color: text }}>
+          <h2 id="unlock-modal-title" className="text-lg font-bold pr-2" style={{ color: DM.text }}>
             Desbloquear juego
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="text-xl leading-none px-2 py-1 rounded-lg hover:opacity-80"
-            style={{ color: textMuted }}
+            className="text-xl leading-none px-2 py-1 rounded-lg border transition-opacity hover:opacity-90"
+            style={{ color: DM.text, borderColor: DM.border, background: DM.cardInner }}
             aria-label="Cerrar"
           >
             ✕
@@ -187,7 +194,7 @@ export function UnlockGameModal({
 
         {hasAllAccess ? (
           <div className="space-y-4">
-            <p className="text-sm" style={{ color: textMuted }}>
+            <p className="text-sm" style={{ color: DM.textMuted }}>
               Ya tenés ALL ACCESS — podés jugar todos los juegos.
             </p>
             <button
@@ -206,9 +213,9 @@ export function UnlockGameModal({
             {userCredits > 0 && (
               <div
                 className="mb-5 rounded-xl border-2 p-4"
-                style={{ borderColor: accent, background: isDark ? 'rgba(124,58,237,0.12)' : 'rgba(124,58,237,0.08)' }}
+                style={{ borderColor: DM.accent, background: 'rgba(124,58,237,0.18)' }}
               >
-                <p className="text-sm font-bold mb-2" style={{ color: text }}>
+                <p className="text-sm font-bold mb-2" style={{ color: DM.text }}>
                   Tenés {userCredits} crédito{userCredits === 1 ? '' : 's'} disponible{userCredits === 1 ? '' : 's'}
                 </p>
                 <button
@@ -223,7 +230,7 @@ export function UnlockGameModal({
               </div>
             )}
 
-            <p className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: textMuted }}>
+            <p className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: DM.textMuted }}>
               Comprá juegos para el Campus
             </p>
 
@@ -233,15 +240,15 @@ export function UnlockGameModal({
                 disabled={!!mpLoading}
                 onClick={() => startMercadoPago('individual')}
                 className="w-full text-left rounded-xl border p-4 transition-opacity hover:opacity-95 disabled:opacity-50"
-                style={{ borderColor: border, background: isDark ? '#0f0f14' : '#fff' }}
+                style={{ borderColor: DM.border, background: DM.cardInner }}
               >
-                <div className="text-lg font-black" style={{ color: text }}>
-                  Desbloquear este juego — ${PRICE_INDIVIDUAL.toLocaleString('es-AR')}
+                <div className="text-lg font-black" style={{ color: DM.text }}>
+                  Desbloquear este juego — ${fmt('INDIVIDUAL')} ARS
                 </div>
-                <div className="text-xs mt-1 truncate" style={{ color: textMuted }}>
+                <div className="text-xs mt-1 truncate" style={{ color: DM.textMuted }}>
                   {game.title || 'Juego'}
                 </div>
-                {mpLoading === 'individual' && <div className="text-xs mt-2" style={{ color: accent }}>Abriendo MercadoPago…</div>}
+                {mpLoading === 'individual' && <div className="text-xs mt-2" style={{ color: DM.accent }}>Abriendo MercadoPago…</div>}
               </button>
 
               <button
@@ -249,11 +256,11 @@ export function UnlockGameModal({
                 disabled={!!mpLoading}
                 onClick={() => startMercadoPago('pack_10')}
                 className="w-full text-left rounded-xl border p-4 transition-opacity hover:opacity-95 disabled:opacity-50"
-                style={{ borderColor: border, background: isDark ? '#0f0f14' : '#fff' }}
+                style={{ borderColor: DM.border, background: DM.cardInner }}
               >
-                <div className="text-lg font-black" style={{ color: text }}>Pack 10 juegos — $40.000</div>
-                <div className="text-xs mt-1" style={{ color: textMuted }}>$4.000 por juego</div>
-                {mpLoading === 'pack_10' && <div className="text-xs mt-2" style={{ color: accent }}>Abriendo MercadoPago…</div>}
+                <div className="text-lg font-black" style={{ color: DM.text }}>Pack 10 juegos — ${fmt('PACK_10')} ARS</div>
+                <div className="text-xs mt-1" style={{ color: DM.textMuted }}>$4.000 por juego</div>
+                {mpLoading === 'pack_10' && <div className="text-xs mt-2" style={{ color: DM.accent }}>Abriendo MercadoPago…</div>}
               </button>
 
               <button
@@ -261,14 +268,14 @@ export function UnlockGameModal({
                 disabled={!!mpLoading || countLoading || approvedCount < MIN_PACK_30}
                 onClick={() => startMercadoPago('pack_30')}
                 className="w-full text-left rounded-xl border p-4 transition-opacity hover:opacity-95 disabled:opacity-40"
-                style={{ borderColor: border, background: isDark ? '#0f0f14' : '#fff' }}
+                style={{ borderColor: DM.border, background: DM.cardInner }}
               >
-                <div className="text-lg font-black" style={{ color: text }}>Pack 30 juegos — $100.000</div>
-                <div className="text-xs mt-1" style={{ color: textMuted }}>$3.333 por juego</div>
+                <div className="text-lg font-black" style={{ color: DM.text }}>Pack 30 juegos — ${fmt('PACK_30')} ARS</div>
+                <div className="text-xs mt-1" style={{ color: DM.textMuted }}>$3.333 por juego</div>
                 {approvedCount < MIN_PACK_30 && !countLoading && (
-                  <div className="text-xs mt-1" style={{ color: '#eab308' }}>Disponible con 50+ juegos en el catálogo</div>
+                  <div className="text-xs mt-1" style={{ color: DM.goldMuted }}>Disponible con 50+ juegos en el catálogo</div>
                 )}
-                {mpLoading === 'pack_30' && <div className="text-xs mt-2" style={{ color: accent }}>Abriendo MercadoPago…</div>}
+                {mpLoading === 'pack_30' && <div className="text-xs mt-2" style={{ color: DM.accent }}>Abriendo MercadoPago…</div>}
               </button>
 
               <button
@@ -276,14 +283,14 @@ export function UnlockGameModal({
                 disabled={!!mpLoading || countLoading || approvedCount < MIN_ALL_ACCESS}
                 onClick={() => startMercadoPago('all_access')}
                 className="w-full text-left rounded-xl border p-4 transition-opacity hover:opacity-95 disabled:opacity-40"
-                style={{ borderColor: 'rgba(234,179,8,0.45)', background: isDark ? 'rgba(234,179,8,0.08)' : 'rgba(234,179,8,0.06)' }}
+                style={{ borderColor: 'rgba(250,204,21,0.45)', background: 'rgba(234,179,8,0.1)' }}
               >
-                <div className="text-lg font-black" style={{ color: '#eab308' }}>ALL ACCESS — $300.000</div>
-                <div className="text-xs mt-1" style={{ color: textMuted }}>Todos los juegos, para siempre</div>
+                <div className="text-lg font-black" style={{ color: DM.gold }}>ALL ACCESS — ${fmt('ALL_ACCESS')} ARS</div>
+                <div className="text-xs mt-1" style={{ color: DM.textMuted }}>Todos los juegos, para siempre</div>
                 {approvedCount < MIN_ALL_ACCESS && !countLoading && (
-                  <div className="text-xs mt-1" style={{ color: textMuted }}>Disponible con 100+ juegos en el catálogo</div>
+                  <div className="text-xs mt-1" style={{ color: DM.textMuted }}>Disponible con 100+ juegos en el catálogo</div>
                 )}
-                {mpLoading === 'all_access' && <div className="text-xs mt-2" style={{ color: accent }}>Abriendo MercadoPago…</div>}
+                {mpLoading === 'all_access' && <div className="text-xs mt-2" style={{ color: DM.accent }}>Abriendo MercadoPago…</div>}
               </button>
             </div>
           </>

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { MercadoPagoConfig, Preference } from 'mercadopago';
+import { PRICING } from '@/lib/pricing.js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -11,10 +12,6 @@ const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL?.startsWith('http://localhost'
   ? 'https://sass.vibecoding.ar'
   : (process.env.NEXT_PUBLIC_BASE_URL || 'https://sass.vibecoding.ar');
 
-const PRICE_INDIVIDUAL = 6000;
-const PRICE_PACK_10 = 40000;
-const PRICE_PACK_30 = 100000;
-const PRICE_ALL_ACCESS = 300000;
 const MIN_GAMES_PACK_30 = 50;
 const MIN_GAMES_ALL_ACCESS = 100;
 
@@ -105,7 +102,7 @@ export async function POST(request) {
       const cleanTitulo = sanitizeMpTitle(decodeURIComponent(String(gameTitle)));
       const safeTitulo = encodeURIComponent(cleanTitulo);
       const externalReference = `${userId}|${gameId}|unlock_all`;
-      const price = Number(gamePrice) || 50000;
+      const price = Number(gamePrice) || PRICING.UNLOCK_FOR_ALL;
       if (price <= 0) {
         return NextResponse.json({ error: 'Precio inválido' }, { status: 400 });
       }
@@ -172,17 +169,17 @@ export async function POST(request) {
       let packQuery;
 
       if (packType === 'pack_10') {
-        price = PRICE_PACK_10;
+        price = PRICING.PACK_10;
         externalReference = `pack10_${userId}`;
         itemTitle = 'Pack 10 juegos - Campus San Andres';
         packQuery = 'pack_10';
       } else if (packType === 'pack_30') {
-        price = PRICE_PACK_30;
+        price = PRICING.PACK_30;
         externalReference = `pack30_${userId}`;
         itemTitle = 'Pack 30 juegos - Campus San Andres';
         packQuery = 'pack_30';
       } else {
-        price = PRICE_ALL_ACCESS;
+        price = PRICING.ALL_ACCESS;
         externalReference = `allaccess_${userId}`;
         itemTitle = 'ALL ACCESS - Campus San Andres';
         packQuery = 'all_access';
@@ -219,7 +216,7 @@ export async function POST(request) {
       return NextResponse.json({ init_point: initPoint });
     }
 
-    const { gameId, gameTitle, gamePrice } = body;
+    const { gameId, gameTitle } = body;
     if (!gameId || !userId || gameTitle == null) {
       return NextResponse.json({ error: 'Faltan gameId, userId o gameTitle' }, { status: 400 });
     }
@@ -250,7 +247,7 @@ export async function POST(request) {
 
     const cleanTitulo = sanitizeMpTitle(decodeURIComponent(String(gameTitle)));
     const safeTitulo = encodeURIComponent(cleanTitulo);
-    const price = Number(gamePrice) || Number(game.price) || PRICE_INDIVIDUAL;
+    const price = PRICING.INDIVIDUAL;
     if (price <= 0) {
       return NextResponse.json({ error: 'Precio inválido' }, { status: 400 });
     }

@@ -10,6 +10,7 @@ import { useUser } from '@/lib/user-context.js';
 import { DashboardNavbar } from '@/components/dashboard-navbar.js';
 import { MobileBottomNav } from '@/components/mobile-bottom-nav.js';
 import { UnlockGameModal } from '@/components/unlock-game-modal.js';
+import { PRICING } from '@/lib/pricing.js';
 
 const HOUSES = [
   { id: 'william_brown', name: 'William Brown', color: '#3b82f6', image: '/images/houses/house-brown.png' },
@@ -649,7 +650,7 @@ export default function DashboardPage() {
                       onLike={() => handleToggleLike(game.id)}
                     />
                     <p className="text-lg font-black tabular-nums mt-2 flex-shrink-0" style={{ color: accent }}>
-                      ${(Number(game.price) || 6000).toLocaleString('es-AR')} ARS
+                      ${PRICING.INDIVIDUAL.toLocaleString('es-AR')} ARS
                     </p>
                     <button
                       type="button"
@@ -1102,7 +1103,7 @@ export default function DashboardPage() {
                         onLike={() => handleToggleLike(game.id)}
                       />
                       <p className="text-lg font-black tabular-nums mt-2 flex-shrink-0" style={{ color: accent }}>
-                        ${(Number(game.price) || 6000).toLocaleString('es-AR')} ARS
+                        ${PRICING.INDIVIDUAL.toLocaleString('es-AR')} ARS
                       </p>
                       <button
                         type="button"
@@ -1416,7 +1417,6 @@ export default function DashboardPage() {
         game={unlockModalGame}
         userCredits={profile?.unlock_credits ?? 0}
         hasAllAccess={!!profile?.has_all_access}
-        isDark={isDark}
         onUnlockSuccess={(g) => {
           setGamesToUnlock((prev) => prev.filter((x) => x.id !== g.id));
           setUnlockedGames((prev) => (prev.some((x) => x.id === g.id) ? prev : [...prev, g]));

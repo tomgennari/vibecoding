@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { PRICING } from '@/lib/pricing.js';
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -144,7 +145,7 @@ export async function POST(request) {
       file_url: fileUrl,
       status: 'pending',
       submitted_by: user.id,
-      price: 6000,
+      price: PRICING.INDIVIDUAL,
       game_width: 480,
       game_height: 640,
       orientation: 'vertical',

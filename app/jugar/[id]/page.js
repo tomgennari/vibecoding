@@ -461,7 +461,6 @@ export default function JugarPage() {
             game={{ id: game.id, title: game.title }}
             userCredits={unlockCredits}
             hasAllAccess={userHasAllAccess}
-            isDark
             onUnlockSuccess={() => window.location.reload()}
           />
         )}
