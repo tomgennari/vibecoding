@@ -4,6 +4,8 @@
 
 Andy tiene 4 frameworks disponibles para generar juegos. La elección es INTERNA — el alumno nunca ve ni elige el framework. Andy decide según la naturaleza del juego.
 
+**REGLA PRINCIPAL:** Andy SIEMPRE prefiere Canvas 2D puro. Es el framework más confiable, con menos bugs, y Andy lo domina perfecto. Kaplay solo se usa cuando el juego REALMENTE necesita física compleja (gravedad + plataformas + colisiones entre muchas entidades). Si Andy puede resolver la física con código simple en Canvas 2D (gravedad manual, colisiones AABB), lo hace en Canvas 2D.
+
 ---
 
 ## FRAMEWORKS DISPONIBLES
@@ -64,26 +66,19 @@ Andy tiene 4 frameworks disponibles para generar juegos. La elección es INTERNA
 
 Andy sigue esta lógica en orden:
 
-1. **¿El juego necesita física, gravedad, o colisiones complejas?**
-   - SÍ → **Kaplay**
-   - NO → seguir a 2
+1. **¿Puedo hacerlo en Canvas 2D?** — Canvas 2D puede manejar: gravedad simple (velocidadY += gravedad), colisiones rectangulares (AABB), rebotes, movimiento de entidades, partículas, HUD, menús, game over. Si la respuesta es SÍ → **Canvas 2D**
 
 2. **¿El juego es artístico, visual, creativo, o una herramienta de dibujo?**
    - SÍ → **p5.js**
    - NO → seguir a 3
 
-3. **¿El juego es simple, basado en lógica, tablero, quiz, o texto?**
-   - SÍ → **Canvas 2D**
-   - NO → seguir a 4
+3. **¿El juego REALMENTE necesita física compleja que Canvas 2D no puede manejar?** — Esto incluye: múltiples cuerpos físicos interactuando entre sí, colisiones con formas no rectangulares, joints/constraints, ragdoll physics, plataformas móviles con fricción. Solo si la respuesta es SÍ → **Kaplay**
 
-4. **En caso de duda:**
-   - Si tiene plataformas o disparos → **Kaplay**
-   - Si tiene efectos visuales llamativos → **p5.js**
-   - Para todo lo demás → **Canvas 2D**
-
-5. **¿El alumno pide explícitamente algo en 3D?**
-   - SÍ → **Three.js** (pero confirmar que realmente necesita 3D)
+4. **¿El alumno pide explícitamente algo en 3D?**
+   - SÍ → **Three.js**
    - NO → Nunca usar Three.js
+
+5. **En caso de duda → Canvas 2D.** Siempre.
 
 ---
 
@@ -97,11 +92,17 @@ Andy sigue esta lógica en orden:
 | 2048 | Canvas 2D | Lógica pura con animaciones simples |
 | Memory / Memotest | Canvas 2D | Cartas que se dan vuelta, sin física |
 | Breakout / Arkanoid | Canvas 2D | Pelota con rebotes simples, sin gravedad |
-| Plataformer de zombies | Kaplay | Necesita gravedad, plataformas, colisiones |
-| Space shooter | Kaplay | Muchas entidades, disparos, colisiones |
-| Tower defense | Kaplay | Entidades con paths, colisiones, oleadas |
-| Beat'em up | Kaplay | Física, knockback, hitboxes |
-| Flappy bird | Kaplay | Gravedad, colisiones con tubos |
+| Flappy bird | Canvas 2D | Gravedad es una línea de código, colisiones son rectangulares |
+| Space shooter | Canvas 2D | Arrays de balas y enemigos con colisiones AABB |
+| Beat'em up simple | Canvas 2D | Hitboxes rectangulares y knockback manual |
+| Plataformer simple (1-2 plataformas) | Canvas 2D | Gravedad y colisiones AABB son suficientes |
+| Runner / endless runner | Canvas 2D | Scroll infinito + obstáculos + gravedad simple |
+| Escalador / climbing game | Canvas 2D | Click en puntos + stamina + gravedad simple |
+| Frogger / cruzar calle | Canvas 2D | Movimiento en grilla, colisiones simples |
+| Top-down shooter | Canvas 2D | Rotación + arrays de balas + colisiones AABB |
+| Plataformer complejo (muchas entidades, plataformas móviles) | Kaplay | Necesita sistema de física real |
+| Tower defense complejo | Kaplay | Muchas entidades con pathfinding y colisiones circulares |
+| Juego de física tipo Angry Birds | Kaplay | Necesita física de cuerpos rígidos real |
 | Canvas de pintura | p5.js | Herramienta creativa, dibujo libre |
 | Simulación de partículas | p5.js | Efectos visuales, arte generativo |
 | Juego de ritmo visual | p5.js | Sincronización visual con efectos |

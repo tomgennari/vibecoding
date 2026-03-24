@@ -265,3 +265,71 @@ La forma correcta es:
 2. Aplicar en CSS: `canvas { font-family: 'Russo One', sans-serif; }`
 3. Usar text() SIN parámetro font: `text("Hola", { size: 24 })`
 Kaplay hereda la fuente del CSS automáticamente.
+
+**NO pasar canvas manual a kaplay():**
+NUNCA usar `canvas: document.createElement('canvas')` en la config de kaplay(). Dejar que Kaplay cree y agregue su canvas automáticamente. Solo configurar width, height, background, stretch, letterbox y global.
+```javascript
+// ❌ MAL — canvas huérfano que nunca se ve
+kaplay({
+  canvas: document.createElement('canvas'),
+  width: 480,
+  ...
+});
+
+// ✅ BIEN — Kaplay crea el canvas solo
+kaplay({
+  width: 480,
+  height: 640,
+  background: [20, 20, 30],
+  stretch: true,
+  letterbox: true,
+  global: true,
+});
+```
+
+**`radius()` NO es un componente standalone:**
+NUNCA usar `radius(n)` como componente dentro de `add([...])`. El radio se pasa como propiedad de `rect()`.
+```javascript
+// ❌ MAL — radius no existe como componente
+add([
+  rect(100, 40),
+  radius(8),
+  pos(50, 50),
+]);
+
+// ✅ BIEN — radius como propiedad de rect
+add([
+  rect(100, 40, { radius: 8 }),
+  pos(50, 50),
+]);
+```
+
+**Botones clickeables SIEMPRE necesitan `area()`:**
+Si un objeto necesita recibir clicks (como un botón "JUGAR"), SIEMPRE agregar `area()` al array de componentes. Sin `area()`, el onClick no se dispara.
+```javascript
+// ❌ MAL — no tiene area(), el click no funciona
+const btn = add([
+  rect(200, 60, { radius: 12 }),
+  pos(width() / 2, height() / 2),
+  anchor("center"),
+  color(39, 174, 96),
+]);
+btn.onClick(() => go("juego"));
+
+// ✅ BIEN — con area(), el click funciona
+const btn = add([
+  rect(200, 60, { radius: 12 }),
+  pos(width() / 2, height() / 2),
+  anchor("center"),
+  area(),
+  color(39, 174, 96),
+]);
+btn.onClick(() => go("juego"));
+```
+
+**Click/tap global para menú y game over:**
+Además de los botones con area(), SIEMPRE agregar onClick global como fallback para iniciar y reiniciar:
+```javascript
+// En la escena de menú y game over, agregar:
+onClick(() => go("juego", { nivel: 0, score: 0 }));
+```
