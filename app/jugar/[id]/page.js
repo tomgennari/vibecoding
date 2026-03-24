@@ -249,6 +249,8 @@ export default function JugarPage() {
 
   const shareUrl = `${BASE_URL}/jugar/${id}`;
   const shareText = `Jugá ${game?.title || 'este juego'} en Campus San Andrés: ${shareUrl}`;
+  const border = '#2a2a3a';
+  const textMuted = '#94a3b8';
 
   function handleShareWhatsApp() {
     window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, '_blank', 'noopener,noreferrer');
@@ -327,6 +329,14 @@ export default function JugarPage() {
 
   const actionBar = (
     <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-4 px-2 py-3">
+      <button
+        type="button"
+        onClick={toggleFullscreen}
+        className="hidden lg:inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold border transition-colors"
+        style={{ borderColor: border, color: textMuted }}
+      >
+        ⛶ Expandir
+      </button>
       <button
         type="button"
         onClick={handleToggleLike}
@@ -433,17 +443,7 @@ export default function JugarPage() {
         <h1 className="text-sm font-bold truncate mx-2 min-w-0 text-center flex-1" style={{ color: '#f1f5f9' }}>
           {game?.title || 'Juego'}
         </h1>
-        <div className="w-16 shrink-0 flex justify-end">
-          <button
-            type="button"
-            onClick={toggleFullscreen}
-            className="text-sm font-medium px-2 py-1 rounded-lg border border-[#2a2a3a] cursor-pointer hover:opacity-80 transition-colors hidden lg:inline-flex items-center gap-1"
-            style={{ color: '#94a3b8' }}
-            title="Pantalla completa"
-          >
-            {isFullscreen ? '⬜ Salir' : '⛶ Expandir'}
-          </button>
-        </div>
+        <div className="w-16 shrink-0" aria-hidden="true" />
       </header>
 
       {/* Contenido principal */}
