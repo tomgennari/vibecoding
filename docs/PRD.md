@@ -154,10 +154,11 @@ Los usuarios crean juegos con ayuda de la IA dentro de la plataforma y por cuent
 
 | Paquete | Precio | Activación |
 |---------|--------|-----------|
-| Juego individual | $5.000 ARS | Desde el día 1 |
-| Pack 10 juegos | $30.000 ARS | Desde el día 1 |
-| Pack 50 juegos | $100.000 ARS | Cuando haya 50+ juegos |
-| ALL ACCESS | $250.000 ARS | Cuando haya 100+ juegos |
+| Juego individual | $6.000 ARS | Desde el día 1 |
+| Pack 10 juegos | $40.000 ARS | Desde el día 1 |
+| Pack 30 juegos | $100.000 ARS | Cuando haya 50+ juegos |
+| ALL ACCESS | $300.000 ARS | Cuando haya 100+ juegos |
+| Juego individual - Desbloqueo para todos los usuarios | $50.000 ARS | Desde el día 1 |
 
 **Donaciones directas (solo padres):**
 - Monto libre elegido por el padre

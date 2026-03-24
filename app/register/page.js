@@ -18,14 +18,8 @@ const HOUSES = [
 /** Asignación automática en el servidor al house con menos usuarios */
 const RANDOM_HOUSE = {
   id: 'random',
-  label: '🎲 No tengo House',
-  color: '#64748b',
+  label: 'No tengo House',
 };
-
-const HOUSE_OPTIONS = [
-  ...HOUSES.map((h) => ({ type: 'house', ...h })),
-  { type: 'random', id: RANDOM_HOUSE.id, label: RANDOM_HOUSE.label, color: RANDOM_HOUSE.color },
-];
 
 function RegisterContent() {
   const searchParams = useSearchParams();
@@ -336,39 +330,56 @@ function RegisterContent() {
                 <p className="text-sm mb-3" style={{ color: isDark ? '#94a3b8' : '#64748b' }}>
                   Elige tu House (alumnos y padres)
                 </p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 min-w-0">
-                  {HOUSE_OPTIONS.map((h) => {
-                    const selected = house === h.id;
-                    const borderColor = isDark ? '#2a2a3a' : '#e2e8f0';
-                    const isRandom = h.type === 'random';
-                    return (
-                      <button
-                        key={h.id}
-                        type="button"
-                        onClick={() => setHouse(h.id)}
-                        className="min-w-0 rounded-xl border-2 p-4 flex flex-col items-center justify-center gap-2 transition-all outline-none overflow-hidden"
-                        style={{
-                          borderColor: selected ? h.color : borderColor,
-                          background: selected
-                            ? `${h.color}${isRandom ? '22' : '15'}`
-                            : isRandom
-                              ? (isDark ? 'rgba(100,116,139,0.08)' : 'rgba(100,116,139,0.06)')
-                              : 'transparent',
-                        }}
-                      >
-                        {isRandom ? (
-                          <span className="text-4xl leading-none" aria-hidden>
-                            🎲
-                          </span>
-                        ) : (
+                <div className="space-y-3 min-w-0">
+                  <div className="grid grid-cols-2 gap-3 min-w-0">
+                    {HOUSES.map((h) => {
+                      const selected = house === h.id;
+                      const borderColor = isDark ? '#2a2a3a' : '#e2e8f0';
+                      return (
+                        <button
+                          key={h.id}
+                          type="button"
+                          onClick={() => setHouse(h.id)}
+                          className="min-w-0 rounded-xl border-2 p-4 flex flex-col items-center justify-center gap-2 transition-all outline-none overflow-hidden"
+                          style={{
+                            borderColor: selected ? h.color : borderColor,
+                            background: selected ? `${h.color}15` : 'transparent',
+                          }}
+                        >
                           <Image src={h.image} alt={h.name} width={48} height={48} className="flex-shrink-0 object-contain" />
-                        )}
-                        <span className="text-xs font-bold text-center break-words min-w-0 w-full" style={{ color: selected ? h.color : (isDark ? '#94a3b8' : '#64748b') }}>
-                          {isRandom ? h.label : h.name}
-                        </span>
-                      </button>
-                    );
-                  })}
+                          <span className="text-xs font-bold text-center break-words min-w-0 w-full" style={{ color: selected ? h.color : (isDark ? '#94a3b8' : '#64748b') }}>
+                            {h.name}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setHouse(RANDOM_HOUSE.id)}
+                    className="w-full flex flex-col items-stretch rounded-xl border-2 px-4 py-2.5 text-sm font-semibold transition-all outline-none min-h-0"
+                    style={{
+                      borderColor: house === RANDOM_HOUSE.id
+                        ? '#7c3aed'
+                        : (isDark ? '#2a2a3a' : '#e2e8f0'),
+                      background: house === RANDOM_HOUSE.id
+                        ? (isDark ? 'rgba(124, 58, 237, 0.12)' : 'rgba(124, 58, 237, 0.08)')
+                        : (isDark ? 'rgba(100, 116, 139, 0.06)' : 'rgba(100, 116, 139, 0.04)'),
+                      color: house === RANDOM_HOUSE.id
+                        ? (isDark ? '#c4b5fd' : '#7c3aed')
+                        : (isDark ? '#94a3b8' : '#64748b'),
+                    }}
+                  >
+                    <div className="flex items-center justify-center gap-3">
+                      <span className="text-lg leading-none flex-shrink-0" aria-hidden>
+                        🎲
+                      </span>
+                      <span>{RANDOM_HOUSE.label}</span>
+                    </div>
+                    <span className="text-xs text-center mt-1 font-normal" style={{ color: '#64748b' }}>
+                      Se te asignará uno automáticamente
+                    </span>
+                  </button>
                 </div>
               </div>
 
