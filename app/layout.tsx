@@ -29,6 +29,14 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Campus San Andrés — Vibe Coding",
   description: "Plataforma de fundraising gamificado para St. Andrew's Scots School",
+  robots: {
+    index: false,
+    follow: false,
+    googleBot: {
+      index: false,
+      follow: false,
+    },
+  },
 };
 
 export default function RootLayout({
