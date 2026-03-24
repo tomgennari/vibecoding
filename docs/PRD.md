@@ -1,5 +1,5 @@
 # Campus San Andrés — Vibe Coding San Andrés
-## Product Requirements Document (PRD) v3.5
+## Product Requirements Document (PRD) v3.6
 
 **Fecha:** Marzo 2026  
 **Autor:** Tomás Gennari  
@@ -17,7 +17,7 @@ Campus San Andrés / Vibe Coding San Andrés es una plataforma web de fundraisin
 1. Recaudar fondos para la construcción del Campus unificado en San Fernando
 2. Introducir a los alumnos de todos los niveles en el mundo del vibe-coding, permitiéndoles crear y publicar sus propios videojuegos
 
-Los usuarios desbloquean juegos mediante pagos en pesos argentinos vía MercadoPago. Los padres además pueden realizar donaciones directas para edificios. Todo el dinero va íntegramente a la construcción del campus. La competencia se organiza alrededor del sistema de Houses del colegio.
+Los usuarios crean juegos con ayuda de la IA dentro de la plataforma y por cuenta propia, y los pueden subir a la plataforma. Los usuarios luego desbloquean juegos mediante pagos en pesos argentinos vía MercadoPago. Los padres además pueden acceder a las mismas funciones y además realizar donaciones directas para edificios. Todo el dinero va íntegramente a la construcción del campus. La competencia se organiza alrededor del sistema de Houses del colegio.
 
 ---
 
@@ -37,15 +37,17 @@ Los usuarios desbloquean juegos mediante pagos en pesos argentinos vía MercadoP
 | Web oficial | sanandres.esc.edu.ar |
 | Campaña oficial | sasscampus.com |
 
-### 2.2 Los Edificios a Construir
+### 2.2 Los Edificios ya Construidos y a Construir
 
-- Natatorio
-- Community Hub (en construcción actualmente)
+- Kinder (ya construido)
+- Primaria (ya construido)
+- Sports Pavilion (ya construido)
+- Natatorio (en construcción actualmente)
+- Community Hub
 - Colegio Secundario unificado
 - Dining Hall – Gimnasio – Auditorio
 - Performing Arts Center
-- Sports Pavilion
-- El Barco Symmetry (elemento histórico — los fundadores escoceses llegaron en este barco)
+- El Barco Symmetry (elemento de fantasía histórico, solo referenciado en esta plataforma — los fundadores del colegio, escoceses, llegaron en este barco a la Argentina)
 
 ### 2.3 El Sistema de Houses
 
@@ -69,9 +71,9 @@ Los usuarios desbloquean juegos mediante pagos en pesos argentinos vía MercadoP
 - **PUEDEN:** jugar juegos gratuitos del día
 - **PUEDEN:** comprar/desbloquear juegos individuales o en paquetes con MercadoPago
 - **PUEDEN:** subir sus propios juegos creados con vibe-coding
+- **PUEDEN:** crear sus propios juegos dentro de la plataforma con la ayuda de Andy, nuestra IA.
 - **PUEDEN:** ver los resultados y el progreso de las donaciones
-- **PUEDEN:** enviar emojis a otros usuarios dentro del campus 3D (Fase 4)
-- **NO PUEDEN:** realizar donaciones directas
+- **NO PUEDEN:** realizar donaciones directas (solo los padres pueden hacer esto)
 - **NO PUEDEN:** chat de texto, comentarios ni mensajes de ningún tipo
 - **BOTÓN COMPARTIR:** en juegos y edificios, pueden compartir por WhatsApp para pedir a sus padres que donen
 
@@ -92,7 +94,7 @@ Los usuarios desbloquean juegos mediante pagos en pesos argentinos vía MercadoP
 - Aprueba o rechaza juegos con mensaje al alumno
 - Gestión completa de usuarios: alta, baja, modificación, bloqueo
 - Acceso a todas las métricas y reportes de recaudación
-- Configura los 2-3 juegos gratuitos del día (manualmente o automático)
+- Configura los 3 juegos gratuitos del día (manualmente o automático)
 - Activa o desactiva paquetes de juegos según volumen disponible
 - En fases futuras: el colegio tendrá su propio administrador
 
@@ -119,7 +121,7 @@ Los usuarios desbloquean juegos mediante pagos en pesos argentinos vía MercadoP
 ### 4.2 Sistema de Juegos
 
 **Acceso:**
-- 2-3 juegos gratuitos por día para todos los usuarios
+- 3 juegos gratuitos por día para todos los usuarios
 - Todos los demás requieren compra/desbloqueo
 - Los juegos desbloqueados quedan disponibles permanentemente para ese usuario
 - Todos se ejecutan en iframe sandboxeado
@@ -515,7 +517,7 @@ Tablas principales (todas con RLS habilitado):
 - [x] Panel de admin con dashboard, rankings de Houses, gestión de juegos del día
 - [x] API routes de admin protegidas por sesión y rol is_admin
 - [ ] Integración MercadoPago — precio fijo $5.000 por juego
-- [ ] Scoreboard básico
+- [x] Scoreboard básico
 - [ ] Deploy estable en sass.vibecoding.ar
 
 ### Fase 2 — Comunidad (4-6 semanas)
@@ -524,11 +526,12 @@ Tablas principales (todas con RLS habilitado):
 - [x] Panel de moderación para el admin
 - [x] Sistema de likes — con fix de sincronización via service role
 - [x] Emails automáticos: aprobación de juegos al alumno (Resend), notificación al admin de juegos nuevos y actualizados
+- [x] Email de bienvenida al registrarse
+- [x] Email de rechazo al alumno con motivo y link a editar
 - [x] Botón compartir por WhatsApp — en perfil y en email de aprobación
 - [ ] Dashboard de recaudación por edificio con barras de progreso
 - [ ] Activación de paquetes de juegos
 - [ ] Sentry para logging de errores
-- [ ] Emails automáticos: bienvenida, rechazo
 
 ### Fase 2.5 — Generador de Juegos con IA (2-3 semanas)
 
@@ -651,8 +654,10 @@ Tablas principales (todas con RLS habilitado):
 - ✅ Three.js hosteado en Supabase Storage (bucket libs/) para juegos 3D
 - ✅ Controles touch nativos en quality-rules: swipe, tap, drag según tipo de juego
 - ✅ Moderación con IA: botón "Analizar con IA" en panel admin, verifica contenido apropiado y score reporting
-- ✅ Fix automático de score reporting: al aprobar un juego sin postMessage, la IA lo agrega al HTML
+- ✅ Badge "Creado con Andy" / "Subido como HTML" en modal admin — análisis IA solo para HTML subidos
 - ✅ Email de rechazo al alumno con motivo y link a editar
+- ✅ Guía colapsable de buenas prácticas en página Subir mi juego (controles, score, librerías, reglas)
+- ✅ Botón Expandir movido a barra de acciones junto a Me gusta, Top 10, Compartir
 - ❌ Descartado: Phaser.js (juegos se truncaban, código demasiado largo)
 - ❌ Descartado: Excalibur.js (requiere TypeScript y bundler)
 - ❌ Descartado: Assets de Kenney (Andy no los usaba, consumían tokens innecesarios)
@@ -661,13 +666,13 @@ Tablas principales (todas con RLS habilitado):
 
 ### Fase 3 — Gamificación (4-6 semanas)
 
-- [ ] Sistema de puntos individuales y por House
-- [ ] Leaderboards entre Houses
+- [x] Sistema de puntos individuales y por House
+- [x] Leaderboards entre Houses
 - [x] High scores por juego — Top 10 por juego con modal, guardado automático via postMessage
 - [x] Script de detección y captura de puntajes HTML5 — game_scores se inserta al recibir GAME_SCORE postMessage
+- [x] Donaciones directas de padres para edificios
 - [ ] Soporte para juegos de Secundaria vía GitHub
 - [ ] Insignias y logros
-- [ ] Donaciones directas de padres para edificios
 
 ### Fase 4 — Campus 3D (3-6 meses)
 

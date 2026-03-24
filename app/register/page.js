@@ -15,6 +15,18 @@ const HOUSES = [
   { id: 'john_monteith', name: 'John Monteith', color: '#22c55e', image: '/images/houses/house-monteith.png' },
 ];
 
+/** Asignación automática en el servidor al house con menos usuarios */
+const RANDOM_HOUSE = {
+  id: 'random',
+  label: '🎲 No tengo House',
+  color: '#64748b',
+};
+
+const HOUSE_OPTIONS = [
+  ...HOUSES.map((h) => ({ type: 'house', ...h })),
+  { type: 'random', id: RANDOM_HOUSE.id, label: RANDOM_HOUSE.label, color: RANDOM_HOUSE.color },
+];
+
 function RegisterContent() {
   const searchParams = useSearchParams();
   const [theme, , toggleTheme] = useAuthTheme();
@@ -67,19 +79,51 @@ function RegisterContent() {
       }
 
       if (authData?.user) {
-        const { error: profileError } = await supabase.from('profiles').insert({
-          id: authData.user.id,
-          first_name: firstName,
-          last_name: lastName,
-          email,
-          user_type: userType,
-          house,
-        });
-
-        if (profileError) {
-          setError('Cuenta creada pero hubo un error al guardar el perfil: ' + profileError.message);
-        } else {
+        const accessToken = authData.session?.access_token;
+        if (accessToken) {
+          const res = await fetch('/api/register-profile', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${accessToken}`,
+            },
+            body: JSON.stringify({
+              first_name: firstName,
+              last_name: lastName,
+              email,
+              user_type: userType,
+              house,
+            }),
+          });
+          const json = await res.json().catch(() => ({}));
+          if (!res.ok) {
+            setError(json.error || 'Error al guardar el perfil.');
+            setLoading(false);
+            return;
+          }
           setSuccess(true);
+        } else {
+          if (house === 'random') {
+            setError(
+              'No podemos asignar un House aleatorio hasta que confirmes tu correo. Elegí una House concreta o registrate de nuevo cuando tengas sesión.',
+            );
+            setLoading(false);
+            return;
+          }
+          const { error: profileError } = await supabase.from('profiles').insert({
+            id: authData.user.id,
+            first_name: firstName,
+            last_name: lastName,
+            email,
+            user_type: userType,
+            house,
+          });
+
+          if (profileError) {
+            setError('Cuenta creada pero hubo un error al guardar el perfil: ' + profileError.message);
+          } else {
+            setSuccess(true);
+          }
         }
       }
     } catch (err) {
@@ -292,10 +336,11 @@ function RegisterContent() {
                 <p className="text-sm mb-3" style={{ color: isDark ? '#94a3b8' : '#64748b' }}>
                   Elige tu House (alumnos y padres)
                 </p>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 min-w-0">
-                  {HOUSES.map((h) => {
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 min-w-0">
+                  {HOUSE_OPTIONS.map((h) => {
                     const selected = house === h.id;
                     const borderColor = isDark ? '#2a2a3a' : '#e2e8f0';
+                    const isRandom = h.type === 'random';
                     return (
                       <button
                         key={h.id}
@@ -304,12 +349,22 @@ function RegisterContent() {
                         className="min-w-0 rounded-xl border-2 p-4 flex flex-col items-center justify-center gap-2 transition-all outline-none overflow-hidden"
                         style={{
                           borderColor: selected ? h.color : borderColor,
-                          background: selected ? `${h.color}15` : 'transparent',
+                          background: selected
+                            ? `${h.color}${isRandom ? '22' : '15'}`
+                            : isRandom
+                              ? (isDark ? 'rgba(100,116,139,0.08)' : 'rgba(100,116,139,0.06)')
+                              : 'transparent',
                         }}
                       >
-                        <Image src={h.image} alt={h.name} width={48} height={48} className="flex-shrink-0 object-contain" />
+                        {isRandom ? (
+                          <span className="text-4xl leading-none" aria-hidden>
+                            🎲
+                          </span>
+                        ) : (
+                          <Image src={h.image} alt={h.name} width={48} height={48} className="flex-shrink-0 object-contain" />
+                        )}
                         <span className="text-xs font-bold text-center break-words min-w-0 w-full" style={{ color: selected ? h.color : (isDark ? '#94a3b8' : '#64748b') }}>
-                          {h.name}
+                          {isRandom ? h.label : h.name}
                         </span>
                       </button>
                     );
