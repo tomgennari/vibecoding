@@ -201,7 +201,7 @@ export default function JuegosPage() {
         router.replace('/login');
         return;
       }
-      const gamePrice = Number(game.price) || 5000;
+      const gamePrice = Number(game.price) || 6000;
       const res = await fetch('/api/mp/crear-preferencia', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
@@ -508,7 +508,7 @@ export default function JuegosPage() {
                     </span>
                   ) : (
                     <span className="text-sm font-black" style={{ color: '#7c3aed' }}>
-                      ${formatArs(Number(game.price) || 5000)} ARS
+                      ${formatArs(Number(game.price) || 6000)} ARS
                     </span>
                   )}
                 </div>

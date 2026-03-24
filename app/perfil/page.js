@@ -314,7 +314,12 @@ export default function PerfilPage() {
               <div className="inline-flex items-center gap-2 mt-2 px-3 py-1.5 rounded-lg border" style={{ borderColor: userHouseMeta.color, background: `${userHouseMeta.color}15` }}>
                 <span className="text-sm font-bold" style={{ color: userHouseMeta.color }}>{userHouseMeta.name}</span>
               </div>
-              <p className="mt-3 text-sm" style={{ color: textMuted }}>{profile.user_type === 'padre' ? 'Padre' : 'Alumno'}</p>
+              {profile?.has_all_access ? (
+                <p className="mt-3 text-sm font-bold" style={{ color: '#eab308' }}>🌟 ALL ACCESS — acceso a todos los juegos</p>
+              ) : (profile?.unlock_credits ?? 0) > 0 ? (
+                <p className="mt-3 text-sm font-bold" style={{ color: accent }}>🎮 {profile.unlock_credits} créditos de desbloqueo disponibles</p>
+              ) : null}
+              <p className="mt-2 text-sm" style={{ color: textMuted }}>{profile.user_type === 'padre' ? 'Padre' : 'Alumno'}</p>
               <p className="text-xs mt-1" style={{ color: textMuted }}>Miembro desde {formatDate(profile.created_at)}</p>
               <hr className="my-4" style={{ borderColor: border }} />
               <div className="space-y-3 text-left">

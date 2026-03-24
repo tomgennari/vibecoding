@@ -283,7 +283,7 @@ export default function DashboardPage() {
         router.replace('/login');
         return;
       }
-      const gamePrice = Number(game.price) || 5000;
+      const gamePrice = Number(game.price) || 6000;
       const res = await fetch('/api/mp/crear-preferencia', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
@@ -676,7 +676,7 @@ export default function DashboardPage() {
                       onLike={() => handleToggleLike(game.id)}
                     />
                     <p className="text-lg font-black tabular-nums mt-2 flex-shrink-0" style={{ color: accent }}>
-                      ${(Number(game.price) || 5000).toLocaleString('es-AR')} ARS
+                      ${(Number(game.price) || 6000).toLocaleString('es-AR')} ARS
                     </p>
                     <button
                       type="button"
@@ -1140,7 +1140,7 @@ export default function DashboardPage() {
                         onLike={() => handleToggleLike(game.id)}
                       />
                       <p className="text-lg font-black tabular-nums mt-2 flex-shrink-0" style={{ color: accent }}>
-                        ${(Number(game.price) || 5000).toLocaleString('es-AR')} ARS
+                        ${(Number(game.price) || 6000).toLocaleString('es-AR')} ARS
                       </p>
                       <button
                         type="button"

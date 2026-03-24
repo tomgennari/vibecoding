@@ -45,15 +45,16 @@ export async function GET(request, context) {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('is_admin')
+    .select('is_admin, has_all_access')
     .eq('id', user.id)
     .single();
 
   // Si es admin o es el creador del juego, tiene acceso directo sin verificar desbloqueos
   const isAdmin = !!profile?.is_admin;
   const isCreator = game.submitted_by === user.id;
+  const hasAllAccess = !!profile?.has_all_access;
 
-  if (!isAdmin && !isCreator) {
+  if (!isAdmin && !isCreator && !hasAllAccess) {
     // Si está desbloqueado para todos, dar acceso directo
     if (game.unlocked_for_all) {
       // acceso permitido, no hacer nada

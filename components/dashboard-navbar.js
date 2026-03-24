@@ -74,6 +74,15 @@ export function DashboardNavbar({ theme, onToggleTheme, onLogout }) {
         </Link>
 
         <div className="flex-1 flex items-center justify-center gap-6 min-w-0">
+          {profile?.has_all_access ? (
+            <span className="text-xs font-bold px-2.5 py-1 rounded-full whitespace-nowrap" style={{ color: '#eab308', background: 'rgba(234,179,8,0.15)', border: '1px solid rgba(234,179,8,0.35)' }}>
+              🌟 ALL ACCESS
+            </span>
+          ) : (profile?.unlock_credits ?? 0) > 0 ? (
+            <span className="text-xs font-bold px-2.5 py-1 rounded-full whitespace-nowrap" style={{ color: accent, background: `${accent}18`, border: `1px solid ${accent}40` }}>
+              🎮 {profile.unlock_credits} créditos disponibles
+            </span>
+          ) : null}
           <div className="flex items-center gap-1.5 flex-shrink-0">
             <span className="text-sm font-black tabular-nums" style={{ color: accent }}>{statValues.juegos}</span>
             <span className="text-xs font-medium whitespace-nowrap" style={{ color: textMuted }}>{STATS_KEYS[0].label}</span>
@@ -135,10 +144,15 @@ export function DashboardNavbar({ theme, onToggleTheme, onLogout }) {
         className="lg:hidden flex-shrink-0 flex items-center px-3 h-12 border-b"
         style={{ background: cardBg, borderColor: border }}
       >
-        <div className="flex-1 min-w-0 flex items-center justify-start">
+        <div className="flex-1 min-w-0 flex items-center justify-start gap-2">
           <Link href="/dashboard" className="flex items-center transition-opacity hover:opacity-90" aria-label="Campus San Andrés">
             <Image src="/images/logo-sass.png" alt="Campus San Andrés" width={28} height={28} className="object-contain flex-shrink-0" />
           </Link>
+          {profile?.has_all_access ? (
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md max-w-[100px] truncate" style={{ color: '#eab308', background: 'rgba(234,179,8,0.15)' }}>🌟 ALL ACCESS</span>
+          ) : (profile?.unlock_credits ?? 0) > 0 ? (
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md max-w-[90px] truncate" style={{ color: accent }}>🎮 {profile.unlock_credits}</span>
+          ) : null}
         </div>
         <Link href="/perfil" className="flex items-center gap-2 px-2 py-1 rounded-lg border min-w-0 flex-shrink-0 overflow-hidden mx-1" style={{ borderColor: userHouseMeta.color, background: `${userHouseMeta.color}15` }}>
           <Image src={userHouseMeta.image} alt={userHouseMeta.name} width={24} height={24} className="flex-shrink-0 object-contain" />

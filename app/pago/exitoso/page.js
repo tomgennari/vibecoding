@@ -12,6 +12,7 @@ function ExitosoContent() {
   const [theme, , toggleTheme] = useAuthTheme();
   const gameId = searchParams.get('gameId');
   const gameTitle = searchParams.get('gameTitle') || 'el juego';
+  const pack = searchParams.get('pack');
 
   const isDark = theme === 'dark';
   const bg = isDark ? '#0a0a0f' : '#ffffff';
@@ -31,18 +32,31 @@ function ExitosoContent() {
             </svg>
           </div>
           <h1 className="text-2xl font-bold tracking-tight" style={{ color: text }}>¡Pago exitoso!</h1>
-          <p className="mt-2 text-base" style={{ color: textMuted }}>
-            Desbloqueaste <strong style={{ color: text }}>{decodeURIComponent(gameTitle)}</strong> correctamente.
-          </p>
+          {pack ? (
+            <p className="mt-2 text-base" style={{ color: textMuted }}>
+              Tu compra se registró correctamente. Los créditos o el acceso ALL ACCESS ya están activos en tu cuenta.
+            </p>
+          ) : (
+            <p className="mt-2 text-base" style={{ color: textMuted }}>
+              Desbloqueaste <strong style={{ color: text }}>{decodeURIComponent(gameTitle)}</strong> correctamente.
+            </p>
+          )}
           <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
-            {gameId && (
+            {pack ? (
+              <Link
+                href="/juegos"
+                className="vibe-btn-gradient inline-flex items-center justify-center rounded-xl px-6 py-3 font-bold text-white"
+              >
+                Ir al catálogo de juegos
+              </Link>
+            ) : gameId ? (
               <Link
                 href={`/jugar/${gameId}`}
                 className="vibe-btn-gradient inline-flex items-center justify-center rounded-xl px-6 py-3 font-bold text-white"
               >
                 Jugar ahora
               </Link>
-            )}
+            ) : null}
             <Link
               href="/dashboard"
               className="inline-flex items-center justify-center rounded-xl px-6 py-3 font-bold border transition-colors"

@@ -144,7 +144,7 @@ export async function POST(request) {
       file_url: fileUrl,
       status: 'pending',
       submitted_by: user.id,
-      price: 5000,
+      price: 6000,
       game_width: 480,
       game_height: 640,
       orientation: 'vertical',

@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { HOUSES, ADMIN_THEME } from '../constants.js';
 
-const DEFAULT_PRICE = 5000;
+const DEFAULT_PRICE = 6000;
 const DEFAULT_WIDTH = 800;
 const DEFAULT_HEIGHT = 600;
 

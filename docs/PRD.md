@@ -699,12 +699,13 @@ Tablas principales (todas con RLS habilitado):
 
 ### 9.2 Precios
 
-| Producto | Precio | Condición de activación |
-|----------|--------|------------------------|
-| Juego individual | $5.000 ARS | Desde el día 1 |
-| Pack 10 juegos | $30.000 ARS | Desde el día 1 |
-| Pack 50 juegos | $100.000 ARS | Cuando haya 50+ juegos disponibles |
-| ALL ACCESS | $250.000 ARS | Cuando haya 100+ juegos disponibles |
+| Paquete | Precio | Activación |
+|---------|--------|-----------|
+| Juego individual | $6.000 ARS | Desde el día 1 |
+| Pack 10 juegos | $40.000 ARS | Desde el día 1 |
+| Pack 30 juegos | $100.000 ARS | Cuando haya 50+ juegos |
+| ALL ACCESS | $300.000 ARS | Cuando haya 100+ juegos |
+| Juego individual - Desbloqueo para todos los usuarios | $50.000 ARS | Desde el día 1 |
 
 Los precios se revisan trimestralmente según inflación.
 
