@@ -161,8 +161,7 @@ Los usuarios crean juegos con ayuda de la IA dentro de la plataforma y por cuent
 | Juego individual - Desbloqueo para todos los usuarios | $50.000 ARS | Desde el día 1 |
 
 **Donaciones directas (solo padres):**
-- Monto libre elegido por el padre
-- Se asignan al edificio que el padre elija
+- Monto elegido por el padre: $20.000 ARS | $100.000 ARS | $200.000 ARS | $500.000 ARS |
 - Los alumnos NO pueden donar — solo compartir por WhatsApp para pedir a sus padres
 - Todo el dinero (compras + donaciones) va al mismo fondo de construcción
 
@@ -536,12 +535,12 @@ Tablas principales (todas con RLS habilitado):
 
 ### Fase 2.5 — Generador de Juegos con IA (2-3 semanas)
 
-- [ ] Integración con API de Anthropic (Claude) dentro de la plataforma
+- [x] Integración con API de Anthropic (Claude) dentro de la plataforma
 - Espacio dedicado llamado "SASS Vibe Coding — Game Lab"
 - URL: /game-lab
 - Accesible desde el modal "Crea tu juego" existente
 - Es el espacio principal donde los alumnos describen y generan sus juegos con IA
-- [ ] El usuario describe el juego en lenguaje natural y Claude genera el HTML5 completo
+- [x] El usuario describe el juego en lenguaje natural y Claude genera el HTML5 completo
 - [x] Sistema de límite de tokens por usuario (columnas `tokens_used` y `tokens_limit` en profiles) — ✅ Implementado como "Créditos de Andy"
 - Límite de créditos por usuario: USD 1.00
 - Acceso al Game Lab:
@@ -556,10 +555,10 @@ Tablas principales (todas con RLS habilitado):
 - Cuando los créditos se agotan: Andy muestra mensaje amigable invitando a desbloquear juegos del catálogo
 - Columnas en tabla `profiles`: `tokens_used` (DECIMAL, default 0) y `tokens_limit` (DECIMAL, default 1.00) — ambas en USD
 - El panel de admin permite ver consumo por usuario y ajustar límites individualmente
-- [ ] El juego generado va directo al flujo de moderación existente
-- [ ] Panel de admin para ver consumo de tokens y ajustar límites
-- [ ] Costo operativo: ~$0.01-0.05 USD por juego generado, sin suscripción mensual
-- [ ] Diferencial clave para el pitch: democratiza la creación para familias sin conocimientos técnicos
+- [x] El juego generado va directo al flujo de moderación existente
+- [x] Panel de admin para ver consumo de tokens y ajustar límites
+- [x] Costo operativo: ~$0.10-0.50 USD por juego generado, sin suscripción mensual
+- [x] Diferencial clave para el pitch: democratiza la creación para familias sin conocimientos técnicos
 - Interfaz del generador: modal existente "Crea tu juego" con opción "Generar con IA"
 - Layout desktop: chat a la izquierda, iframe con previsualización del juego en vivo a la derecha
 - Layout mobile: chat con fullscreen overlay para juegos. Cuando Andy genera un juego, se abre automáticamente en pantalla completa con botón "Salir del juego". Botones de acción unificados debajo del input: "Jugá tu juego", "Enviar a moderación", "Crear otro juego".

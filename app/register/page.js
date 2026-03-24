@@ -97,27 +97,25 @@ function RegisterContent() {
           }
           setSuccess(true);
         } else {
-          if (house === 'random') {
-            setError(
-              'No podemos asignar un House aleatorio hasta que confirmes tu correo. Elegí una House concreta o registrate de nuevo cuando tengas sesión.',
-            );
+          const res = await fetch('/api/register-profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: authData.user.id,
+              email,
+              first_name: firstName,
+              last_name: lastName,
+              user_type: userType,
+              house,
+            }),
+          });
+          const json = await res.json().catch(() => ({}));
+          if (!res.ok) {
+            setError(json.error || 'Error al guardar el perfil.');
             setLoading(false);
             return;
           }
-          const { error: profileError } = await supabase.from('profiles').insert({
-            id: authData.user.id,
-            first_name: firstName,
-            last_name: lastName,
-            email,
-            user_type: userType,
-            house,
-          });
-
-          if (profileError) {
-            setError('Cuenta creada pero hubo un error al guardar el perfil: ' + profileError.message);
-          } else {
-            setSuccess(true);
-          }
+          setSuccess(true);
         }
       }
     } catch (err) {

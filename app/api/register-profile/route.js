@@ -1,57 +1,29 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { VALID_HOUSES } from '@/lib/house-resolve-server.js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-/** Mismos valores que en la UI; nunca persistir "random" en la DB */
-const VALID_HOUSES = ['william_brown', 'james_dodds', 'james_fleming', 'john_monteith'];
-
-/**
- * Cuenta usuarios por house (equiv. a GROUP BY; excluye null y "random").
- * Elige el house con menor cantidad; si hay empate, uno al azar entre los empatados.
- */
-async function resolveLeastPopulatedHouse(supabaseAdmin) {
-  const counts = await Promise.all(
-    VALID_HOUSES.map(async (h) => {
-      const { count, error } = await supabaseAdmin
-        .from('profiles')
-        .select('*', { count: 'exact', head: true })
-        .eq('house', h);
-      if (error) throw error;
-      return { house: h, count: count ?? 0 };
-    }),
-  );
-  const minCount = Math.min(...counts.map((c) => c.count));
-  const candidates = counts.filter((c) => c.count === minCount).map((c) => c.house);
-  return candidates[Math.floor(Math.random() * candidates.length)];
-}
-
 function isValidHouseField(house) {
   return house === 'random' || VALID_HOUSES.includes(house);
 }
 
+function normalizeEmail(e) {
+  return typeof e === 'string' ? e.trim().toLowerCase() : '';
+}
+
 /**
  * POST /api/register-profile
- * Crea el perfil tras el signup. Si house === "random", asigna el house con menos usuarios.
- * Requiere Authorization: Bearer <session.access_token>
+ * Crea el perfil tras el signup. house puede ser "random" (se resuelve en el primer login).
+ *
+ * Con Authorization: Bearer <session.access_token> — inserta para el usuario del JWT.
+ * Sin Authorization — body debe incluir userId + email; se verifica con auth.admin.getUserById (sin sesión, p. ej. confirmación por email).
  */
 export async function POST(request) {
   if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceKey) {
     return NextResponse.json({ error: 'Configuración del servidor incompleta' }, { status: 500 });
-  }
-
-  const authHeader = request.headers.get('authorization');
-  const token = authHeader?.replace(/^Bearer\s+/i, '');
-  if (!token) {
-    return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-  }
-
-  const supabaseAnon = createClient(supabaseUrl, supabaseAnonKey);
-  const { data: { user }, error: authError } = await supabaseAnon.auth.getUser(token);
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Sesión inválida o expirada' }, { status: 401 });
   }
 
   let body;
@@ -78,31 +50,49 @@ export async function POST(request) {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  let houseResolved = houseRaw;
-  if (houseRaw === 'random') {
-    try {
-      houseResolved = await resolveLeastPopulatedHouse(supabaseAdmin);
-    } catch (e) {
-      console.error('register-profile resolve house:', e);
-      return NextResponse.json({ error: 'No se pudo asignar un House' }, { status: 500 });
+  const authHeader = request.headers.get('authorization');
+  const token = authHeader?.replace(/^Bearer\s+/i, '');
+
+  let targetUserId;
+
+  if (token) {
+    const supabaseAnon = createClient(supabaseUrl, supabaseAnonKey);
+    const { data: { user }, error: authError } = await supabaseAnon.auth.getUser(token);
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Sesión inválida o expirada' }, { status: 401 });
     }
+    targetUserId = user.id;
+  } else {
+    const userId = typeof body?.userId === 'string' ? body.userId.trim() : '';
+    if (!userId) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
+    const { data: adminData, error: adminErr } = await supabaseAdmin.auth.admin.getUserById(userId);
+    if (adminErr || !adminData?.user) {
+      return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 403 });
+    }
+    const authEmail = normalizeEmail(adminData.user.email);
+    if (!authEmail || authEmail !== normalizeEmail(email)) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
+    }
+    targetUserId = userId;
   }
 
   const { error: insertError } = await supabaseAdmin.from('profiles').insert({
-    id: user.id,
+    id: targetUserId,
     first_name,
     last_name,
     email,
     user_type,
-    house: houseResolved,
+    house: houseRaw,
   });
 
   if (insertError) {
     if (insertError.code === '23505') {
-      return NextResponse.json({ ok: true, house: houseResolved, duplicate: true });
+      return NextResponse.json({ ok: true, house: houseRaw, duplicate: true });
     }
     return NextResponse.json({ error: insertError.message || 'Error al crear el perfil' }, { status: 400 });
   }
 
-  return NextResponse.json({ ok: true, house: houseResolved });
+  return NextResponse.json({ ok: true, house: houseRaw });
 }
