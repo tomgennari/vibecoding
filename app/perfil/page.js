@@ -70,6 +70,7 @@ export default function PerfilPage() {
   const [credits, setCredits] = useState(null);
   const [showCreditsInfo, setShowCreditsInfo] = useState(false);
   const [playingGame, setPlayingGame] = useState(null); // { id, title, file_url }
+  const [playingGameHtml, setPlayingGameHtml] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
 
   const isDark = theme === 'dark';
@@ -167,6 +168,17 @@ export default function PerfilPage() {
       document.body.style.overflow = '';
     }
     return () => { document.body.style.overflow = ''; };
+  }, [playingGame]);
+
+  useEffect(() => {
+    if (!playingGame?.file_url) {
+      setPlayingGameHtml(null);
+      return;
+    }
+    fetch(playingGame.file_url)
+      .then((res) => (res.ok ? res.text() : null))
+      .then((html) => setPlayingGameHtml(html))
+      .catch(() => setPlayingGameHtml(null));
   }, [playingGame]);
 
   async function handleLogout() {
@@ -762,14 +774,20 @@ export default function PerfilPage() {
               ✕ Salir
             </button>
           </div>
-          <div className="flex-1 min-h-0 overflow-hidden" style={{ touchAction: 'none' }}>
-            <iframe
-              title={playingGame.title || 'Mi juego'}
-              sandbox="allow-scripts allow-same-origin"
-              src={playingGame.file_url}
-              className="w-full h-full border-0"
-              style={{ touchAction: 'auto' }}
-            />
+          <div className="flex-1 min-h-0 overflow-hidden flex flex-col" style={{ touchAction: 'none' }}>
+            {playingGameHtml ? (
+              <iframe
+                title={playingGame.title || 'Mi juego'}
+                sandbox="allow-scripts allow-same-origin"
+                srcDoc={playingGameHtml}
+                className="w-full h-full border-0 flex-1 min-h-0"
+                style={{ touchAction: 'auto' }}
+              />
+            ) : (
+              <div className="flex-1 flex items-center justify-center">
+                <p className="text-sm" style={{ color: textMuted }}>Cargando juego...</p>
+              </div>
+            )}
           </div>
         </div>
       )}

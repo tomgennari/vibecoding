@@ -36,7 +36,7 @@ export default function JugarPage() {
   const accessTokenRef = useRef(null);
   const gameContainerRef = useRef(null);
 
-  const [iframeSrc, setIframeSrc] = useState('');
+  const [gameHtml, setGameHtml] = useState(null);
   const [needsUnlock, setNeedsUnlock] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [highScores, setHighScores] = useState([]);
@@ -103,6 +103,7 @@ export default function JugarPage() {
     }
     async function load() {
       setNeedsUnlock(false);
+      setGameHtml(null);
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         setError('Tenés que iniciar sesión para jugar.');
@@ -178,7 +179,30 @@ export default function JugarPage() {
         }
       }
 
-      setIframeSrc(`/api/juego/${id}?token=${encodeURIComponent(session.access_token)}`);
+      try {
+        const gameRes = await fetch(`/api/juego/${id}`, {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        if (gameRes.ok) {
+          const html = await gameRes.text();
+          setGameHtml(html);
+        } else {
+          const errData = await gameRes.json().catch(() => ({}));
+          if (errData.code === 'LOCKED') {
+            setNeedsUnlock(true);
+            setLoading(false);
+            return;
+          }
+          setError('No se pudo cargar el juego');
+          setLoading(false);
+          return;
+        }
+      } catch {
+        setError('Error al cargar el juego');
+        setLoading(false);
+        return;
+      }
+
       accessTokenRef.current = session.access_token;
       startTimeRef.current = Date.now();
       try {
@@ -472,9 +496,9 @@ export default function JugarPage() {
                 className="rounded-xl overflow-hidden border-2 border-[#2a2a3a] shadow-xl fullscreen:border-0 fullscreen:rounded-none flex items-center justify-center max-w-full max-h-full"
                 style={{ background: '#000', width: 'min(100%, 100vw - 1rem)', height: 'auto' }}
               >
-                {iframeSrc && (
+                {!needsUnlock && gameHtml && (
                   <iframe
-                    src={iframeSrc}
+                    srcDoc={gameHtml}
                     title={game?.title || 'Juego'}
                     sandbox="allow-scripts allow-same-origin"
                     width={width}
