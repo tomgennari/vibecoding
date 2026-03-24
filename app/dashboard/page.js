@@ -163,6 +163,7 @@ export default function DashboardPage() {
         allProfilesRes,
         allSessionsRes,
         allDonationsRes,
+        profileAccessRes,
       ] = await Promise.all([
         supabase.from('game_sessions').select('duration_seconds').eq('user_id', uid).then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('game_sessions').select('game_id, user_id').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
@@ -176,6 +177,7 @@ export default function DashboardPage() {
         supabase.from('profiles').select('house, user_type').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('game_sessions').select('game_id, duration_seconds').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('donations').select('house, amount').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
+        supabase.from('profiles').select('has_all_access').eq('id', uid).maybeSingle().then((r) => ({ data: r.data, error: r.error })).catch(() => ({ data: null, error: true })),
       ]);
 
       const uniquePlayersByGame = {};
@@ -214,10 +216,15 @@ export default function DashboardPage() {
       }
       setGameAuthors(authorsMap);
 
-      const isUnlocked = (g) => unlockedIds.includes(g.id) || g.unlocked_for_all === true;
+      const hasAllAccessInit = !!profileAccessRes.data?.has_all_access;
+      const isUnlocked = (g) => hasAllAccessInit || unlockedIds.includes(g.id) || g.unlocked_for_all === true;
       setDailyGames(approvedGames.filter((g) => g.id && dailyIds.includes(g.id)));
-      setGamesToUnlock(approvedGames.filter((g) => g.id && !isUnlocked(g) && !dailyIds.includes(g.id)));
-      setUnlockedGames(approvedGames.filter((g) => g.id && isUnlocked(g)));
+      setGamesToUnlock(
+        hasAllAccessInit ? [] : approvedGames.filter((g) => g.id && !isUnlocked(g) && !dailyIds.includes(g.id)),
+      );
+      setUnlockedGames(
+        hasAllAccessInit ? approvedGames.filter((g) => g.id) : approvedGames.filter((g) => g.id && isUnlocked(g)),
+      );
       setUserLikedIds(new Set((userLikesRes.data || []).map((r) => r.game_id).filter(Boolean)));
 
       setBuildings(buildingsRes.data || []);
@@ -229,6 +236,18 @@ export default function DashboardPage() {
     }
     init();
   }, [router]);
+
+  /** Si el usuario obtiene ALL ACCESS en la misma sesión (p. ej. tras pago), alinear listas con el catálogo completo. */
+  useEffect(() => {
+    if (!profile?.has_all_access || !approvedGamesAll.length) return;
+    const approvedGames = approvedGamesAll.map((g) => normalizeGameProfiles(g));
+    setGamesToUnlock([]);
+    setUnlockedGames((prev) => {
+      const base = approvedGames.filter((g) => g.id);
+      const likeMap = new Map(prev.map((g) => [g.id, g.total_likes]));
+      return base.map((g) => ({ ...g, total_likes: likeMap.has(g.id) ? likeMap.get(g.id) : g.total_likes }));
+    });
+  }, [profile?.has_all_access, approvedGamesAll]);
 
   async function handleLogout() {
     await supabase.auth.signOut();
@@ -306,7 +325,9 @@ export default function DashboardPage() {
 
   const userHouse = profile?.house || 'william_brown';
   const displayName = profile ? [profile.first_name, profile.last_name].filter(Boolean).join(' ') || 'Usuario' : 'Usuario';
+  const hasAllAccess = !!profile?.has_all_access;
   const hasUnlockedGames = unlockedGames.length > 0;
+  const unlockedCarouselTitle = hasAllAccess ? '🌟 Todos los juegos' : '🔓 Mis juegos desbloqueados';
   const dailyGameIdSet = useMemo(() => new Set(dailyGames.map((g) => g.id)), [dailyGames]);
 
   const progressBarBg = isDark ? 'var(--vibe-border)' : '#e2e8f0';
@@ -610,14 +631,21 @@ export default function DashboardPage() {
           <section className="flex-shrink-0 mb-4">
             <div className="flex items-center justify-between gap-2 mb-3">
               <h2 className="text-lg font-bold min-w-0" style={{ color: text }}>🎮 Juegos para desbloquear</h2>
-              <Link
-                href="/juegos"
-                className="h-8 px-3 rounded-lg border text-sm font-bold inline-flex items-center justify-center flex-shrink-0"
-                style={{ borderColor: border, color: text }}
-              >
-                Ver todos →
-              </Link>
+              {!hasAllAccess && (
+                <Link
+                  href="/juegos"
+                  className="h-8 px-3 rounded-lg border text-sm font-bold inline-flex items-center justify-center flex-shrink-0"
+                  style={{ borderColor: border, color: text }}
+                >
+                  Ver todos →
+                </Link>
+              )}
             </div>
+            {hasAllAccess ? (
+              <p className="text-sm py-4 px-3 rounded-xl border text-center min-w-0" style={{ color: textMuted, ...cardStyle }}>
+                Tenés ALL ACCESS — todos los juegos del catálogo están desbloqueados.
+              </p>
+            ) : (
             <div className="flex gap-4 overflow-x-auto overflow-y-hidden pb-2 -mx-1 scrollbar-hide" style={{ WebkitOverflowScrolling: 'touch' }}>
               {gamesToUnlock.map((game) => {
                 const house = HOUSES.find((h) => h.id === game.house) || HOUSES[0];
@@ -663,6 +691,7 @@ export default function DashboardPage() {
                 );
               })}
             </div>
+            )}
           </section>
 
           {/* Banner separador full width (tercero) */}
@@ -691,7 +720,7 @@ export default function DashboardPage() {
           {/* Carrusel 1 — Mis juegos desbloqueados (cuarto) */}
           <section className="flex-1 min-h-0 flex flex-col">
             <div className="flex items-center justify-between gap-2 mb-3 flex-shrink-0">
-              <h2 className="text-lg font-bold min-w-0" style={{ color: text }}>🔓 Mis juegos desbloqueados</h2>
+              <h2 className="text-lg font-bold min-w-0" style={{ color: text }}>{unlockedCarouselTitle}</h2>
               <Link
                 href="/juegos"
                 className="h-8 px-3 rounded-lg border text-sm font-bold inline-flex items-center justify-center flex-shrink-0"
@@ -722,6 +751,10 @@ export default function DashboardPage() {
                         {dailyGameIdSet.has(game.id) ? (
                           <span className="inline-block rounded-md px-2 py-0.5 text-[10px] font-bold uppercase" style={{ background: '#22c55e', color: '#fff' }}>
                             GRATIS HOY
+                          </span>
+                        ) : hasAllAccess ? (
+                          <span className="inline-block rounded-md px-2 py-0.5 text-[10px] font-bold uppercase" style={{ background: '#eab308', color: '#0f172a' }}>
+                            ALL ACCESS
                           </span>
                         ) : (
                           <span className="inline-block rounded-md px-2 py-0.5 text-[10px] font-bold uppercase" style={{ background: accent, color: '#fff' }}>
@@ -1059,16 +1092,22 @@ export default function DashboardPage() {
           <section className="min-w-0">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-lg font-bold" style={{ color: text }}>🎮 Juegos para desbloquear</h2>
-              <button
-                type="button"
-                onClick={() => router.push('/juegos')}
-                className="text-xs font-bold px-3 py-1 rounded-lg border cursor-pointer hover:opacity-80"
-                style={{ borderColor: border, color: accent }}
-              >
-                Ver todos →
-              </button>
+              {!hasAllAccess && (
+                <button
+                  type="button"
+                  onClick={() => router.push('/juegos')}
+                  className="text-xs font-bold px-3 py-1 rounded-lg border cursor-pointer hover:opacity-80"
+                  style={{ borderColor: border, color: accent }}
+                >
+                  Ver todos →
+                </button>
+              )}
             </div>
-            {gamesToUnlock.length === 0 ? (
+            {hasAllAccess ? (
+              <p className="text-sm py-4 rounded-xl border text-center min-w-0" style={{ color: textMuted, ...cardStyle }}>
+                Tenés ALL ACCESS — todos los juegos del catálogo están desbloqueados.
+              </p>
+            ) : gamesToUnlock.length === 0 ? (
               <p className="text-sm py-4 rounded-xl border text-center min-w-0" style={{ color: textMuted, ...cardStyle }}>No hay más juegos para desbloquear</p>
             ) : (
               <div className="flex gap-4 overflow-x-auto overflow-y-hidden pb-2 -mx-4 px-4 scrollbar-hide" style={{ WebkitOverflowScrolling: 'touch' }}>
@@ -1121,7 +1160,7 @@ export default function DashboardPage() {
 
           {/* Mis juegos desbloqueados — vacío o grid 2 cols */}
           <section className="min-w-0">
-            <h2 className="text-base font-bold mb-3" style={{ color: text }}>Mis juegos desbloqueados</h2>
+            <h2 className="text-base font-bold mb-3" style={{ color: text }}>{unlockedCarouselTitle}</h2>
             {hasUnlockedGames ? (
               <div className="grid grid-cols-2 gap-3 min-w-0">
                 {unlockedGames.map((game) => {
@@ -1144,6 +1183,10 @@ export default function DashboardPage() {
                         {dailyGameIdSet.has(game.id) ? (
                           <span className="inline-block rounded-md px-2 py-0.5 text-[10px] font-bold uppercase" style={{ background: '#22c55e', color: '#fff' }}>
                             GRATIS HOY
+                          </span>
+                        ) : hasAllAccess ? (
+                          <span className="inline-block rounded-md px-2 py-0.5 text-[10px] font-bold uppercase" style={{ background: '#eab308', color: '#0f172a' }}>
+                            ALL ACCESS
                           </span>
                         ) : (
                           <span className="inline-block rounded-md px-2 py-0.5 text-[10px] font-bold uppercase" style={{ background: accent, color: '#fff' }}>
