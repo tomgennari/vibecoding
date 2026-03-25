@@ -4,7 +4,7 @@ export function HeroSection({ isLoggedIn }) {
   return (
     <section
       id="hero"
-      className="relative min-h-[90vh] overflow-hidden pt-24 pb-16 md:pt-32 md:pb-24"
+      className="relative min-h-[90vh] overflow-hidden pt-16 pb-16 md:pt-20 md:pb-24"
     >
       <div className="absolute inset-0 bg-gradient-to-b from-white via-slate-50 to-white" />
 

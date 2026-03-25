@@ -1,16 +1,15 @@
 import Image from 'next/image';
-import { Building2, CheckCircle2, Construction, ExternalLink, Lock, School, Ship, Theater } from 'lucide-react';
+import { CheckCircle2, Construction, ExternalLink, Sparkles } from 'lucide-react';
 
 const BUILDINGS = [
   { name: 'Kinder', status: 'built', image: '/images/campus/Kinder_Normal.png' },
   { name: 'Primaria', status: 'built', image: '/images/campus/Primary_School_Normal.png' },
   { name: 'Sports Pavilion', status: 'built', image: '/images/campus/Sports_Pavilion_Normal.png' },
   { name: 'Natatorio', status: 'construction', image: '/images/campus/Natatorio_Normal.png' },
-  { name: 'Community Hub', status: 'planned', icon: Building2 },
-  { name: 'Secundario', status: 'planned', icon: School },
-  { name: 'Dining Hall', status: 'planned', icon: Building2 },
-  { name: 'Performing Arts', status: 'planned', icon: Theater },
-  { name: 'Barco Symmetry', status: 'planned', icon: Ship },
+  { name: 'Secundario', status: 'planned', image: '/images/campus/Secondary_Normal.png' },
+  { name: 'Dining Hall', status: 'planned', image: '/images/campus/Dinning_Hall_normal.png' },
+  { name: 'Performing Arts', status: 'planned', image: '/images/campus/Performing_Arts_Center_Normal.png' },
+  { name: 'Barco Symmetry', status: 'planned', image: '/images/campus/Sports_Pavilion_Normal.png' },
 ];
 
 function statusBadge(status) {
@@ -58,70 +57,50 @@ export function CampusSection() {
           Cada peso recaudado va íntegramente a la construcción del campus
         </p>
 
-        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-10 flex flex-wrap justify-center gap-4">
           {BUILDINGS.map((b) => {
             const isPlanned = b.status === 'planned';
             const isConstruction = b.status === 'construction';
+            const isBarco = b.name === 'Barco Symmetry';
             const cardHover =
+              isPlanned ? 'hover:scale-100' : 'hover:scale-[1.02] motion-reduce:transform-none';
+
+            const imageClass =
               isPlanned
-                ? 'hover:scale-100'
-                : 'hover:scale-[1.02] motion-reduce:transform-none';
+                ? 'object-cover grayscale opacity-70'
+                : isConstruction
+                  ? 'object-cover opacity-90'
+                  : 'object-cover';
 
             return (
               <div
                 key={b.name}
-                className={`group flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-[#f8fafc] shadow-sm transition-transform duration-300 ease-in-out ${cardHover}`}
+                className={`group flex w-full min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-[#f8fafc] shadow-sm transition-transform duration-300 ease-in-out sm:w-[calc(50%-0.5rem)] lg:w-[calc(33.333%-0.67rem)] ${cardHover}`}
               >
                 <div className="relative aspect-[16/10] w-full overflow-hidden bg-gradient-to-br from-slate-100 to-slate-200">
-                  {b.image ? (
-                    <>
-                      <Image
-                        src={b.image}
-                        alt=""
-                        fill
-                        className={`object-cover transition-all ${
-                          isPlanned
-                            ? 'grayscale opacity-70'
-                            : isConstruction
-                              ? 'opacity-90'
-                              : ''
-                        }`}
-                        sizes="(max-width:768px) 100vw, 33vw"
-                      />
-                      {isPlanned && (
-                        <div
-                          className="pointer-events-none absolute inset-0 flex items-center justify-center bg-slate-900/15"
-                          aria-hidden
-                        >
-                          <Lock className="h-12 w-12 text-slate-400/70 md:h-14 md:w-14" strokeWidth={1.5} />
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      <div
-                        className={`flex h-full w-full items-center justify-center text-slate-400 ${
-                          isPlanned ? 'grayscale opacity-70' : ''
-                        }`}
-                      >
-                        {b.icon && <b.icon className="h-14 w-14" strokeWidth={1.25} />}
-                      </div>
-                      {isPlanned && (
-                        <div
-                          className="pointer-events-none absolute inset-0 flex items-center justify-center bg-slate-900/10"
-                          aria-hidden
-                        >
-                          <Lock className="h-12 w-12 text-slate-400/70 md:h-14 md:w-14" strokeWidth={1.5} />
-                        </div>
-                      )}
-                    </>
-                  )}
+                  <Image
+                    src={b.image}
+                    alt=""
+                    fill
+                    className={imageClass}
+                    sizes="(max-width:768px) 100vw, 33vw"
+                  />
                 </div>
                 <div className="flex flex-1 flex-col gap-2 p-4">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <h3 className="text-lg font-semibold text-[#0f172a] md:text-xl">{b.name}</h3>
+                    <h3 className="flex items-center gap-1.5 text-lg font-semibold text-[#0f172a] md:text-xl">
+                      {b.name}
+                      {isBarco ? (
+                        <Sparkles className="h-4 w-4 shrink-0 text-[#7c3aed]" aria-hidden />
+                      ) : null}
+                    </h3>
                     {statusBadge(b.status)}
                   </div>
+                  {isBarco ? (
+                    <p className="mt-1 text-xs italic text-slate-400">
+                      Elemento de fantasía de Vibe Coding San Andrés
+                    </p>
+                  ) : null}
                 </div>
               </div>
             );

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { Menu, X } from 'lucide-react';
 
@@ -36,11 +37,25 @@ export function LandingNavbar({ isLoggedIn }) {
   return (
     <>
       <header
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ease-in-out ${barClass}`}
+        className={`fixed top-0 left-0 right-0 z-50 h-16 md:h-20 transition-all duration-300 ease-in-out ${barClass}`}
       >
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 md:px-8">
-          <Link href="/" className="text-lg font-bold text-[#00478E] md:text-xl">
-            Campus San Andrés
+        <div className="mx-auto flex h-full max-w-7xl items-center justify-between gap-2 px-4 md:gap-4 md:px-8">
+          <Link
+            href="/"
+            className="flex min-w-0 flex-1 items-center gap-2 md:max-w-none md:flex-none md:gap-3"
+          >
+            <Image
+              src="/images/logo-sass.png"
+              alt="Logo St. Andrew's Scots School"
+              width={48}
+              height={48}
+              className="h-10 w-10 shrink-0 object-contain md:h-12 md:w-12"
+              sizes="(max-width: 768px) 40px, 48px"
+              priority
+            />
+            <span className="hidden truncate font-bold text-[#00478E] sm:block text-base md:text-lg">
+              Campus San Andrés
+            </span>
           </Link>
 
           <nav className="hidden items-center gap-8 md:flex" aria-label="Secciones">
@@ -83,7 +98,7 @@ export function LandingNavbar({ isLoggedIn }) {
 
           <button
             type="button"
-            className="rounded-lg p-2 text-[#00478E] md:hidden"
+            className="ml-auto shrink-0 rounded-lg p-2 text-[#00478E] md:hidden"
             aria-label={open ? 'Cerrar menú' : 'Abrir menú'}
             onClick={() => setOpen((o) => !o)}
           >
