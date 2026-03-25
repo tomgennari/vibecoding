@@ -1,5 +1,5 @@
 # Campus San Andrés — Vibe Coding San Andrés
-## Product Requirements Document (PRD) v3.6
+## Product Requirements Document (PRD) v3.8
 
 **Fecha:** Marzo 2026  
 **Autor:** Tomás Gennari  
@@ -43,7 +43,7 @@ Los usuarios crean juegos con ayuda de la IA dentro de la plataforma y por cuent
 - Primaria (ya construido)
 - Sports Pavilion (ya construido)
 - Natatorio (en construcción actualmente)
-- Community Hub
+- Community Hub (nombre general del proyecto de campus; no es un edificio individual en la plataforma)
 - Colegio Secundario unificado
 - Dining Hall – Gimnasio – Auditorio
 - Performing Arts Center
@@ -117,6 +117,9 @@ Los usuarios crean juegos con ayuda de la IA dentro de la plataforma y por cuent
 - Perfil: nombre, apellido, tipo, house — SIN foto de perfil
 - Seguridad: Supabase Auth + Row Level Security en toda la DB
 - **Email transaccional:** Resend configurado como SMTP custom en Supabase Auth. Sender: `noreply@sass.vibecoding.ar`. Dominio `sass.vibecoding.ar` verificado en Resend con registros DNS en Vercel. Rate limit free tier: 100 emails/día — suficiente para MVP, escalar a plan pago en lanzamiento masivo.
+- **Validación de contraseña:** mínimo 8 caracteres, máximo 16, al menos 1 mayúscula, 1 minúscula y 1 número. Checklist visual en tiempo real durante el registro.
+- **Confirmación de email:** template custom en Supabase Auth con redirect a `/auth/callback?token_hash={{ .TokenHash }}&type=signup` para crear sesión y redirigir al dashboard automáticamente.
+- **Site URL en Supabase Auth:** `https://sass.vibecoding.ar` (producción). Los redirect URLs incluyen localhost para desarrollo y sass.vibecoding.ar + vibecoding-xi-sage.vercel.app para producción.
 
 ### 4.2 Sistema de Juegos
 
@@ -305,6 +308,7 @@ Aprender Git, GitHub y deployment es una habilidad valiosa en sí misma y está 
 - **Subtítulo:** Vibe Coding San Andrés
 - El nombre NUNCA se abrevia como "VibeCoding" en la interfaz pública
 - El dominio `sass.vibecoding.ar` es técnico — en la UI aparece "Campus San Andrés"
+- **Logo SASS:** `/public/images/logo-sass.png` — usado en navbar de landing page. Pendiente autorización formal del colegio para uso en producción.
 
 ### 6.2 Modo Claro — Light Mode (registro, login, páginas públicas)
 
@@ -403,6 +407,7 @@ Estilo gaming tipo Discord + Fortnite. Donde los usuarios pasan la mayor parte d
 | Game Lab — Frameworks | Canvas 2D, p5.js, Kaplay | Librerías hosteadas en Supabase Storage (`libs/` bucket) |
 | MobileBottomNav | Componente reutilizable | Barra de navegación inferior mobile, presente en todas las páginas excepto /jugar |
 | Email transaccional | Resend | SMTP custom para Supabase Auth + Edge Functions. Dominio: `sass.vibecoding.ar`. Free tier: 3.000 emails/mes, 100/día |
+| Landing Page | Server Component + Client Components | Light mode, Intersection Observer, YouTube embed |
 
 ### 7.2 Estructura de Base de Datos
 
@@ -443,6 +448,8 @@ Tablas principales (todas con RLS habilitado):
 - **Datos de menores:** mínimo dato personal posible. Cumplimiento con Ley 25.326 Argentina
 - **Auditoría:** registrar todas las acciones del admin en Supabase (aprobaciones, rechazos, bajas)
 - **Dependencies:** `npm audit` antes de cada deploy a producción
+- **Indexación bloqueada:** `public/robots.txt` con `Disallow: /` + meta `noindex, nofollow` en layout hasta aprobación del colegio
+- **Contraseñas seguras:** validación frontend obligatoria (8-16 chars, mayúscula, minúscula, número)
 
 ### 7.4 Reglas de Limpieza y Orden
 
@@ -530,7 +537,7 @@ Tablas principales (todas con RLS habilitado):
 - [x] API routes de admin protegidas por sesión y rol is_admin
 - [x] Integración MercadoPago — precio fijo $6.000 por juego (packs y ALL ACCESS según catálogo)
 - [x] Scoreboard básico
-- [ ] Deploy estable en sass.vibecoding.ar
+- [x] Deploy estable en sass.vibecoding.ar
 
 ### Fase 2 — Comunidad (4-6 semanas)
 
@@ -612,8 +619,8 @@ Tablas principales (todas con RLS habilitado):
 
 - ✅ Arquitectura modular de Andy: 7 archivos de docs en `docs/andy/` (personality, pedagogy, framework-decision, quality-rules, templates x3)
 - ✅ Backend dinámico: `loadAndyDocs()` + `buildSystemPrompt()` en `app/api/game-lab/chat/route.js`
-- ✅ Multi-framework: Andy elige internamente entre Canvas 2D, p5.js y Kaplay según el tipo de juego
-- ✅ Librerías hosteadas en Supabase Storage (bucket `libs/`): p5.min.js, kaplay.js, gamepad-overlay.js
+- ✅ Multi-framework: Andy elige internamente entre Canvas 2D, p5.js, Kaplay y Three.js según el tipo de juego
+- ✅ Librerías hosteadas en Supabase Storage (bucket `libs/`): p5.min.js, kaplay.js, gamepad-overlay.js, three.min.js
 - ✅ Assets visuales: emojis + formas geométricas procedurales (Kenney descartado)
 - ✅ Flujo pedagógico: Andy guía al alumno a dar instrucciones detalladas antes de generar
 - ✅ Preservación de juegos al iterar: contexto reducido + HTML actual para evitar regeneración
@@ -670,6 +677,12 @@ Tablas principales (todas con RLS habilitado):
 - ✅ Email de rechazo al alumno con motivo y link a editar
 - ✅ Guía colapsable de buenas prácticas en página Subir mi juego (controles, score, librerías, reglas)
 - ✅ Botón Expandir movido a barra de acciones junto a Me gusta, Top 10, Compartir
+- ✅ Three.js como 4to framework en framework-decision.md (solo si alumno pide 3D explícitamente)
+- ✅ Canvas 2D priorizado sobre Kaplay: menos bugs, más confiable para la mayoría de juegos
+- ✅ Errores comunes de Kaplay documentados: canvas manual, radius, area para clicks, fonts, gravedad, salto
+- ✅ Cron de juegos diarios migrado de Edge Function a endpoint Vercel via net.http_post de Supabase
+- ✅ Tarjetas de /juegos: badges y precio unificados en bloque fijo h-7, 4 métricas en todas las tarjetas
+- ✅ Juegos unlocked_for_all incluidos en "Mis juegos desbloqueados" en dashboard y catálogo
 - ✅ Sistema de packs de desbloqueo: Pack 10 ($40k), Pack 30 ($100k), ALL ACCESS ($300k) con créditos acumulables en `profiles.unlock_credits`
 - ✅ ALL ACCESS permanente: `has_all_access` en profiles, acceso a todos los juegos actuales y futuros
 - ✅ Endpoint `/api/games/unlock-with-credits`: desbloqueo con crédito, protección de race condition
@@ -685,6 +698,30 @@ Tablas principales (todas con RLS habilitado):
 - ❌ Descartado: Assets de Kenney (Andy no los usaba, consumían tokens innecesarios)
 - 🔲 Pendiente: Persistencia robusta en Supabase (reemplazar sessionStorage)
 - 🔲 Pendiente: Métrica total_time_played en tabla games (actualmente se calcula al vuelo desde game_sessions)
+- 🔲 Pendiente: Guardar interacciones alumno-Andy para análisis y mejora de instrucciones
+- 🔲 Pendiente: Videos tutoriales de cómo usar Game Lab y subir juegos
+
+### Fase 2.6 — Landing Page Pública ✅ Implementada
+
+- [x] Landing page pública en sass.vibecoding.ar como home principal (reemplaza redirección a login)
+- [x] Server Component con detección de sesión: usuarios logueados redirigen a /dashboard
+- [x] 9 secciones scroll narrativo: Hero, Campus, Vibe Coding, Cómo funciona, Transparencia, Video institucional, Houses, Comunidad, CTA final
+- [x] Componentes en `components/landing/`: LandingNavbar, HeroSection, CampusSection, VibeCodingSection, HowItWorksSection, TransparencySection, VideoSection, HousesSection, CommunitySection, CTASection, LandingFooter, FadeIn, DisclaimerModal
+- [x] Light mode (PRD §6.2): colores institucionales, Inter, Lucide icons
+- [x] Navbar fijo con logo SASS + texto, transparente al top, fondo al scroll, hamburger mobile
+- [x] Sección Campus: 8 edificios con imágenes reales, construidos a color, por construir en grayscale
+- [x] Barco Symmetry identificado como elemento de fantasía de Vibe Coding San Andrés
+- [x] Video institucional del SASS embebido (YouTube: 33c0kz1Frhk)
+- [x] CTA a campaña oficial sasscampus.com (target="_blank")
+- [x] Houses con escudos desde /images/houses/house-{nombre}.png
+- [x] Andy avatar visible de cuerpo entero en sección Vibe Coding
+- [x] Botones de registro directo: "Soy alumno" / "Soy padre/madre" con parámetro ?tipo=
+- [x] SEO: metadata + Open Graph + Twitter tags
+- [x] Animaciones fade-in con Intersection Observer + prefers-reduced-motion
+- [x] Mobile-first responsive (390px base)
+- [x] Modal de disclaimer institucional (sessionStorage): avisa que el sitio no está indexado, no tiene redes sociales, no usa logo sin autorización, no realiza transacciones reales, y que el contenido está sujeto a aprobación del SASS
+- [x] robots.txt bloqueando toda indexación + meta robots noindex/nofollow hasta aprobación del colegio
+- [x] Imágenes de edificios en `/public/images/campus/`: Kinder_Normal.png, Primary_School_Normal.png, Sports_Pavilion_Normal.png, Natatorio_Normal.png, Secondary_Normal.png, Dinning_Hall_normal.png, Performing_Arts_Center_Normal.png, Symmetry_normal.png
 
 ### Fase 3 — Gamificación (4-6 semanas)
 
@@ -765,6 +802,8 @@ Los valores son configurables por el admin.
 - [ ] **PENDIENTE COLEGIO — Whitelist de emails:** consultar al SASS si prefieren que solo emails previamente validados puedan registrarse. Requeriría que el colegio provea una lista actualizada de emails de alumnos y familias.
 - [ ] **PENDIENTE COLEGIO — Registro de emails:** verificar si el SASS tiene un registro de emails de sus ~1.900 alumnos. Si no lo tienen, el registro abierto es la única opción viable para el MVP.
 - [ ] SEGURIDAD — Regenerar service role key antes de producción: la service role key actual fue compartida durante el desarrollo. Antes del lanzamiento oficial con el colegio, regenerarla en Supabase → Settings → API → Legacy keys → service_role → Regenerate. Luego actualizar la variable de entorno en Vercel.
+- [ ] **LANDING — Fotos institucionales:** conseguir fotos profesionales del campus para reemplazar los renders actuales en la landing
+- [ ] **LANDING — Aprobación del colegio:** una vez aprobado, remover robots.txt Disallow, quitar meta noindex, quitar DisclaimerModal
 
 ---
 
