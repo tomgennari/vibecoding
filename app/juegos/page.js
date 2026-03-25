@@ -10,7 +10,7 @@ import { DashboardNavbar } from '@/components/dashboard-navbar.js';
 import { MobileBottomNav } from '@/components/mobile-bottom-nav.js';
 import { useUser } from '@/lib/user-context.js';
 import { UnlockGameModal } from '@/components/unlock-game-modal.js';
-import { PRICING } from '@/lib/pricing.js';
+import { effectiveIndividualGamePrice } from '@/lib/pricing.js';
 
 const HOUSES = [
   { id: 'william_brown', name: 'William Brown', color: '#3b82f6', image: '/images/houses/house-brown.png' },
@@ -482,7 +482,7 @@ export default function JuegosPage() {
                     </span>
                   ) : (
                     <span className="text-sm font-black" style={{ color: '#7c3aed' }}>
-                      ${formatArs(PRICING.INDIVIDUAL)} ARS
+                      ${formatArs(effectiveIndividualGamePrice(game.price))} ARS
                     </span>
                   )}
                 </div>

@@ -10,7 +10,7 @@ import { useUser } from '@/lib/user-context.js';
 import { DashboardNavbar } from '@/components/dashboard-navbar.js';
 import { MobileBottomNav } from '@/components/mobile-bottom-nav.js';
 import { UnlockGameModal } from '@/components/unlock-game-modal.js';
-import { PRICING } from '@/lib/pricing.js';
+import { effectiveIndividualGamePrice } from '@/lib/pricing.js';
 
 const HOUSES = [
   { id: 'william_brown', name: 'William Brown', color: '#3b82f6', image: '/images/houses/house-brown.png' },
@@ -678,7 +678,7 @@ export default function DashboardPage() {
                       onLike={() => handleToggleLike(game.id)}
                     />
                     <p className="text-lg font-black tabular-nums mt-2 flex-shrink-0" style={{ color: accent }}>
-                      ${PRICING.INDIVIDUAL.toLocaleString('es-AR')} ARS
+                      ${effectiveIndividualGamePrice(game.price).toLocaleString('es-AR')} ARS
                     </p>
                     <button
                       type="button"
@@ -1142,7 +1142,7 @@ export default function DashboardPage() {
                         onLike={() => handleToggleLike(game.id)}
                       />
                       <p className="text-lg font-black tabular-nums mt-2 flex-shrink-0" style={{ color: accent }}>
-                        ${PRICING.INDIVIDUAL.toLocaleString('es-AR')} ARS
+                        ${effectiveIndividualGamePrice(game.price).toLocaleString('es-AR')} ARS
                       </p>
                       <button
                         type="button"

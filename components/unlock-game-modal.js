@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/utils/supabase/client.js';
 import { useUser } from '@/lib/user-context.js';
-import { PRICING } from '@/lib/pricing.js';
+import { PRICING, effectiveIndividualGamePrice } from '@/lib/pricing.js';
 
 const MIN_PACK_30 = 50;
 const MIN_ALL_ACCESS = 100;
@@ -23,7 +23,7 @@ const DM = {
 
 /**
  * Modal de desbloqueo: créditos, individual, packs (MercadoPago).
- * @param {{ isOpen: boolean, onClose: () => void, game: { id: string, title?: string } | null, userCredits: number, hasAllAccess: boolean, onUnlockSuccess?: (game: { id: string, title?: string }) => void }} props
+ * @param {{ isOpen: boolean, onClose: () => void, game: { id: string, title?: string, price?: number | null } | null, userCredits: number, hasAllAccess: boolean, onUnlockSuccess?: (game: { id: string, title?: string }) => void }} props
  */
 export function UnlockGameModal({
   isOpen,
@@ -125,7 +125,6 @@ export function UnlockGameModal({
               gameId: game.id,
               userId: session.user.id,
               gameTitle: game.title || 'Juego',
-              gamePrice: PRICING.INDIVIDUAL,
               pack_type: 'individual',
             }
           : {
@@ -153,6 +152,7 @@ export function UnlockGameModal({
 
   if (!isOpen || !game) return null;
 
+  const individualArs = effectiveIndividualGamePrice(game.price);
   const fmt = (n) => PRICING[n] != null ? PRICING[n].toLocaleString('es-AR') : '';
 
   return (
@@ -244,7 +244,7 @@ export function UnlockGameModal({
                 style={{ borderColor: DM.border, background: DM.cardInner }}
               >
                 <div className="text-lg font-black" style={{ color: DM.text }}>
-                  Desbloquear este juego — ${fmt('INDIVIDUAL')} ARS
+                  Desbloquear este juego — ${individualArs.toLocaleString('es-AR')} ARS
                 </div>
                 <div className="text-xs mt-1 truncate" style={{ color: DM.textMuted }}>
                   {game.title || 'Juego'}

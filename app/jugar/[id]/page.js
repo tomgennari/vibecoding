@@ -113,7 +113,7 @@ export default function JugarPage() {
         setLoading(false);
         return;
       }
-      const { data, error: e } = await supabase.from('games').select('id, title, file_url, game_width, game_height, total_likes, submitted_by').eq('id', id).eq('status', 'approved').single();
+      const { data, error: e } = await supabase.from('games').select('id, title, price, file_url, game_width, game_height, total_likes, submitted_by').eq('id', id).eq('status', 'approved').single();
       if (e || !data) {
         setError('Juego no encontrado o no disponible.');
         setLoading(false);
@@ -458,7 +458,7 @@ export default function JugarPage() {
           <UnlockGameModal
             isOpen={needsUnlock}
             onClose={() => router.push('/juegos')}
-            game={{ id: game.id, title: game.title }}
+            game={{ id: game.id, title: game.title, price: game.price }}
             userCredits={unlockCredits}
             hasAllAccess={userHasAllAccess}
             onUnlockSuccess={() => window.location.reload()}

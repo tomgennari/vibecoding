@@ -186,6 +186,7 @@ export default function AdminGamesSection() {
       game_width: payload.game_width ?? 800,
       game_height: payload.game_height ?? 600,
       orientation: payload.orientation ?? 'horizontal',
+      price: payload.price ?? null,
     };
     const { error } = await supabase.from('games').insert(row);
     if (error) throw error;

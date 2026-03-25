@@ -5,9 +5,23 @@ import Image from 'next/image';
 import { HOUSES, ADMIN_THEME } from '../constants.js';
 import { PRICING } from '@/lib/pricing.js';
 
-const DEFAULT_PRICE = PRICING.INDIVIDUAL;
 const DEFAULT_WIDTH = 800;
 const DEFAULT_HEIGHT = 600;
+
+function priceFieldFromDb(dbPrice) {
+  if (dbPrice == null) return '';
+  const n = Number(dbPrice);
+  if (!Number.isFinite(n) || n <= 0) return '';
+  return String(Math.round(n));
+}
+
+function parsePriceForDb(raw) {
+  const t = String(raw ?? '').trim();
+  if (t === '') return null;
+  const n = Math.round(Number(t));
+  if (!Number.isFinite(n) || n <= 0) return null;
+  return n;
+}
 
 function getOrientation(width, height) {
   const w = Number(width) || 0;
@@ -67,7 +81,7 @@ export default function LoadGameModal({ game: editGame, onSave, onClose }) {
   const [title, setTitle] = useState(editGame?.title ?? '');
   const [description, setDescription] = useState(editGame?.description ?? '');
   const [house, setHouse] = useState(editGame?.house ?? 'william_brown');
-  const [price, setPrice] = useState(editGame?.price != null ? String(editGame.price) : String(DEFAULT_PRICE));
+  const [price, setPrice] = useState(() => priceFieldFromDb(editGame?.price));
   const [file, setFile] = useState(null);
   const [detectedSize, setDetectedSize] = useState(null);
   const [manualWidth, setManualWidth] = useState(String(DEFAULT_WIDTH));
@@ -80,16 +94,27 @@ export default function LoadGameModal({ game: editGame, onSave, onClose }) {
 
   useEffect(() => {
     if (editGame) {
+      setFile(null);
       setTitle(editGame.title ?? '');
       setDescription(editGame.description ?? '');
       setHouse(editGame.house ?? 'william_brown');
-      setPrice(editGame.price != null ? String(editGame.price) : String(DEFAULT_PRICE));
+      setPrice(priceFieldFromDb(editGame.price));
       const gw = editGame.game_width ?? DEFAULT_WIDTH;
       const gh = editGame.game_height ?? DEFAULT_HEIGHT;
       setManualWidth(String(gw));
       setManualHeight(String(gh));
       setDetectedSize(editGame.game_width != null ? { width: gw, height: gh } : null);
       setShowManualFields(editGame.game_width == null && editGame.game_height == null);
+    } else {
+      setTitle('');
+      setDescription('');
+      setHouse('william_brown');
+      setPrice('');
+      setFile(null);
+      setDetectedSize(null);
+      setManualWidth(String(DEFAULT_WIDTH));
+      setManualHeight(String(DEFAULT_HEIGHT));
+      setShowManualFields(false);
     }
   }, [editGame]);
 
@@ -183,7 +208,7 @@ export default function LoadGameModal({ game: editGame, onSave, onClose }) {
         title: title.trim(),
         description: description.trim(),
         house,
-        price: Number(price) || DEFAULT_PRICE,
+        price: parsePriceForDb(price),
         file: file || null,
         game_width: w,
         game_height: h,
@@ -253,7 +278,9 @@ export default function LoadGameModal({ game: editGame, onSave, onClose }) {
               type="number"
               value={price}
               onChange={(e) => setPrice(e.target.value)}
-              min={0}
+              min={1}
+              step={1}
+              placeholder={`${PRICING.INDIVIDUAL.toLocaleString('es-AR')} (vacío = default)`}
               className="w-full rounded-lg px-3 py-2.5 text-sm border outline-none focus:ring-2 focus:ring-offset-0"
               style={style.input}
             />

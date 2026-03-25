@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { MercadoPagoConfig, Preference } from 'mercadopago';
-import { PRICING } from '@/lib/pricing.js';
+import { PRICING, effectiveIndividualGamePrice } from '@/lib/pricing.js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -272,12 +272,13 @@ export async function POST(request) {
 
     const cleanTitulo = sanitizeMpTitle(decodeURIComponent(String(gameTitle)));
     const safeTitulo = encodeURIComponent(cleanTitulo);
-    const price = PRICING.INDIVIDUAL;
+    const price = effectiveIndividualGamePrice(game.price);
     if (price <= 0) {
       return NextResponse.json({ error: 'Precio inválido' }, { status: 400 });
     }
 
     const externalReference = `unlock_${userId}_${gameId}`;
+    const titleArs = price.toLocaleString('es-AR');
 
     const backUrls = {
       success: `${BASE_URL}/pago/exitoso?gameId=${gameId}&gameTitle=${safeTitulo}`,
@@ -291,7 +292,7 @@ export async function POST(request) {
       body: {
         items: [{
           id: String(gameId),
-          title: sanitizeMpTitle(`Desbloquear juego - Campus San Andres`),
+          title: sanitizeMpTitle(`Desbloquear juego - $${titleArs} - Campus San Andres`),
           quantity: 1,
           unit_price: price,
           currency_id: 'ARS',
