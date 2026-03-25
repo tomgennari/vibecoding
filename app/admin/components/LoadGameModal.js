@@ -7,6 +7,7 @@ import { PRICING } from '@/lib/pricing.js';
 
 const DEFAULT_WIDTH = 800;
 const DEFAULT_HEIGHT = 600;
+const DEFAULT_CATALOG_PRICE_LABEL = `$${PRICING.INDIVIDUAL.toLocaleString('es-AR')}`;
 
 function priceFieldFromDb(dbPrice) {
   if (dbPrice == null) return '';
@@ -278,12 +279,14 @@ export default function LoadGameModal({ game: editGame, onSave, onClose }) {
               type="number"
               value={price}
               onChange={(e) => setPrice(e.target.value)}
-              min={1}
               step={1}
-              placeholder={`${PRICING.INDIVIDUAL.toLocaleString('es-AR')} (vacío = default)`}
+              placeholder={`${DEFAULT_CATALOG_PRICE_LABEL} (default)`}
               className="w-full rounded-lg px-3 py-2.5 text-sm border outline-none focus:ring-2 focus:ring-offset-0"
               style={style.input}
             />
+            <p className="mt-1.5 text-xs leading-snug" style={{ color: style.textMuted }}>
+              Dejá vacío para usar el precio default del catálogo ({DEFAULT_CATALOG_PRICE_LABEL})
+            </p>
           </div>
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: style.textMuted }}>Archivo .html</label>
