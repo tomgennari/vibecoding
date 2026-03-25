@@ -4,9 +4,20 @@ import { useState, useEffect, Suspense } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { CheckCircle2, Circle } from 'lucide-react';
 import { supabase } from '@/utils/supabase/client.js';
 import { useAuthTheme } from '@/lib/use-auth-theme.js';
 import { ThemeToggle } from '@/components/auth-theme-toggle.js';
+
+function validatePassword(password) {
+  const errors = [];
+  if (password.length < 8) errors.push('Mínimo 8 caracteres');
+  if (password.length > 16) errors.push('Máximo 16 caracteres');
+  if (!/[A-Z]/.test(password)) errors.push('Al menos 1 mayúscula');
+  if (!/[a-z]/.test(password)) errors.push('Al menos 1 minúscula');
+  if (!/[0-9]/.test(password)) errors.push('Al menos 1 número');
+  return errors;
+}
 
 const HOUSES = [
   { id: 'william_brown', name: 'William Brown', color: '#3b82f6', image: '/images/houses/house-brown.png' },
@@ -47,6 +58,12 @@ function RegisterContent() {
 
     if (!house) {
       setError('Selecciona tu House.');
+      return;
+    }
+
+    const pwdErrors = validatePassword(password);
+    if (pwdErrors.length > 0) {
+      setError(`La contraseña no cumple los requisitos: ${pwdErrors.join(' · ')}`);
       return;
     }
 
@@ -126,6 +143,29 @@ function RegisterContent() {
   }
 
   const isDark = theme === 'dark';
+
+  const pwdLenOk = password.length >= 8 && password.length <= 16;
+  const pwdUpper = /[A-Z]/.test(password);
+  const pwdLower = /[a-z]/.test(password);
+  const pwdNum = /[0-9]/.test(password);
+  const passwordValid = validatePassword(password).length === 0;
+
+  const pwdReqMetClass = (met) =>
+    met
+      ? isDark
+        ? 'text-green-400 transition-colors duration-200'
+        : 'text-green-600 transition-colors duration-200'
+      : isDark
+        ? 'text-slate-500 transition-colors duration-200'
+        : 'text-slate-400 transition-colors duration-200';
+  const pwdReqIconClass = (met) =>
+    met
+      ? isDark
+        ? 'text-green-400 transition-colors duration-200'
+        : 'text-green-600 transition-colors duration-200'
+      : isDark
+        ? 'text-slate-500 transition-colors duration-200'
+        : 'text-slate-400 transition-colors duration-200';
 
   if (success) {
     return (
@@ -283,12 +323,46 @@ function RegisterContent() {
                   id="password"
                   type="password"
                   required
-                  minLength={6}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className={inputClass}
-                  placeholder="Mínimo 6 caracteres"
+                  placeholder="Entre 8 y 16 caracteres"
+                  autoComplete="new-password"
                 />
+                <ul className="mt-2 space-y-1.5" aria-label="Requisitos de contraseña">
+                  <li className="flex items-center gap-2">
+                    {pwdLenOk ? (
+                      <CheckCircle2 className={`h-4 w-4 shrink-0 ${pwdReqIconClass(true)}`} aria-hidden />
+                    ) : (
+                      <Circle className={`h-4 w-4 shrink-0 ${pwdReqIconClass(false)}`} aria-hidden />
+                    )}
+                    <span className={`text-xs ${pwdReqMetClass(pwdLenOk)}`}>8 a 16 caracteres</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    {pwdUpper ? (
+                      <CheckCircle2 className={`h-4 w-4 shrink-0 ${pwdReqIconClass(true)}`} aria-hidden />
+                    ) : (
+                      <Circle className={`h-4 w-4 shrink-0 ${pwdReqIconClass(false)}`} aria-hidden />
+                    )}
+                    <span className={`text-xs ${pwdReqMetClass(pwdUpper)}`}>Una letra mayúscula</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    {pwdLower ? (
+                      <CheckCircle2 className={`h-4 w-4 shrink-0 ${pwdReqIconClass(true)}`} aria-hidden />
+                    ) : (
+                      <Circle className={`h-4 w-4 shrink-0 ${pwdReqIconClass(false)}`} aria-hidden />
+                    )}
+                    <span className={`text-xs ${pwdReqMetClass(pwdLower)}`}>Una letra minúscula</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    {pwdNum ? (
+                      <CheckCircle2 className={`h-4 w-4 shrink-0 ${pwdReqIconClass(true)}`} aria-hidden />
+                    ) : (
+                      <Circle className={`h-4 w-4 shrink-0 ${pwdReqIconClass(false)}`} aria-hidden />
+                    )}
+                    <span className={`text-xs ${pwdReqMetClass(pwdNum)}`}>Un número</span>
+                  </li>
+                </ul>
               </div>
 
               <div className="min-w-0">
@@ -389,7 +463,7 @@ function RegisterContent() {
 
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || !passwordValid}
                 className="vibe-btn-gradient w-full rounded-xl py-4 font-bold text-white text-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
               >
                 {loading ? 'Registrando...' : 'Registrarse'}
