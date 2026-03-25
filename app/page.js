@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation';
 import { createClient } from '@/utils/supabase/server';
 import { LandingNavbar } from '@/components/landing/LandingNavbar.js';
 import { FadeIn } from '@/components/landing/FadeIn.js';
@@ -41,6 +42,9 @@ export default async function Home() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  if (user) {
+    redirect('/dashboard');
+  }
   const isLoggedIn = !!user;
 
   return (
