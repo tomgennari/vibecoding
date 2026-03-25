@@ -4,11 +4,11 @@ export function HeroSection({ isLoggedIn }) {
   return (
     <section
       id="hero"
-      className="relative min-h-[90vh] overflow-hidden pt-16 pb-16 md:pt-20 md:pb-24"
+      className="relative flex min-h-[70vh] flex-col items-center justify-center overflow-hidden pt-24 pb-12 md:min-h-[80vh] md:pt-32 md:pb-16"
     >
       <div className="absolute inset-0 bg-gradient-to-b from-white via-slate-50 to-white" />
 
-      <div className="relative z-10 mx-auto max-w-5xl px-4 text-center md:px-8">
+      <div className="relative z-10 mx-auto w-full max-w-5xl px-4 text-center md:px-8">
         <div className="mb-6 flex justify-center gap-2">
           {['#3b82f6', '#eab308', '#ef4444', '#22c55e'].map((c) => (
             <span
