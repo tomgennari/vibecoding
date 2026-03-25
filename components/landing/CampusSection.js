@@ -9,7 +9,7 @@ const BUILDINGS = [
   { name: 'Secundario', status: 'planned', image: '/images/campus/Secondary_Normal.png' },
   { name: 'Dining Hall', status: 'planned', image: '/images/campus/Dinning_Hall_normal.png' },
   { name: 'Performing Arts', status: 'planned', image: '/images/campus/Performing_Arts_Center_Normal.png' },
-  { name: 'Barco Symmetry', status: 'planned', image: '/images/campus/Sports_Pavilion_Normal.png' },
+  { name: 'Barco Symmetry', status: 'planned', image: '/images/campus/Symmetry_Normal.png' },
 ];
 
 function statusBadge(status) {
