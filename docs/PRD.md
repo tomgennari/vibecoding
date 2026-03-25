@@ -166,6 +166,7 @@ Los usuarios crean juegos con ayuda de la IA dentro de la plataforma y por cuent
 **Sistema de packs y créditos — ✅ Implementado:**
 - **Juego individual:** desbloquea 1 juego específico al pagar. Se registra en `game_unlocks`.
 - **Pack 10 / Pack 30:** al pagar, se acreditan N créditos en `profiles.unlock_credits`. El usuario luego elige qué juegos desbloquear uno por uno desde la pantalla de desbloqueo, sin pagar de nuevo.
+- **Auto-desbloqueo del juego origen:** si el usuario compra un pack desde un juego específico, ese juego se desbloquea automáticamente y se acreditan N-1 créditos (ej: Pack 10 → 9 créditos + 1 juego desbloqueado). Si el juego ya estaba desbloqueado, se acreditan los N créditos completos. El `back_url` de MercadoPago redirige al juego para que pueda jugar inmediatamente.
 - **ALL ACCESS:** setea `profiles.has_all_access = true` permanentemente. Acceso a todos los juegos actuales y futuros sin necesidad de desbloquear individualmente.
 - Los créditos se acumulan: un usuario puede comprar múltiples packs y sumar créditos.
 - El desbloqueo con crédito se hace via endpoint `/api/games/unlock-with-credits` con protección de race condition.
@@ -173,6 +174,9 @@ Los usuarios crean juegos con ayuda de la IA dentro de la plataforma y por cuent
 - Todas las compras se registran en tabla `pack_purchases` para historial y auditoría.
 - Indicador de créditos disponibles visible en navbar y perfil. Badge "ALL ACCESS" si aplica.
 - Créditos de Andy: +$1.00 USD al comprar cualquier paquete (individual, pack o ALL ACCESS).
+- **Modal `UnlockGameModal`:** componente reutilizable (`components/unlock-game-modal.js`) integrado en dashboard, `/juegos` y `/jugar/[id]`. Muestra opciones de crédito (si disponible), individual, packs y ALL ACCESS. Tema oscuro fijo para legibilidad en ambos modos.
+- **Precios centralizados** en `lib/pricing.js` — fuente única de verdad para todos los componentes y APIs.
+- **Dashboard con ALL ACCESS:** si el usuario tiene `has_all_access`, todos los juegos aparecen en el carrusel "Todos los juegos" con tag "ALL ACCESS" y la sección "Juegos para desbloquear" se oculta.
 
 **Donaciones directas (solo padres):**
 - Monto elegido por el padre: $20.000 ARS | $100.000 ARS | $200.000 ARS | $500.000 ARS |
@@ -693,6 +697,11 @@ Tablas principales (todas con RLS habilitado):
 - ✅ Página `/pago/exitoso` con flujo diferenciado para packs (redirige a catálogo)
 - ✅ Precio juego individual actualizado de $5.000 a $6.000 ARS
 - ✅ Webhook MercadoPago actualizado: parsea `pack10_`, `pack30_`, `allaccess_` en external_reference, backward compatible con formato legacy
+- ✅ Auto-desbloqueo del juego origen al comprar pack: webhook desbloquea el juego y acredita N-1 créditos; back_url redirige al juego
+- ✅ `lib/pricing.js`: fuente única de precios (INDIVIDUAL, PACK_10, PACK_30, ALL_ACCESS, UNLOCK_FOR_ALL) importada en todos los componentes y APIs
+- ✅ `UnlockGameModal` con tema oscuro fijo: opciones de crédito, individual, packs y ALL ACCESS. Integrado en dashboard, /juegos y /jugar/[id]
+- ✅ Dashboard ALL ACCESS: carrusel "Todos los juegos" con tag ALL ACCESS, sección "Juegos para desbloquear" oculta
+- ✅ Perfil: sección dedicada con badge ALL ACCESS (con fecha) o créditos disponibles
 - ❌ Descartado: Phaser.js (juegos se truncaban, código demasiado largo)
 - ❌ Descartado: Excalibur.js (requiere TypeScript y bundler)
 - ❌ Descartado: Assets de Kenney (Andy no los usaba, consumían tokens innecesarios)
@@ -775,7 +784,7 @@ Los precios se revisan trimestralmente según inflación.
 - Un usuario con ALL ACCESS no necesita créditos — tiene acceso directo
 - La verificación de acceso sigue este orden: `has_all_access` → `game_unlocks` → `unlocked_for_all` → juego gratuito del día
 - Los umbrales de activación (50+ y 100+ juegos) se validan dinámicamente al crear la preference de MercadoPago
-- El `external_reference` de MercadoPago codifica el tipo: `unlock_userId_gameId` (individual), `pack10_userId`, `pack30_userId`, `allaccess_userId`
+- El `external_reference` de MercadoPago codifica el tipo: `unlock_userId_gameId` (individual), `pack10_userId_gameId` (pack con juego origen), `pack10_userId` (pack sin juego origen), `allaccess_userId_gameId`, `allaccess_userId`. El gameId es opcional en packs — si está presente, el webhook auto-desbloquea ese juego.
 
 ### 9.3 Puntos por House
 
