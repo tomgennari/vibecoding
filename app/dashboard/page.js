@@ -11,6 +11,7 @@ import { DashboardNavbar } from '@/components/dashboard-navbar.js';
 import { MobileBottomNav } from '@/components/mobile-bottom-nav.js';
 import { UnlockGameModal } from '@/components/unlock-game-modal.js';
 import { effectiveIndividualGamePrice } from '@/lib/pricing.js';
+import { getTodayArgentina } from '@/lib/dates';
 
 const HOUSES = [
   { id: 'william_brown', name: 'William Brown', color: '#3b82f6', image: '/images/houses/house-brown.png' },
@@ -148,7 +149,7 @@ export default function DashboardPage() {
         return;
       }
       const uid = session.user.id;
-      const today = new Date().toISOString().split('T')[0];
+      const today = getTodayArgentina();
 
       const [
         sessionsRes,

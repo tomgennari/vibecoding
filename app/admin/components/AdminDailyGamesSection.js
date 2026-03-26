@@ -4,18 +4,13 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import Image from 'next/image';
 import { supabase } from '@/utils/supabase/client.js';
 import { HOUSES, ADMIN_THEME } from '../constants.js';
+import { getTodayArgentina, getTomorrowArgentina } from '@/lib/dates';
 
 const PAGE_SIZE = 20;
 const MAX_SCHEDULED = 3;
 
 function formatArs(n) {
   return Number(n).toLocaleString('es-AR');
-}
-
-function getTomorrow() {
-  const d = new Date();
-  d.setDate(d.getDate() + 1);
-  return d.toISOString().split('T')[0];
 }
 
 export default function AdminDailyGamesSection() {
@@ -29,8 +24,8 @@ export default function AdminDailyGamesSection() {
   const [page, setPage] = useState(1);
   const [actioning, setActioning] = useState(null);
 
-  const today = new Date().toISOString().split('T')[0];
-  const tomorrow = getTomorrow();
+  const today = getTodayArgentina();
+  const tomorrow = getTomorrowArgentina();
 
   const loadData = useCallback(async () => {
     setLoading(true);

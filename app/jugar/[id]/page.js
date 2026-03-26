@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/utils/supabase/client.js';
 import { UnlockGameModal } from '@/components/unlock-game-modal.js';
+import { getTodayArgentina } from '@/lib/dates';
 
 const BASE_URL = typeof window !== 'undefined' && window.location.origin ? window.location.origin : 'https://sass.vibecoding.ar';
 
@@ -169,7 +170,7 @@ export default function JugarPage() {
             .maybeSingle();
 
           // Verificar juego gratis del día
-          const today = new Date().toISOString().split('T')[0];
+          const today = getTodayArgentina();
           const { data: dailyFree } = await supabase
             .from('daily_free_games')
             .select('id')

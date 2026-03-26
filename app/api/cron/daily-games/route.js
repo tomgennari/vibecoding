@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { getTodayArgentina } from '@/lib/dates';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -19,7 +20,7 @@ export async function GET(request) {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = getTodayArgentina();
   let added = 0;
 
   try {

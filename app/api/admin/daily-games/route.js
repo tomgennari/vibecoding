@@ -1,14 +1,9 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { getTomorrowArgentina } from '@/lib/dates';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-function getTomorrow() {
-  const d = new Date();
-  d.setDate(d.getDate() + 1);
-  return d.toISOString().split('T')[0];
-}
 
 async function requireAdmin(request) {
   const authHeader = request.headers.get('authorization');
@@ -43,7 +38,7 @@ export async function POST(request) {
   if (!gameId) {
     return NextResponse.json({ error: 'Falta gameId' }, { status: 400 });
   }
-  const tomorrow = getTomorrow();
+  const tomorrow = getTomorrowArgentina();
   const { data: existing } = await auth.supabase
     .from('daily_free_games')
     .select('id')
@@ -83,7 +78,7 @@ export async function DELETE(request) {
   if (!gameId) {
     return NextResponse.json({ error: 'Falta gameId' }, { status: 400 });
   }
-  const tomorrow = getTomorrow();
+  const tomorrow = getTomorrowArgentina();
   const { error } = await auth.supabase
     .from('daily_free_games')
     .delete()
