@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { PRICING } from '@/lib/pricing.js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -116,8 +117,26 @@ export async function GET(request) {
     const pidRaw = u.payment_id;
     const pid = pidRaw != null && String(pidRaw).trim() !== '' ? String(pidRaw) : null;
     if (pid && packPaymentIds.has(pid)) continue;
-    kpiUnlockAll += amt;
     exclusiveUnlocks.push(u);
+  }
+
+  const exclusiveGameIds = [...new Set(exclusiveUnlocks.map((u) => u.game_id).filter(Boolean))];
+  let exclusiveGamesById = {};
+  if (exclusiveGameIds.length > 0) {
+    const exGamesRes = await admin
+      .from('games')
+      .select('id, unlocked_for_all')
+      .in('id', exclusiveGameIds);
+    if (exGamesRes.error) {
+      return NextResponse.json(
+        { error: `games (game_unlocks): ${exGamesRes.error.message}` },
+        { status: 500 },
+      );
+    }
+    exclusiveGamesById = (exGamesRes.data || []).reduce((acc, g) => {
+      acc[g.id] = g;
+      return acc;
+    }, {});
   }
 
   const kpiDonations = donations.reduce((acc, d) => acc + (Number(d.amount) || 0), 0);
@@ -138,13 +157,22 @@ export async function GET(request) {
   });
 
   exclusiveUnlocks.forEach((u, idx) => {
+    const amount = Number(u.amount_paid) || 0;
+    const gameRow = u.game_id ? exclusiveGamesById[u.game_id] : null;
+    const isUnlockAll =
+      Math.round(amount) === PRICING.UNLOCK_FOR_ALL &&
+      gameRow?.unlocked_for_all === true;
+    const kind = isUnlockAll ? 'unlock_all' : 'individual_legacy';
+    if (isUnlockAll) kpiUnlockAll += amount;
+    else kpiIndividual += amount;
+
     const at = rowDate(u, ['unlocked_at']) || new Date(0).toISOString();
     transactions.push({
       id: `unlock-${idx}-${u.payment_id ?? u.game_id ?? idx}`,
       at,
       userId: u.user_id,
-      kind: 'unlock_all',
-      amount: Number(u.amount_paid) || 0,
+      kind,
+      amount,
       paymentId: u.payment_id ?? null,
       gameId: u.game_id ?? null,
     });

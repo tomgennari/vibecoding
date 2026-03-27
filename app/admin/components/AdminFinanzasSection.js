@@ -9,6 +9,7 @@ const PAGE_SIZE = 20;
 
 const TX_KIND_LABEL = {
   individual: 'Individual',
+  individual_legacy: 'Individual (legacy)',
   pack_10: 'Pack 10',
   pack_30: 'Pack 30',
   all_access: 'ALL ACCESS',
@@ -19,6 +20,7 @@ const TX_KIND_LABEL = {
 const TX_KIND_OPTIONS = [
   { id: '', label: 'Todos los tipos' },
   { id: 'individual', label: 'Individual' },
+  { id: 'individual_legacy', label: 'Individual (legacy)' },
   { id: 'pack_10', label: 'Pack 10' },
   { id: 'pack_30', label: 'Pack 30' },
   { id: 'all_access', label: 'ALL ACCESS' },
