@@ -198,7 +198,6 @@ export default function DashboardPage() {
         userLikesRes,
         buildingsRes,
         unlocksAmountRes,
-        donationsRes,
         allProfilesRes,
         allSessionsRes,
         allDonationsRes,
@@ -212,7 +211,6 @@ export default function DashboardPage() {
         supabase.from('game_likes').select('game_id').eq('user_id', uid).then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('buildings').select('*').order('display_order', { ascending: true }).then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => supabase.from('buildings').select('*').order('name', { ascending: true }).then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true }))),
         supabase.from('game_unlocks').select('game_id, amount_paid').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
-        supabase.from('donations').select('amount').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('profiles').select('house, user_type').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('game_sessions').select('game_id, duration_seconds').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('donations').select('house, amount').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
@@ -268,9 +266,8 @@ export default function DashboardPage() {
 
       setBuildings(buildingsRes.data || []);
 
-      const sumUnlocks = (unlocksAmountRes.data || []).reduce((acc, row) => acc + (Number(row.amount_paid) || 0), 0);
-      const sumDonations = (donationsRes.data || []).reduce((acc, row) => acc + (Number(row.amount) || 0), 0);
-      setTotalRaised(sumUnlocks + sumDonations);
+      const { data: raisedData } = await supabase.rpc('get_total_raised');
+      setTotalRaised(Number(raisedData) || 0);
       setLoading(false);
     }
     init();
