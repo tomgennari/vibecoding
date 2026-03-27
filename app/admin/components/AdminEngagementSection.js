@@ -28,30 +28,58 @@ function formatDayLabel(ymd) {
 
 const BAR_CHART_MAX_PX = 120;
 
-function VerticalBars({ data, valueKey, max: maxOverride }) {
+/** 3–4 marcas: máximo arriba, 0 abajo, intermedias. */
+function yAxisTicks(maxData, segments = 3) {
+  const m = Math.max(0, Number(maxData) || 0);
+  if (m === 0) return [0];
+  const out = [];
+  for (let i = 0; i <= segments; i += 1) {
+    out.push(Math.round((m * (segments - i)) / segments));
+  }
+  return [...new Set(out)].sort((a, b) => b - a);
+}
+
+function VerticalBars({ data, valueKey, formatTick }) {
   const vals = data.map((row) => Number(row[valueKey]) || 0);
-  const max = maxOverride ?? Math.max(1, ...vals);
+  const maxData = Math.max(0, ...vals);
+  const scaleMax = maxData > 0 ? maxData : 1;
+  const ticks = yAxisTicks(maxData, 3);
+  const fmt =
+    formatTick ||
+    ((v) => (Number.isInteger(v) ? formatInt(v) : Number(v).toLocaleString('es-AR', { maximumFractionDigits: 1 })));
+
   return (
-    <div className="flex items-end gap-0.5 px-1" style={{ height: BAR_CHART_MAX_PX + 8 }}>
-      {data.map((row) => {
-        const v = Number(row[valueKey]) || 0;
-        const hPx = Math.max(v > 0 ? 3 : 0, Math.round((v / max) * BAR_CHART_MAX_PX));
-        return (
-          <div
-            key={row.date}
-            className="flex-1 min-w-[5px] flex flex-col items-center justify-end"
-            title={`${row.date}: ${v}`}
-          >
+    <div className="flex gap-2 items-end min-w-0">
+      <div
+        className="flex flex-col justify-between shrink-0 w-11 text-right pr-1 tabular-nums leading-none text-[10px]"
+        style={{ height: BAR_CHART_MAX_PX, color: ADMIN_THEME.textMuted }}
+      >
+        {ticks.map((t, i) => (
+          <span key={`${t}-${i}`}>{fmt(t)}</span>
+        ))}
+      </div>
+      <div className="flex-1 flex items-end gap-0.5 min-w-0" style={{ height: BAR_CHART_MAX_PX }}>
+        {data.map((row) => {
+          const v = Number(row[valueKey]) || 0;
+          const hPx =
+            maxData > 0 ? Math.max(v > 0 ? 3 : 0, Math.round((v / scaleMax) * BAR_CHART_MAX_PX)) : 0;
+          return (
             <div
-              className="w-full rounded-t transition-all"
-              style={{
-                height: hPx,
-                background: `linear-gradient(180deg, ${ADMIN_THEME.accent} 0%, ${ADMIN_THEME.accentSecondary} 100%)`,
-              }}
-            />
-          </div>
-        );
-      })}
+              key={row.date}
+              className="flex-1 min-w-[5px] flex flex-col items-center justify-end h-full"
+              title={`${row.date}: ${v}`}
+            >
+              <div
+                className="w-full rounded-t transition-all mt-auto"
+                style={{
+                  height: hPx,
+                  background: `linear-gradient(180deg, ${ADMIN_THEME.accent} 0%, ${ADMIN_THEME.accentSecondary} 100%)`,
+                }}
+              />
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -246,20 +274,34 @@ export default function AdminEngagementSection() {
 
       <section>
         <h3 className="text-lg font-bold mb-4" style={{ color: ADMIN_THEME.text }}>Actividad</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
           {[
-            { label: 'Usuarios activos hoy', value: au.today },
-            { label: 'Últimos 7 días', value: au.last7days },
-            { label: 'Últimos 30 días', value: au.last30days },
+            { label: 'Usuarios activos hoy', value: formatInt(au.today), highlight: false },
+            { label: 'Últimos 7 días', value: formatInt(au.last7days), highlight: false },
+            { label: 'Últimos 30 días', value: formatInt(au.last30days), highlight: false },
+            {
+              label: 'Tiempo total jugado',
+              value: formatDurationSeconds(data.totalTimePlayed),
+              highlight: true,
+            },
           ].map((c) => (
             <div
               key={c.label}
               className="rounded-xl border p-5"
-              style={{ borderColor: ADMIN_THEME.border, background: ADMIN_THEME.card }}
+              style={{
+                borderColor: ADMIN_THEME.border,
+                background: ADMIN_THEME.card,
+                ...(c.highlight
+                  ? { borderColor: ADMIN_THEME.accentSecondary, boxShadow: `0 0 0 1px ${ADMIN_THEME.accentSecondary}40` }
+                  : {}),
+              }}
             >
               <p className="text-sm font-semibold mb-1" style={{ color: ADMIN_THEME.textMuted }}>{c.label}</p>
-              <p className="text-3xl font-black tabular-nums" style={{ color: ADMIN_THEME.accent }}>
-                {formatInt(c.value)}
+              <p
+                className="text-3xl font-black tabular-nums"
+                style={{ color: c.highlight ? ADMIN_THEME.accentSecondary : ADMIN_THEME.accent }}
+              >
+                {c.value}
               </p>
             </div>
           ))}
@@ -292,7 +334,16 @@ export default function AdminEngagementSection() {
               style={{ borderColor: ADMIN_THEME.border, background: ADMIN_THEME.card }}
             >
               <h4 className="font-semibold text-sm mb-2" style={{ color: ADMIN_THEME.text }}>{chart.title}</h4>
-              <VerticalBars data={chart.data} valueKey={chart.key} />
+              <VerticalBars
+                data={chart.data}
+                valueKey={chart.key}
+                formatTick={
+                  chart.key === 'minutes'
+                    ? (v) =>
+                        Number(v).toLocaleString('es-AR', { maximumFractionDigits: v >= 10 || Number.isInteger(v) ? 0 : 1 })
+                    : undefined
+                }
+              />
               <p className="text-[10px] mt-2 flex flex-wrap gap-x-1" style={{ color: ADMIN_THEME.textMuted }}>
                 {(chart.data || []).slice(0, 6).map((d) => (
                   <span key={d.date}>{formatDayLabel(d.date)}</span>
@@ -444,11 +495,6 @@ export default function AdminEngagementSection() {
             </p>
           </div>
         </div>
-        <p className="text-xs mt-2" style={{ color: ADMIN_THEME.textMuted }}>
-          Tiempo total jugado (global):{' '}
-          <strong style={{ color: ADMIN_THEME.text }}>{formatDurationSeconds(data.totalTimePlayed)}</strong>
-          {' '}({formatInt(data.totalTimePlayed)} s)
-        </p>
       </section>
     </div>
   );

@@ -1,6 +1,5 @@
-﻿import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { getTodayArgentina } from '@/lib/dates.js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -31,7 +30,14 @@ function argentinaYmd(d) {
   }).format(d instanceof Date ? d : new Date(d));
 }
 
-/** Suma dÃ­as calendario en zona AR usando mediodÃ­a BA como ancla. */
+/** Fecha calendario “hoy” en America/Argentina/Buenos_Aires (no medianoche UTC). */
+function todayYmdArgentina() {
+  const now = new Date();
+  const argDate = new Date(now.toLocaleString('en-US', { timeZone: 'America/Argentina/Buenos_Aires' }));
+  return argDate.toISOString().slice(0, 10);
+}
+
+/** Suma días calendario en zona AR usando mediodía BA como ancla. */
 function addDaysYmd(ymd, delta) {
   const [y, m, d] = ymd.split('-').map(Number);
   const base = new Date(
@@ -46,7 +52,7 @@ function isAndyFileUrl(fileUrl) {
   return fileUrl.toLowerCase().includes('game-lab');
 }
 
-/** Ãšltimos N dÃ­as (incl. hoy) como YYYY-MM-DD ascendente. */
+/** Últimos N días (incl. hoy) como YYYY-MM-DD ascendente. */
 function lastDaysYmd(todayYmd, n) {
   const out = [];
   for (let i = n - 1; i >= 0; i -= 1) {
@@ -74,7 +80,7 @@ async function paginateSelect(admin, table, columns, applyFilters = (q) => q) {
 
 export async function GET(request) {
   if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceKey) {
-    return NextResponse.json({ error: 'ConfiguraciÃ³n incompleta' }, { status: 500 });
+    return NextResponse.json({ error: 'Configuración incompleta' }, { status: 500 });
   }
 
   const auth = await requireAdmin(request);
@@ -86,7 +92,7 @@ export async function GET(request) {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  const todayYmd = getTodayArgentina();
+  const todayYmd = todayYmdArgentina();
   const day30StartYmd = addDaysYmd(todayYmd, -29);
   const day7StartYmd = addDaysYmd(todayYmd, -6);
 
@@ -104,7 +110,7 @@ export async function GET(request) {
     gamesRes.error && `games: ${gamesRes.error.message}`,
   ].filter(Boolean);
   if (batchErrors.length) {
-    return NextResponse.json({ error: batchErrors.join(' Â· ') }, { status: 500 });
+    return NextResponse.json({ error: batchErrors.join(' · ') }, { status: 500 });
   }
 
   const profiles = profilesRes.rows || [];
