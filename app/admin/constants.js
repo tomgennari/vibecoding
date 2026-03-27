@@ -9,7 +9,7 @@ export const ADMIN_SECTIONS = [
   { id: 'juegos', label: 'Juegos', icon: '🎮' },
   { id: 'juegos-dia', label: 'Juegos del día', icon: '📅' },
   { id: 'usuarios', label: 'Usuarios', icon: '👥' },
-  { id: 'metricas', label: 'Métricas', icon: '📊' },
+  { id: 'engagement', label: 'Engagement', icon: '📈' },
   { id: 'finanzas', label: 'Finanzas', icon: '💰' },
 ];
 

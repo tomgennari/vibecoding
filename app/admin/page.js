@@ -9,7 +9,7 @@ import AdminSidebar from './components/AdminSidebar.js';
 import AdminGamesSection from './components/AdminGamesSection.js';
 import AdminDailyGamesSection from './components/AdminDailyGamesSection.js';
 import AdminUsersSection from './components/AdminUsersSection.js';
-import AdminMetricsSection from './components/AdminMetricsSection.js';
+import AdminEngagementSection from './components/AdminEngagementSection.js';
 import AdminFinanzasSection from './components/AdminFinanzasSection.js';
 
 export default function AdminPage() {
@@ -65,7 +65,7 @@ export default function AdminPage() {
           {section === 'juegos' && <AdminGamesSection />}
           {section === 'juegos-dia' && <AdminDailyGamesSection />}
           {section === 'usuarios' && <AdminUsersSection />}
-          {section === 'metricas' && <AdminMetricsSection />}
+          {section === 'engagement' && <AdminEngagementSection />}
           {section === 'finanzas' && <AdminFinanzasSection />}
         </main>
       </div>
