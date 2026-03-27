@@ -1,5 +1,5 @@
 # Campus San Andrés — Vibe Coding San Andrés
-## Product Requirements Document (PRD) v3.8
+## Product Requirements Document (PRD) v3.9
 
 **Fecha:** Marzo 2026  
 **Autor:** Tomás Gennari  
@@ -92,8 +92,9 @@ Los usuarios crean juegos con ayuda de la IA dentro de la plataforma y por cuent
 ### 3.3 Administrador (Tomás Gennari — fase MVP)
 
 - Aprueba o rechaza juegos con mensaje al alumno
+- Edita HTML de juegos inline o reemplaza archivos desde el panel admin
 - Gestión completa de usuarios: alta, baja, modificación, bloqueo
-- Acceso a todas las métricas y reportes de recaudación
+- Acceso a todas las métricas, finanzas y reportes de recaudación
 - Configura los 3 juegos gratuitos del día (manualmente o automático)
 - Activa o desactiva paquetes de juegos según volumen disponible
 - En fases futuras: el colegio tendrá su propio administrador
@@ -183,6 +184,12 @@ Los usuarios crean juegos con ayuda de la IA dentro de la plataforma y por cuent
 - Los alumnos NO pueden donar — solo compartir por WhatsApp para pedir a sus padres
 - Todo el dinero (compras + donaciones) va al mismo fondo de construcción
 
+**Cálculo de recaudación total — ✅ Implementado:**
+- Función RPC `get_total_raised()` en Supabase con `SECURITY DEFINER`
+- Fórmula: `SUM(pack_purchases.amount_paid) + SUM(game_unlocks.amount_paid WHERE payment_id NOT IN pack_purchases AND amount_paid > 0) + SUM(donations.amount)`
+- Evita doble conteo: compras individuales están en ambas tablas (`pack_purchases` y `game_unlocks`) con el mismo `payment_id`; la RPC usa anti-join por `payment_id`
+- Bypasea RLS para mostrar el total global a todos los usuarios
+
 **Infraestructura:**
 - Procesador: MercadoPago (~3% comisión por transacción)
 - MVP: fondos a cuenta personal de Tomás Gennari
@@ -209,44 +216,126 @@ Cada juego registra en la base de datos:
 - Leaderboard por juego: top 10 histórico
 - Los puntajes suman puntos al House del jugador
 
-### 4.5 Scoreboards y Rankings
+### 4.5 Scoreboards, Rankings y Sistema de Edificios ✅ Implementado
 
-- Top juegos por tiempo jugado total
-- Top juegos por likes
-- Top juegos por dinero recaudado
-- Top juegos por puntuación máxima
-- Juegos más nuevos
-- Top jugadores individuales
-- Ranking de Houses (suma ponderada de todas las métricas)
-- Progreso de construcción por edificio (barra de avance visible para todos)
+**Rankings de Houses en el Dashboard:**
+
+8 rankings organizados en carrusel de grillas 2×2, en este orden:
+
+| # | Ranking | Edificio asociado |
+|---|---------|------------------|
+| 1 | Más alumnos registrados | Kinder |
+| 2 | Más padres registrados | Primary School |
+| 3 | Más juegos creados | Sports Pavilion |
+| 4 | Juegos Desbloqueados | Natatorio |
+| 5 | Ranking de Likes | Dinning Hall |
+| 6 | Tiempo Jugado | Performing Arts Center |
+| 7 | Donaciones | Secondary School |
+| 8 | Ranking Total | Symmetry Boat |
+
+Cada tarjeta de ranking muestra una miniatura del edificio asociado en la esquina superior derecha (80×80px, `z-20`, sobresale de la tarjeta). Tamaño ajustable por edificio via `rankingScale` en `BUILDING_GOALS`.
+
+**Sistema de Edificios a Desbloquear:**
+
+Los edificios se desbloquean progresivamente según la recaudación total de la plataforma (calculada via RPC `get_total_raised()`):
+
+| # | Edificio | Meta de recaudación | Progresión |
+|---|----------|-------------------|------------|
+| 1 | Kinder | $200.000 ARS | — |
+| 2 | Primary School | $500.000 ARS | ×2.5 |
+| 3 | Sports Pavilion | $1.500.000 ARS | ×3 |
+| 4 | Natatorio | $5.000.000 ARS | ×3.3 |
+| 5 | Dinning Hall | $15.000.000 ARS | ×3 |
+| 6 | Performing Arts Center | $40.000.000 ARS | ×2.67 |
+| 7 | Secondary School | $80.000.000 ARS | ×2 |
+| 8 | Symmetry Boat | $150.000.000 ARS | ×1.875 |
+
+Progresión exponencial decreciente: los primeros edificios son "alcanzables" rápido (genera momentum), los últimos son aspiracionales. Los primeros 3 edificios se desbloquean con $1.5M (1% del total).
+
+Los milestones están definidos en el array `BUILDING_GOALS` en `app/dashboard/page.js`.
+
+**Imágenes de edificios:**
+- Ubicación: `public/images/Buildings No Backgrounds/`
+- Patrón de nombres: `{Edificio}_Normal.png` (versión neutral) y `{Edificio}_{House}.png` (versión con colores de House)
+- Sufijos de House: `William_Brown`, `James_Dodds`, `James_Fleming`, `John_Monteith`
+- Excepciones de naming: `Natatorio_William Brown.png` y `Secondary_John Monteith.png` tienen espacio en vez de guion bajo (mapeado en `BUILDING_HOUSE_FILE_QUIRKS`)
+
+**Estados visuales de los edificios en los rankings:**
+- **Bloqueado** (`totalRaised < meta`): imagen Normal en `grayscale(100%)`, `opacity: 0.7`, ícono 🔒 superpuesto. Sin animación.
+- **Desbloqueado** (`totalRaised >= meta`): animación CSS loop de 5s — ~2s imagen Normal a color → fade → ~3s imagen con colores del House que lidera ESE ranking → fade. Si el House líder cambia, la imagen se actualiza reactivamente. Animación en `app/globals.css`.
+
+**Widget "Próximo Edificio a Desbloquear" (sidebar derecha del dashboard):**
+- Título: "🏗️ Próximo Edificio a Desbloquear"
+- Imagen del edificio actual en estado Normal (~80px, centrada)
+- Nombre del edificio en negrita
+- Monto recaudado vs meta con barra de progreso gradient (violeta→cyan)
+- Lista de edificios ya completados con ✅ y nombre
+- Versión mobile: compacta con nombre del edificio, barra de progreso y botón Donar
+- Botón "Donar" abre modal de donación
 
 ### 4.6 Panel de Administración ✅ Implementado
 
-El panel de admin está construido en Next.js en `/app/admin` con las siguientes secciones operativas:
+El panel de admin está construido en Next.js en `/app/admin` con 5 hojas definidas en `app/admin/constants.js`:
 
-**Juegos del día (`AdminDailyGamesSection`):**
-- Vista de juegos activos hoy
-- Vista de juegos programados para mañana (con botón Quitar)
-- Tabla de todos los juegos aprobados con métricas: jugadores únicos, likes, recaudado, última vez usado como gratis
-- Filtros: Todos / No usados / Ya usados como gratis
-- Ordenamiento por cualquier columna
-- Paginación
-- Botón "Programar para mañana" — inserta con `scheduled_for = mañana` y `active_date = null`
-- Límite de 3 juegos programados por día (validado en frontend y API)
-- Fallback automático: los juegos faltantes se seleccionan automáticamente a las 00:00
+**🎮 Juegos (`AdminGamesSection`) — ✅ Implementado:**
+- Tabla completa de juegos con datos enriquecidos via `/api/admin/juegos`
+- Columnas: ID (copiable), Título, House, Autor, Tipo (Andy/Manual), Estado, Fecha, Jugadores únicos, Likes, Recaudado, Tiempo jugado, High Score, Última partida, Badges (Gratis hoy, Para todos, Nunca gratis)
+- Filtros: buscador por título/autor, estado, House, tipo (Andy/Manual)
+- Ordenamiento por cualquier columna, paginación 20 por página
+- Acciones: Ver (modal preview), Descargar HTML, Eliminar
+- **Editor HTML inline:** en el modal de preview, el modo "Ver código" es un textarea editable. Botón "Guardar cambios" sube el HTML editado a Storage reemplazando el archivo existente via `/api/admin/juegos/update-html`
+- **Resubir HTML:** botón "Reemplazar HTML" permite subir un archivo .html nuevo (< 500KB) que reemplaza el anterior en Storage. No afecta likes, compras, métricas ni scores del juego (están vinculados al `game_id`, no al archivo)
+- **Moderación:** botones Aprobar/Rechazar en juegos pendientes, "Analizar con IA" para verificar contenido
+- Botón "Cargar juego" para subir juegos nuevos como admin
+
+**📅 Juegos del día (`AdminDailyGamesSection`):**
+- Vista de juegos activos hoy y programados para mañana
+- Tabla de todos los juegos aprobados con métricas
+- Botón "Programar para mañana", límite 3 por día
+- Fallback automático via cron a las 00:00
+
+**👥 Usuarios (`AdminUsersSection`) — ✅ Implementado:**
+- Tabla enriquecida via `/api/admin/usuarios` con datos agregados de múltiples tablas
+- Columnas: Nombre, Email, Tipo, House, Registro, Juegos creados, Juegos comprados, Total gastado, Donado, Créditos Andy (usados/límite), Créditos desbloqueo, ALL ACCESS, Tiempo jugado, Puntos, Última actividad, Acciones
+- Filtros: buscador, tipo (alumno/padre), House, estado (activos/bloqueados/admin), pagos (pagaron/nunca/ALL ACCESS)
+- Ordenamiento por cualquier columna, paginación 20 por página
+- Fila expandible con detalle de packs comprados y donaciones
+- Acciones: Hacer admin / Quitar admin / Bloquear / Desbloquear
+
+**📈 Engagement (`AdminEngagementSection`) — ✅ Implementado:**
+- Datos via `/api/admin/engagement` (timezone `America/Argentina/Buenos_Aires`)
+- KPIs: Usuarios activos hoy / 7 días / 30 días, Tiempo total jugado
+- Tendencias (30 días): Registros por día, Tiempo jugado por día, Juegos creados por día — gráficos de barras CSS con eje Y
+- Distribución: Registros por House, Andy vs Manual, Retención
+- Rankings top 10: juegos por tiempo/jugadores/likes, jugadores por tiempo/desbloqueos
+- Andy/Game Lab: créditos consumidos, promedio por usuario, juegos generados/publicados/rechazados
+
+**💰 Finanzas (`AdminFinanzasSection`) — ✅ Implementado:**
+- Datos via `/api/admin/finanzas`
+- KPIs: Total recaudado (via RPC `get_total_raised()`), desglose por fuente (individuales, packs, ALL ACCESS, unlock_all, donaciones)
+- Progreso de edificios: 8 barras con nombre, meta, recaudado, porcentaje, estado (✅/🔒)
+- Tabla de transacciones: todas las transacciones unificadas de `pack_purchases` + `game_unlocks` (exclusivos) + `donations`, ordenadas por fecha. Columnas: Fecha, Usuario, Tipo, Monto, Payment ID, Juego. Tipos: Individual, Pack 10, Pack 30, ALL ACCESS, Unlock All, Individual (legacy), Donación
+- Filtros: tipo, House, rango de fechas. Paginación 20 por página
+- Métricas adicionales: Ticket promedio, Conversión (usuarios que pagaron vs registrados), Top 5 compradores
 
 **API routes de admin:**
-- `POST /api/admin/daily-games` — programa un juego para mañana
-- `DELETE /api/admin/daily-games?gameId=` — quita un juego programado
-- Ambas rutas verifican sesión activa y rol `is_admin` antes de operar
+- `GET /api/admin/juegos` — juegos enriquecidos con métricas
+- `POST /api/admin/juegos/update-html` — editor inline y resubida de HTML
+- `GET /api/admin/usuarios` — usuarios enriquecidos con datos agregados
+- `GET /api/admin/engagement` — métricas de engagement
+- `GET /api/admin/finanzas` — métricas financieras y transacciones
+- `POST /api/admin/daily-games` — programar juego del día
+- `DELETE /api/admin/daily-games?gameId=` — quitar juego programado
+- `POST /api/admin/notify-rejection` — email de rechazo al alumno
+- Todas verifican sesión activa + `is_admin` + usan service role para bypasear RLS
 
-**Moderación de juegos — ✅ Implementado:**
-- Modal `GamePreviewModal` al hacer click en "Ver" en cualquier juego de la tabla
-- El modal carga el HTML del juego via `fetch` y lo renderiza en `<iframe srcdoc>` (evita problema de Content-Type de Supabase Storage que mostraba el código como texto plano)
-- Toggle "Ver código / Ver juego" para inspeccionar el HTML fuente antes de aprobar
-- Si el juego está pendiente, botones Aprobar y Rechazar disponibles dentro del modal
-- **Notificación al admin:** Edge Function `notify-new-game` + Database Webhook en Supabase. Cuando se inserta un juego con `status = 'pending'`, se envía un email automático al admin via Resend con título, descripción, house y link directo al panel de admin
-- **Problema de encoding conocido:** juegos generados en Safari/Mac pueden tener caracteres especiales corruptos (ej: `PresionÃ¡` en vez de `Presioná`). Andy tiene regla en `quality-rules.md` para usar unicode escapado (`\u00E1` etc.) y evitarlo. Si un juego llega corrupto, rechazarlo para que el alumno lo regenere.
+**Moderación de juegos:**
+- Modal `GamePreviewModal` con iframe `srcdoc` + toggle ver juego / ver código (editable)
+- Botones Aprobar y Rechazar para juegos pendientes
+- "Analizar con IA" verifica contenido apropiado y score reporting
+- Badge "Creado con Andy" / "Subido como HTML" — análisis IA solo para HTML subidos
+- Notificación email al admin cuando hay juegos pendientes (Edge Function `notify-new-game` + Database Webhook + Resend)
+- Email de rechazo al alumno con motivo y link a editar
 
 ---
 
@@ -264,16 +353,9 @@ El panel de admin está construido en Next.js en `/app/admin` con las siguientes
 - Scoreboards como carteles dentro del mundo 3D
 - **ÚNICA interacción:** envío de emojis a usuarios cercanos
 
-### 5.3 Sistema de Desbloqueo de Edificios por House
+### 5.3 Sistema de Desbloqueo de Edificios por House (Fase 4)
 
-| Edificio | Cómo se desbloquea | Notas |
-|----------|-------------------|-------|
-| Kinder (existente) | Publicar juegos aprobados | Alumnos que publican juegos |
-| Primaria | Tiempo jugado | Horas acumuladas del House |
-| Secundaria | Donaciones directas de padres | Dinero donado sin comprar juegos |
-| Community Hub | Compra de juegos | Dinero gastado en desbloquear juegos del House |
-| Sports Pavilion | Likes en juegos del House | Juegos del House con alto rating |
-| Barco Symmetry | Donaciones corporativas | Empresas de padres — mecanismo a definir |
+> Nota: En Fase 4, el desbloqueo visual en el mundo 3D será por House. En la fase actual, el desbloqueo en el dashboard es global por recaudación total (ver §4.5).
 
 ---
 
@@ -408,35 +490,41 @@ Estilo gaming tipo Discord + Fortnite. Donde los usuarios pasan la mayor parte d
 | 3D (Fase 4) | Three.js / Babylon.js | NO Unity — 3D nativo web, sin descarga |
 | React Context API | CreateGameContext, UserContext | Estado global: modal "Crea tu juego" y perfil/stats del usuario |
 | Game Lab — IA | Claude Sonnet 4.6 via Anthropic API | Streaming SSE, max 16K tokens, system prompt modular en `docs/andy/` |
-| Game Lab — Frameworks | Canvas 2D, p5.js, Kaplay | Librerías hosteadas en Supabase Storage (`libs/` bucket) |
+| Game Lab — Frameworks | Canvas 2D, p5.js, Kaplay, Three.js (r128) | Librerías hosteadas en Supabase Storage (`libs/` bucket) |
 | MobileBottomNav | Componente reutilizable | Barra de navegación inferior mobile, presente en todas las páginas excepto /jugar |
 | Email transaccional | Resend | SMTP custom para Supabase Auth + Edge Functions. Dominio: `sass.vibecoding.ar`. Free tier: 3.000 emails/mes, 100/día |
 | Landing Page | Server Component + Client Components | Light mode, Intersection Observer, YouTube embed |
 
 ### 7.2 Estructura de Base de Datos
 
+> Referencia detallada de columnas en `docs/schema-notes.md`. Consultarlo siempre antes de escribir queries.
+
 Tablas principales (todas con RLS habilitado):
 
-| Tabla | Descripción | Columnas clave |
-|-------|-------------|----------------|
-| `profiles` | Datos de usuario | id, first_name, last_name, email, user_type, house, tokens_used, tokens_limit, unlock_credits, has_all_access, all_access_at, is_admin, is_blocked, created_at |
-| `games` | Juegos publicados | id, title, description, house, file_url, github_url, status, submitted_by, approved_at, show_author, unlocked_for_all, unlocked_for_all_by, unlocked_for_all_at, total_likes, total_revenue, total_plays |
-| `game_sessions` | Sesiones de juego | id, user_id, game_id, started_at, ended_at, duration_seconds |
-| `game_scores` | Puntuaciones | id, user_id, game_id, score, played_at |
-| `game_likes` | Likes | id, user_id, game_id, created_at |
-| `game_unlocks` | Desbloqueos | id, user_id, game_id, amount_paid, payment_id, unlocked_at |
-| `pack_purchases` | Historial de compras de packs | id, user_id, pack_type ('individual'\|'pack_10'\|'pack_30'\|'all_access'), credits_granted, amount_paid, payment_id, purchased_at |
-| `donations` | Donaciones directas | id, user_id, building_id, amount, payment_id, donated_at |
-| `buildings` | Edificios | id, name, target_amount, current_amount, unlock_type |
-| `daily_free_games` | Juegos gratuitos del día | id, game_id, active_date (date\|null), scheduled_for (date\|null), auto_selected (bool) |
-| `house_points` | Puntos por House | house, total_points, points_by_games, points_by_time, points_by_donations |
+| Tabla | Descripción | Columna de fecha principal |
+|-------|-------------|---------------------------|
+| `profiles` | Datos de usuario | `created_at` |
+| `games` | Juegos publicados | `created_at`, `approved_at` |
+| `game_sessions` | Sesiones de juego | `started_at` ⚠️ |
+| `game_scores` | Puntuaciones | `played_at` ⚠️ |
+| `game_likes` | Likes | `created_at` |
+| `game_unlocks` | Desbloqueos | `unlocked_at` ⚠️ |
+| `pack_purchases` | Compras de packs | `purchased_at` ⚠️ |
+| `donations` | Donaciones directas | `donated_at` ⚠️ |
+| `buildings` | Edificios (legacy, ya no se usa en admin) | — |
+| `daily_free_games` | Juegos gratuitos del día | `active_date`, `scheduled_for` |
+| `house_points` | Puntos por House | — |
+
+⚠️ = NO tiene `created_at`. Usar la columna indicada.
+
+**RPCs de Supabase:**
+- `get_total_raised()` → bigint — suma total recaudada sin doble conteo. `SECURITY DEFINER`.
+- `get_authors(user_ids UUID[])` → tabla — nombres de autores respetando RLS. `SECURITY DEFINER`.
 
 **Lógica de `daily_free_games`:**
 - `scheduled_for`: fecha para la que está programado el juego (seteada por el admin o el cron)
 - `active_date`: fecha en que el juego fue efectivamente activado (seteada por el cron a las 00:00)
 - `auto_selected`: `true` si fue elegido automáticamente por el cron, `false` si fue elegido por el admin
-- Al insertar manualmente: `active_date = null`, `scheduled_for = mañana`, `auto_selected = false`
-- El cron de las 00:00 setea `active_date` en los registros con `scheduled_for = hoy`
 
 ### 7.3 Seguridad
 
@@ -452,14 +540,15 @@ Tablas principales (todas con RLS habilitado):
 - **Datos de menores:** mínimo dato personal posible. Cumplimiento con Ley 25.326 Argentina
 - **Auditoría:** registrar todas las acciones del admin en Supabase (aprobaciones, rechazos, bajas)
 - **Dependencies:** `npm audit` antes de cada deploy a producción
-- **Indexación bloqueada:** `public/robots.txt` con `Disallow: /` + meta `noindex, nofollow` en layout hasta aprobación del colegio
+- **Indexación bloqueada:** `public/robots.txt` con `Disallow: /` + meta `noindex, nofollow` hasta aprobación del colegio
 - **Contraseñas seguras:** validación frontend obligatoria (8-16 chars, mayúscula, minúscula, número)
 
 ### 7.4 Reglas de Limpieza y Orden
 
 - **NUNCA** dejar columnas, tablas o índices sin usar en la base de datos
 - **NUNCA** dejar archivos de código sin usar en el repositorio
-- Cada cambio de estructura en la DB se documenta en `/docs/db-changelog.md`
+- Cada cambio de estructura en la DB se documenta en la sección 11 (DB Changelog)
+- Referencia de schema completa en `docs/schema-notes.md`
 - Antes de agregar una columna nueva: verificar que no existe algo similar
 - Cada componente React tiene un único propósito
 - Máximo 300 líneas por archivo — si supera, dividir en componentes
@@ -524,14 +613,14 @@ Tablas principales (todas con RLS habilitado):
 | MercadoPago | ~3% por pago | Sin costo fijo |
 | Resend | Gratis / USD 20 | Free tier: 3.000 emails/mes, 100/día — suficiente para MVP. Escalar antes del lanzamiento masivo |
 | Figma | Gratis | Mockups y diseño |
-| Sentry | Gratis | Logging de errores — Fase 2 |
+| Sentry | Gratis | Logging de errores — pendiente |
 | **TOTAL MVP** | **~USD 25-40/mes** | Cursor Pro + Anthropic API variable |
 
 ---
 
 ## 8. Roadmap de Desarrollo
 
-### Fase 1 — MVP Funcional ← EN CURSO
+### Fase 1 — MVP Funcional ✅ Completada
 
 - [x] Registro y login (alumnos y padres), ambos eligen House
 - [x] Modo claro para páginas de acceso, oscuro para plataforma
@@ -543,201 +632,53 @@ Tablas principales (todas con RLS habilitado):
 - [x] Scoreboard básico
 - [x] Deploy estable en sass.vibecoding.ar
 
-### Fase 2 — Comunidad (4-6 semanas)
+### Fase 2 — Comunidad ✅ Completada
 
 - [x] Panel para que alumnos suban juegos HTML5
 - [x] Panel de moderación para el admin
 - [x] Sistema de likes — con fix de sincronización via service role
-- [x] Emails automáticos: aprobación de juegos al alumno (Resend), notificación al admin de juegos nuevos y actualizados
+- [x] Emails automáticos: aprobación de juegos al alumno, notificación al admin de juegos nuevos/actualizados
 - [x] Email de bienvenida al registrarse
 - [x] Email de rechazo al alumno con motivo y link a editar
 - [x] Botón compartir por WhatsApp — en perfil y en email de aprobación
-- [ ] Dashboard de recaudación por edificio con barras de progreso
-- [ ] Activación de paquetes de juegos
+- [x] Sistema de packs de desbloqueo: Pack 10, Pack 30, ALL ACCESS
 - [ ] Sentry para logging de errores
 
-### Fase 2.5 — Generador de Juegos con IA (2-3 semanas)
+### Fase 2.5 — Generador de Juegos con IA ✅ Implementada
 
-- [x] Integración con API de Anthropic (Claude) dentro de la plataforma
-- Espacio dedicado llamado "SASS Vibe Coding — Game Lab"
-- URL: /game-lab
-- Accesible desde el modal "Crea tu juego" existente
-- Es el espacio principal donde los alumnos describen y generan sus juegos con IA
-- [x] El usuario describe el juego en lenguaje natural y Claude genera el HTML5 completo
-- [x] Sistema de límite de tokens por usuario (columnas `tokens_used` y `tokens_limit` en profiles) — ✅ Implementado como "Créditos de Andy"
-- Límite de créditos por usuario: USD 1.00
-- Acceso al Game Lab:
-  - Alumnos: reciben USD 1.00 en créditos gratis al registrarse (default de la columna)
-  - Padres: no reciben créditos gratis
-  - Todos: reciben USD 1.00 en créditos adicionales por cada juego que compran/desbloquean
-  - Administradores: acceso ilimitado sin consumo de créditos (bypass en backend)
-- Tracking de costos: el backend captura `input_tokens` y `output_tokens` del stream de Anthropic, calcula el costo (Sonnet 4.6: $3/M input + $15/M output), y actualiza `tokens_used` en la DB
-- El costo real por juego varía según complejidad: ~$0.03-0.05 para juegos simples, ~$0.15-0.50 para juegos complejos con auto-retry y auto-fix
-- Barra visual de créditos: visible en header del Game Lab y en la página de perfil
-- Tooltip explicativo (ícono i) que explica qué son los créditos y cómo recargar
-- Cuando los créditos se agotan: Andy muestra mensaje amigable invitando a desbloquear juegos del catálogo
-- Columnas en tabla `profiles`: `tokens_used` (DECIMAL, default 0) y `tokens_limit` (DECIMAL, default 1.00) — ambas en USD
-- El panel de admin permite ver consumo por usuario y ajustar límites individualmente
-- [x] El juego generado va directo al flujo de moderación existente
-- [x] Panel de admin para ver consumo de tokens y ajustar límites
-- [x] Costo operativo: ~$0.10-0.50 USD por juego generado, sin suscripción mensual
-- [x] Diferencial clave para el pitch: democratiza la creación para familias sin conocimientos técnicos
-- Interfaz del generador: modal existente "Crea tu juego" con opción "Generar con IA"
-- Layout desktop: chat a la izquierda, iframe con previsualización del juego en vivo a la derecha
-- Layout mobile: chat con fullscreen overlay para juegos. Cuando Andy genera un juego, se abre automáticamente en pantalla completa con botón "Salir del juego". Botones de acción unificados debajo del input: "Jugá tu juego", "Enviar a moderación", "Crear otro juego".
-- El iframe usa sandbox="allow-scripts allow-same-origin" para permitir touch events en mobile
-- Botón "Enviar a moderación" prominente cuando el alumno está conforme
-- Barra de progreso o indicador de tokens restantes visible en todo momento
-- Entrada por voz: botón de micrófono en la caja de texto usando Web Speech API nativa del navegador (sin servicios externos, sin costo adicional)
-  - Compatible con Chrome y Edge principalmente
-  - El alumno habla → el texto aparece en el input → se envía como texto normal a Claude
-  - Requiere permiso de micrófono del navegador
-  - Ideal para alumnos de primaria que no escriben rápido
-- El historial de la conversación se mantiene durante la sesión para permitir ajustes iterativos ("cambiá el color", "agregá más enemigos")
-- El juego y la conversación se persisten en sessionStorage del browser. Sobreviven refresh pero se limpian al cerrar la pestaña. El alumno puede iniciar un juego nuevo con el botón "Crear otro juego".
-- Claude responde siempre con dos partes: (1) el HTML completo del juego, (2) una explicación en español amigable para niños de qué hizo y sugerencias de próximos pasos ("¿querés que agregue música? ¿más niveles? ¿un personaje diferente?")
-- Claude hace preguntas antes de generar cuando el prompt es ambiguo, igual que haría un desarrollador: género, personaje principal, objetivo del juego, etc.
-- Canvas fijo 480x640 (portrait) por default, 640x480 (landscape) si Andy decide internamente que el juego lo amerita. Andy NUNCA pregunta al alumno si es para celular o computadora — el iframe del Game Lab se encarga del escalado.
-- Moderación en el system prompt — línea clara entre contenido permitido y prohibido:
-  - PERMITIDO: disparos, explosiones, espadas, peleas, zombies, monstruos, sangre leve — contenido normal de videojuegos apto para todas las edades
-  - PROHIBIDO: gore explícito (sangre excesiva, desmembramiento), desnudez o contenido sexual de cualquier tipo, insultos o lenguaje inapropiado, violencia contra personas reales identificables, temáticas religiosas o políticas controversiales
-  - Criterio general: si el juego podría aparecer en una App Store con rating 9+ o E10+, está permitido
-  - En caso de solicitud inapropiada: Claude explica amablemente y sugiere una alternativa divertida
-- Idioma del Game Lab: español únicamente
-  - Claude responde siempre en español, independientemente del idioma en que escriba el alumno
-  - Los comentarios dentro del código HTML generado también van en español
-  - Los mensajes de error, sugerencias y preguntas: siempre en español
-  - Variante: español argentino — usar "vos", "che", tono cercano y entusiasta, vocabulario familiar para chicos argentinos
-- El asistente de IA del Game Lab se llama "Andy"
-  - Nombre inspirado en St. Andrew's Scots School
-  - Se presenta como: "¡Hola! Soy Andy, tu asistente del Game Lab 🎮"
-  - Personalidad: entusiasta, paciente, alentador, usa español argentino
-  - Tono: como un amigo mayor que sabe mucho de juegos y quiere ayudarte
-  - Andy nunca se identifica como Claude ni como una IA de Anthropic
-  - Andy hace preguntas simples y divertidas para entender qué juego quiere crear el alumno antes de generarlo
-  - Andy tiene un avatar: gaitero escocés con colores del SASS
-  - Archivo: /public/images/andy-avatar.png
-  - El avatar aparece al lado de cada mensaje de Andy en el chat del Game Lab
-
-**Estado actual de la Fase 2.5 (Mar 2026):**
-
-- ✅ Arquitectura modular de Andy: 7 archivos de docs en `docs/andy/` (personality, pedagogy, framework-decision, quality-rules, templates x3)
-- ✅ Backend dinámico: `loadAndyDocs()` + `buildSystemPrompt()` en `app/api/game-lab/chat/route.js`
-- ✅ Multi-framework: Andy elige internamente entre Canvas 2D, p5.js, Kaplay y Three.js según el tipo de juego
-- ✅ Librerías hosteadas en Supabase Storage (bucket `libs/`): p5.min.js, kaplay.js, gamepad-overlay.js, three.min.js
-- ✅ Assets visuales: emojis + formas geométricas procedurales (Kenney descartado)
-- ✅ Flujo pedagógico: Andy guía al alumno a dar instrucciones detalladas antes de generar
-- ✅ Preservación de juegos al iterar: contexto reducido + HTML actual para evitar regeneración
-- ✅ Persistencia de sesión: sessionStorage para juego y chat (sobrevive refresh)
-- ✅ Mobile: fullscreen overlay para juegos + botones unificados (Jugá tu juego, Enviar a moderación, Crear otro juego)
-- ✅ Mobile: gamepad-overlay.js con layouts configurables (dpad-1btn, dpad-2btn, dpad-only, lr-only, none)
-- ✅ Google Fonts para tipografías en juegos
-- ✅ HUD estandarizado: zona reservada de 50px superiores
-- ✅ Mensajes iniciales rotativos de Andy (5 variantes)
-- ✅ Placeholder dinámico del input según estado
-- ✅ Pipeline de validación HTML: verifica estructura, sintaxis JS con `new Function()`, y auto-fix enviando errores a Andy
-- ✅ Auto-retry automático cuando HTML se trunca: reintenta con versión compacta sin intervención del alumno
-- ✅ Optimización de tokens: en modificaciones se manda solo personality + qualityRules + template del framework usado (~50% menos tokens)
-- ✅ Streaming visual: texto de Andy aparece en tiempo real mientras genera, con contador de líneas de código
-- ✅ Barra de progreso y timer visible mientras Andy genera juegos
-- ✅ Input por voz: Web Speech API nativa (es-AR), con interim results en PC y sin interim en mobile
-- ✅ ReactMarkdown para parsear mensajes de Andy (negritas, listas, etc.)
-- ✅ Ctrl+Enter envía mensaje en PC, Enter agrega nueva línea
-- ✅ Tap/click para iniciar y reiniciar juegos obligatorio en todos los frameworks
-- ✅ Emojis solo cuando quedan bien, formas procedurales para protagonistas y entidades dinámicas
-- ✅ Bottom nav oculto durante fullscreen del juego en mobile
-- ✅ Limpieza completa de Supabase: bucket kenney y RPC list_kenney_objects() eliminados
-- ✅ Créditos de Andy: sistema completo de tracking de costos, barra visual en Game Lab y perfil, tooltip explicativo, bypass para admins
-- ✅ Links a Términos y Condiciones y Política de Privacidad en página de perfil
-- ✅ Regla de caracteres especiales en `quality-rules.md`: Andy usa unicode escapado (`\u00E1`, `\u00A1`, etc.) para evitar corrupción de encoding en Safari/Mac
-- ✅ Panel admin: modal de previsualización de juegos con iframe `srcdoc` + toggle ver juego / ver código
-- ✅ Notificación por email al admin cuando hay juegos pendientes (Edge Function `notify-new-game` + Database Webhook + Resend)
-- ✅ Flujo post-moderación en Game Lab: al enviar a moderación, se limpia la sesión y se redirige al perfil con link a "Mis juegos subidos"
-- ✅ Perfil — jugar propio juego desde "Mis juegos subidos" con fullscreen overlay
-- ✅ Perfil — editar juego: carga el HTML en el Game Lab para que Andy lo modifique
-- ✅ Re-envío a moderación: actualiza el mismo juego en vez de crear duplicado. Título bloqueado al re-enviar.
-- ✅ Desbloquear juego para todos ($50,000 ARS via MercadoPago): columnas `unlocked_for_all`, `unlocked_for_all_by`, `unlocked_for_all_at` en `games`
-- ✅ Compartir juego vía WhatsApp desde perfil (solo juegos aprobados)
-- ✅ Email de aprobación al alumno via Resend: link a perfil, compartir por WhatsApp, invitación a desbloquear para todos
-- ✅ Notificación email al admin cuando un juego se re-envía a moderación (actualización)
-- ✅ Créditos de Andy por compra: +$1.00 USD al comprar/desbloquear cualquier juego (individual o para todos)
-- ✅ Pantalla de desbloqueo cuando usuario accede a juego bloqueado via URL directa (ej: link de WhatsApp)
-- ✅ Verificación `unlocked_for_all` en API de acceso a juegos
-- ✅ Highscores por juego: Top 10 con modal, guardado automático via postMessage GAME_SCORE
-- ✅ Fullscreen en PC: botón "Expandir" usando Fullscreen API del browser
-- ✅ Rediseño layout de /jugar/[id]: header mínimo, barra de acciones abajo (Me gusta, Top 10, Compartir)
-- ✅ Fix likes: service role para actualizar total_likes, sincronización con count real de game_likes
-- ✅ Opción show_author: alumno elige si mostrar su nombre al publicar. Toggle en Game Lab, subida HTML y perfil.
-- ✅ Tarjetas de juegos rediseñadas: nombre del autor, métricas inline (jugadores, likes, recaudado, min jugados), título y descripción con line-clamp, expansión hover/tap
-- ✅ RPC `get_authors()` en Supabase para cargar autores respetando RLS restrictivo de profiles
-- ✅ Tarjeta "Crea tu juego" en carrusel de Juegos del día (desktop y mobile)
-- ✅ Bottom nav: botón Juegos lleva a /juegos, botón Ver todos en mobile para desbloquear
-- ✅ Pestaña "Mis juegos subidos" visible para alumnos, admins y padres que crearon juegos
-- ✅ Iframe de juegos carga via srcdoc en vez de src URL (fix Content-Type text/plain en mobile)
-- ✅ Three.js hosteado en Supabase Storage (bucket libs/) para juegos 3D
-- ✅ Controles touch nativos en quality-rules: swipe, tap, drag según tipo de juego
-- ✅ Moderación con IA: botón "Analizar con IA" en panel admin, verifica contenido apropiado y score reporting
-- ✅ Badge "Creado con Andy" / "Subido como HTML" en modal admin — análisis IA solo para HTML subidos
-- ✅ Email de rechazo al alumno con motivo y link a editar
-- ✅ Guía colapsable de buenas prácticas en página Subir mi juego (controles, score, librerías, reglas)
-- ✅ Botón Expandir movido a barra de acciones junto a Me gusta, Top 10, Compartir
-- ✅ Three.js como 4to framework en framework-decision.md (solo si alumno pide 3D explícitamente)
-- ✅ Canvas 2D priorizado sobre Kaplay: menos bugs, más confiable para la mayoría de juegos
-- ✅ Errores comunes de Kaplay documentados: canvas manual, radius, area para clicks, fonts, gravedad, salto
-- ✅ Cron de juegos diarios migrado de Edge Function a endpoint Vercel via net.http_post de Supabase
-- ✅ Tarjetas de /juegos: badges y precio unificados en bloque fijo h-7, 4 métricas en todas las tarjetas
-- ✅ Juegos unlocked_for_all incluidos en "Mis juegos desbloqueados" en dashboard y catálogo
-- ✅ Sistema de packs de desbloqueo: Pack 10 ($40k), Pack 30 ($100k), ALL ACCESS ($300k) con créditos acumulables en `profiles.unlock_credits`
-- ✅ ALL ACCESS permanente: `has_all_access` en profiles, acceso a todos los juegos actuales y futuros
-- ✅ Endpoint `/api/games/unlock-with-credits`: desbloqueo con crédito, protección de race condition
-- ✅ Endpoint `/api/games/count`: conteo de juegos aprobados para activación de packs
-- ✅ Pantalla de desbloqueo con opciones de packs: individual, Pack 10, Pack 30, ALL ACCESS (según umbrales)
-- ✅ Tabla `pack_purchases` para historial de todas las compras (individual + packs)
-- ✅ Badge de créditos/ALL ACCESS en navbar y perfil via UserContext
-- ✅ Página `/pago/exitoso` con flujo diferenciado para packs (redirige a catálogo)
-- ✅ Precio juego individual actualizado de $5.000 a $6.000 ARS
-- ✅ Webhook MercadoPago actualizado: parsea `pack10_`, `pack30_`, `allaccess_` en external_reference, backward compatible con formato legacy
-- ✅ Auto-desbloqueo del juego origen al comprar pack: webhook desbloquea el juego y acredita N-1 créditos; back_url redirige al juego
-- ✅ `lib/pricing.js`: fuente única de precios (INDIVIDUAL, PACK_10, PACK_30, ALL_ACCESS, UNLOCK_FOR_ALL) importada en todos los componentes y APIs
-- ✅ `UnlockGameModal` con tema oscuro fijo: opciones de crédito, individual, packs y ALL ACCESS. Integrado en dashboard, /juegos y /jugar/[id]
-- ✅ Dashboard ALL ACCESS: carrusel "Todos los juegos" con tag ALL ACCESS, sección "Juegos para desbloquear" oculta
-- ✅ Perfil: sección dedicada con badge ALL ACCESS (con fecha) o créditos disponibles
-- ❌ Descartado: Phaser.js (juegos se truncaban, código demasiado largo)
-- ❌ Descartado: Excalibur.js (requiere TypeScript y bundler)
-- ❌ Descartado: Assets de Kenney (Andy no los usaba, consumían tokens innecesarios)
+- [x] Integración con API de Anthropic (Claude) — Game Lab en `/game-lab`
+- [x] Andy: asistente IA con personalidad, pedagogía y reglas de calidad modulares en `docs/andy/`
+- [x] Multi-framework: Canvas 2D (preferido), p5.js, Kaplay (physics), Three.js r128 (3D)
+- [x] Sistema de Créditos de Andy: tracking de costos, barra visual, bypass admin
+- [x] Streaming visual, input por voz, auto-retry, pipeline de validación HTML
+- [x] Flujo completo: generar → previsualizar → iterar → enviar a moderación
 - 🔲 Pendiente: Persistencia robusta en Supabase (reemplazar sessionStorage)
-- 🔲 Pendiente: Métrica total_time_played en tabla games (actualmente se calcula al vuelo desde game_sessions)
-- 🔲 Pendiente: Guardar interacciones alumno-Andy para análisis y mejora de instrucciones
+- 🔲 Pendiente: Guardar interacciones alumno-Andy para análisis
 - 🔲 Pendiente: Videos tutoriales de cómo usar Game Lab y subir juegos
 
 ### Fase 2.6 — Landing Page Pública ✅ Implementada
 
-- [x] Landing page pública en sass.vibecoding.ar como home principal (reemplaza redirección a login)
-- [x] Server Component con detección de sesión: usuarios logueados redirigen a /dashboard
-- [x] 9 secciones scroll narrativo: Hero, Campus, Vibe Coding, Cómo funciona, Transparencia, Video institucional, Houses, Comunidad, CTA final
-- [x] Componentes en `components/landing/`: LandingNavbar, HeroSection, CampusSection, VibeCodingSection, HowItWorksSection, TransparencySection, VideoSection, HousesSection, CommunitySection, CTASection, LandingFooter, FadeIn, DisclaimerModal
-- [x] Light mode (PRD §6.2): colores institucionales, Inter, Lucide icons
-- [x] Navbar fijo con logo SASS + texto, transparente al top, fondo al scroll, hamburger mobile
-- [x] Sección Campus: 8 edificios con imágenes reales, construidos a color, por construir en grayscale
-- [x] Barco Symmetry identificado como elemento de fantasía de Vibe Coding San Andrés
-- [x] Video institucional del SASS embebido (YouTube: 33c0kz1Frhk)
-- [x] CTA a campaña oficial sasscampus.com (target="_blank")
-- [x] Houses con escudos desde /images/houses/house-{nombre}.png
-- [x] Andy avatar visible de cuerpo entero en sección Vibe Coding
-- [x] Botones de registro directo: "Soy alumno" / "Soy padre/madre" con parámetro ?tipo=
-- [x] SEO: metadata + Open Graph + Twitter tags
-- [x] Animaciones fade-in con Intersection Observer + prefers-reduced-motion
-- [x] Mobile-first responsive (390px base)
-- [x] Modal de disclaimer institucional (sessionStorage): avisa que el sitio no está indexado, no tiene redes sociales, no usa logo sin autorización, no realiza transacciones reales, y que el contenido está sujeto a aprobación del SASS
-- [x] robots.txt bloqueando toda indexación + meta robots noindex/nofollow hasta aprobación del colegio
-- [x] Imágenes de edificios en `/public/images/campus/`: Kinder_Normal.png, Primary_School_Normal.png, Sports_Pavilion_Normal.png, Natatorio_Normal.png, Secondary_Normal.png, Dinning_Hall_normal.png, Performing_Arts_Center_Normal.png, Symmetry_normal.png
+- [x] Landing page pública en sass.vibecoding.ar como home principal
+- [x] 9 secciones scroll narrativo con animaciones fade-in
+- [x] Mobile-first responsive, SEO, disclaimer modal
+- [x] robots.txt bloqueando indexación hasta aprobación del colegio
+
+### Fase 2.7 — Sistema de Edificios y Admin Completo ✅ Implementada
+
+- [x] Sistema de edificios a desbloquear con milestones de recaudación progresivos ($200K → $150M)
+- [x] Widget "Próximo Edificio a Desbloquear" en dashboard (desktop y mobile)
+- [x] Edificios asociados a cada ranking de Houses con animación de colores del House líder
+- [x] RPC `get_total_raised()` para cálculo correcto de recaudación sin doble conteo
+- [x] Policy RLS `admin_read_pack_purchases` para que admin lea todas las compras
+- [x] Panel admin reorganizado: Juegos (mejorado con editor HTML inline + descarga + resubida), Juegos del día, Usuarios (enriquecido con métricas por usuario), Engagement (nuevo), Finanzas (nuevo, reemplaza Edificios y Métricas)
+- [x] Imágenes de edificios con variantes por House en `public/images/Buildings No Backgrounds/`
 
 ### Fase 3 — Gamificación (4-6 semanas)
 
 - [x] Sistema de puntos individuales y por House
-- [x] Leaderboards entre Houses
+- [x] Leaderboards entre Houses (8 rankings con edificios asociados)
 - [x] High scores por juego — Top 10 por juego con modal, guardado automático via postMessage
-- [x] Script de detección y captura de puntajes HTML5 — game_scores se inserta al recibir GAME_SCORE postMessage
+- [x] Script de detección y captura de puntajes HTML5
 - [x] Donaciones directas de padres para edificios
 - [ ] Soporte para juegos de Secundaria vía GitHub
 - [ ] Insignias y logros
@@ -775,7 +716,7 @@ Tablas principales (todas con RLS habilitado):
 | ALL ACCESS | $300.000 ARS | Cuando haya 100+ juegos |
 | Juego individual - Desbloqueo para todos los usuarios | $50.000 ARS | Desde el día 1 |
 
-Los precios se revisan trimestralmente según inflación.
+Los precios se revisan trimestralmente según inflación. Fuente única: `lib/pricing.js`.
 
 **Reglas de packs:**
 - Los packs otorgan créditos de desbloqueo en `profiles.unlock_credits` que se gastan uno a uno al elegir juegos
@@ -808,17 +749,23 @@ Los valores son configurables por el admin.
 - [ ] Definir si el logo de SASS puede usarse en la plataforma (pedir permiso)
 - [ ] Evaluar si alumnos de Kinder necesitan flow de registro asistido por padres
 - [ ] Definir proceso para que alumnos de Secundaria compartan repos de GitHub
-- [ ] **PENDIENTE COLEGIO — Whitelist de emails:** consultar al SASS si prefieren que solo emails previamente validados puedan registrarse. Requeriría que el colegio provea una lista actualizada de emails de alumnos y familias.
-- [ ] **PENDIENTE COLEGIO — Registro de emails:** verificar si el SASS tiene un registro de emails de sus ~1.900 alumnos. Si no lo tienen, el registro abierto es la única opción viable para el MVP.
-- [ ] SEGURIDAD — Regenerar service role key antes de producción: la service role key actual fue compartida durante el desarrollo. Antes del lanzamiento oficial con el colegio, regenerarla en Supabase → Settings → API → Legacy keys → service_role → Regenerate. Luego actualizar la variable de entorno en Vercel.
-- [ ] **LANDING — Fotos institucionales:** conseguir fotos profesionales del campus para reemplazar los renders actuales en la landing
-- [ ] **LANDING — Aprobación del colegio:** una vez aprobado, remover robots.txt Disallow, quitar meta noindex, quitar DisclaimerModal
+- [ ] **PENDIENTE COLEGIO — Whitelist de emails:** consultar al SASS si prefieren que solo emails previamente validados puedan registrarse
+- [ ] **PENDIENTE COLEGIO — Registro de emails:** verificar si el SASS tiene un registro de emails de sus ~1.900 alumnos
+- [ ] SEGURIDAD — Regenerar service role key antes de producción
+- [ ] **LANDING — Fotos institucionales:** conseguir fotos profesionales del campus
+- [ ] **LANDING — Aprobación del colegio:** remover robots.txt Disallow, quitar meta noindex, quitar DisclaimerModal
+- [ ] Sentry para logging de errores
+- [ ] Persistencia robusta en Game Lab (reemplazar sessionStorage por Supabase)
+- [ ] Métrica `total_time_played` en tabla games (actualmente se calcula al vuelo)
+- [ ] Guardar interacciones alumno-Andy para análisis y mejora
+- [ ] Videos tutoriales de cómo usar Game Lab y subir juegos
 
 ---
 
 ## 11. DB Changelog
 
 > Registrar aquí todos los cambios de estructura en la base de datos.
+> Referencia completa del schema: `docs/schema-notes.md`
 
 | Fecha | Cambio | Motivo |
 |-------|--------|--------|
@@ -833,6 +780,8 @@ Los valores son configurables por el admin.
 | Mar 2026 | Creada función RPC `get_authors(user_ids UUID[])` con SECURITY DEFINER | Cargar nombres de autores respetando RLS restrictivo de profiles |
 | Mar 2026 | Agregado columnas `unlock_credits` (integer, default 0), `has_all_access` (boolean, default false), `all_access_at` (timestamptz, null) a `profiles` | Sistema de packs de desbloqueo de juegos |
 | Mar 2026 | Creada tabla `pack_purchases` (id, user_id, pack_type, credits_granted, amount_paid, payment_id, purchased_at) con RLS | Historial de compras de packs individuales y grupales |
+| Mar 2026 | Creada función RPC `get_total_raised()` con SECURITY DEFINER | Suma total recaudada sin doble conteo, bypasea RLS |
+| Mar 2026 | Creada policy `admin_read_pack_purchases` en `pack_purchases` | Admin puede leer todas las compras para panel Finanzas |
 
 ---
 
