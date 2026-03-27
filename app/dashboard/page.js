@@ -27,8 +27,8 @@ const BUILDING_GOALS = [
   { amount: 5000000, name: 'Natatorio', image: '/images/Buildings No Backgrounds/Natatorio_normal.png' },
   { amount: 15000000, name: 'Dinning Hall', image: '/images/Buildings No Backgrounds/Dinning_Hall_normal.png' },
   { amount: 40000000, name: 'Performing Arts Center', image: '/images/Buildings No Backgrounds/Performing_Arts_Center_Normal.png' },
-  { amount: 80000000, name: 'Secondary School', image: '/images/Buildings No Backgrounds/Secondary_Normal.png' },
-  { amount: 150000000, name: 'Symmetry Boat', image: '/images/Buildings No Backgrounds/Symmetry_Normal.png' },
+  { amount: 80000000, name: 'Secondary School', image: '/images/Buildings No Backgrounds/Secondary_Normal.png', rankingScale: 0.9 },
+  { amount: 150000000, name: 'Symmetry Boat', image: '/images/Buildings No Backgrounds/Symmetry_Normal.png', rankingScale: 1.1 },
 ];
 
 const HOUSE_IMAGE_NAMES = {
@@ -475,52 +475,58 @@ export default function DashboardPage() {
     const thumbTitle = buildingGoal && leaderRow
       ? `${buildingGoal.name} · Líder: ${leaderRow.name}`
       : buildingGoal?.name;
+    const rankingScale = buildingGoal?.rankingScale ?? 1;
     return (
-      <div key={ranking.key} className="relative min-w-0 overflow-visible rounded-xl border p-3" style={cardStyle}>
+      <div
+        key={ranking.key}
+        className="relative z-0 min-w-0 overflow-visible rounded-xl border p-3 hover:z-[35]"
+        style={cardStyle}
+      >
         {buildingGoal ? (
           <div
-            className="pointer-events-none absolute -right-4 -top-4 z-10 flex h-[120px] w-[120px] items-center justify-center"
+            className="pointer-events-none absolute -right-4 -top-6 z-20 flex h-[80px] w-[80px] items-center justify-center"
+            style={{ transform: `scale(${rankingScale})` }}
             title={thumbTitle}
           >
             {buildingUnlocked && houseLeaderSrc ? (
-              <div className="ranking-building-thumb-anim relative h-[120px] w-[120px]">
+              <div className="ranking-building-thumb-anim relative h-[80px] w-[80px]">
                 <Image
                   src={encodeURI(buildingGoal.image)}
                   alt={buildingGoal.name}
-                  width={120}
-                  height={120}
-                  className="ranking-building-thumb-normal pointer-events-none absolute left-1/2 top-1/2 max-h-[120px] max-w-[120px] -translate-x-1/2 -translate-y-1/2 object-contain"
+                  width={80}
+                  height={80}
+                  className="ranking-building-thumb-normal pointer-events-none absolute left-1/2 top-1/2 max-h-[80px] max-w-[80px] -translate-x-1/2 -translate-y-1/2 object-contain"
                 />
                 <Image
                   src={encodeURI(houseLeaderSrc)}
                   alt=""
-                  width={120}
-                  height={120}
-                  className="ranking-building-thumb-house pointer-events-none absolute left-1/2 top-1/2 max-h-[120px] max-w-[120px] -translate-x-1/2 -translate-y-1/2 object-contain"
+                  width={80}
+                  height={80}
+                  className="ranking-building-thumb-house pointer-events-none absolute left-1/2 top-1/2 max-h-[80px] max-w-[80px] -translate-x-1/2 -translate-y-1/2 object-contain"
                 />
               </div>
             ) : (
-              <div className="relative h-[120px] w-[120px]">
+              <div className="relative h-[80px] w-[80px]">
                 <Image
                   src={encodeURI(buildingGoal.image)}
                   alt={buildingGoal.name}
-                  width={120}
-                  height={120}
-                  className="h-[120px] w-[120px] object-contain"
+                  width={80}
+                  height={80}
+                  className="h-[80px] w-[80px] object-contain"
                   style={
                     buildingUnlocked
                       ? undefined
-                      : { filter: 'grayscale(100%)', opacity: 0.5 }
+                      : { filter: 'grayscale(100%)', opacity: 0.7 }
                   }
                 />
                 {!buildingUnlocked ? (
-                  <span className="absolute inset-0 flex items-center justify-center text-3xl leading-none select-none" aria-hidden>🔒</span>
+                  <span className="absolute inset-0 flex items-center justify-center text-2xl leading-none select-none" aria-hidden>🔒</span>
                 ) : null}
               </div>
             )}
           </div>
         ) : null}
-        <h3 className="mb-2 truncate pr-[132px] text-sm font-bold" style={{ color: text }}>{ranking.title}</h3>
+        <h3 className="mb-2 truncate pr-[92px] text-sm font-bold" style={{ color: text }}>{ranking.title}</h3>
         <div className="space-y-1.5">
           {ranking.rows.map((row) => {
             const pct = ranking.max > 0 ? (row.value / ranking.max) * 100 : 0;
@@ -973,19 +979,28 @@ export default function DashboardPage() {
                 </button>
               </div>
             </div>
-            <div className="min-w-0 overflow-hidden pt-7 pr-7" onWheel={handleRankingWheel}>
+            <div
+              className="min-w-0 w-full overflow-x-hidden overflow-y-visible pt-7"
+              onWheel={handleRankingWheel}
+            >
               <div
                 className="flex"
                 style={{
-                  transform: `translateX(-${rankingPage * 100}%)`,
+                  width: `${rankingPages.length * 100}%`,
+                  transform: `translateX(-${(rankingPage * 100) / rankingPages.length}%)`,
                   transition: 'transform 350ms ease-in-out',
                 }}
               >
                 {rankingPages.map((pageRankings, pageIdx) => (
                   <div
                     key={`desktop-page-${pageIdx}`}
-                    className="w-full shrink-0"
-                    style={{ transition: 'opacity 350ms ease-in-out', opacity: rankingPage === pageIdx ? 1 : 0.9 }}
+                    className="box-border min-w-0 shrink-0"
+                    style={{
+                      width: `${100 / rankingPages.length}%`,
+                      paddingRight: pageIdx < rankingPages.length - 1 ? 24 : 0,
+                      transition: 'opacity 350ms ease-in-out',
+                      opacity: rankingPage === pageIdx ? 1 : 0.9,
+                    }}
                   >
                     <div className="grid min-w-0 grid-cols-2 gap-3">
                       {pageRankings.map((ranking) => renderRankingCard(ranking))}
@@ -1361,19 +1376,28 @@ export default function DashboardPage() {
                 </button>
               </div>
             </div>
-            <div className="min-w-0 overflow-hidden pt-7 pr-7" onWheel={handleRankingWheel}>
+            <div
+              className="min-w-0 w-full overflow-x-hidden overflow-y-visible pt-7"
+              onWheel={handleRankingWheel}
+            >
               <div
                 className="flex"
                 style={{
-                  transform: `translateX(-${rankingPage * 100}%)`,
+                  width: `${rankingPages.length * 100}%`,
+                  transform: `translateX(-${(rankingPage * 100) / rankingPages.length}%)`,
                   transition: 'transform 350ms ease-in-out',
                 }}
               >
                 {rankingPages.map((pageRankings, pageIdx) => (
                   <div
                     key={`mobile-page-${pageIdx}`}
-                    className="w-full shrink-0"
-                    style={{ transition: 'opacity 350ms ease-in-out', opacity: rankingPage === pageIdx ? 1 : 0.9 }}
+                    className="box-border min-w-0 shrink-0"
+                    style={{
+                      width: `${100 / rankingPages.length}%`,
+                      paddingRight: pageIdx < rankingPages.length - 1 ? 24 : 0,
+                      transition: 'opacity 350ms ease-in-out',
+                      opacity: rankingPage === pageIdx ? 1 : 0.9,
+                    }}
                   >
                     <div className="grid min-w-0 grid-cols-1 gap-3">
                       {pageRankings.map((ranking) => renderRankingCard(ranking))}
