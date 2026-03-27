@@ -175,3 +175,22 @@ body {
 button, [role="button"] {
   cursor: pointer;
 }
+
+/* Dashboard — miniatura edificio en rankings (normal ↔ variante House, ciclo 5s) */
+@keyframes ranking-building-normal-opacity {
+  0%, 37% { opacity: 1; }
+  43%, 97% { opacity: 0; }
+  100% { opacity: 1; }
+}
+@keyframes ranking-building-house-opacity {
+  0%, 37% { opacity: 0; }
+  43%, 97% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.ranking-building-thumb-anim .ranking-building-thumb-normal {
+  animation: ranking-building-normal-opacity 5s ease-in-out infinite;
+}
+.ranking-building-thumb-anim .ranking-building-thumb-house {
+  animation: ranking-building-house-opacity 5s ease-in-out infinite;
+}

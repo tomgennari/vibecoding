@@ -30,6 +30,35 @@ const BUILDING_GOALS = [
   { amount: 80000000, name: 'Secondary School', image: '/images/Buildings No Backgrounds/Secondary_Normal.png' },
   { amount: 150000000, name: 'Symmetry Boat', image: '/images/Buildings No Backgrounds/Symmetry_Normal.png' },
 ];
+
+const HOUSE_IMAGE_NAMES = {
+  'William Brown': 'William_Brown',
+  'James Dodds': 'James_Dodds',
+  'James Fleming': 'James_Fleming',
+  'John Monteith': 'John_Monteith',
+};
+
+/** Archivos en /public que no siguen el patrón estricto `{stem}_{HOUSE}.png`. */
+const BUILDING_HOUSE_FILE_QUIRKS = {
+  Natatorio_William_Brown: 'Natatorio_William Brown.png',
+  Secondary_John_Monteith: 'Secondary_John Monteith.png',
+};
+
+function buildingStemFromNormalImagePath(normalPath) {
+  const segment = normalPath.split('/').pop() || '';
+  const file = decodeURIComponent(segment);
+  return file.replace(/_Normal\.png$/i, '').replace(/_normal\.png$/i, '');
+}
+
+function houseColoredBuildingSrc(normalPath, leaderHouseDisplayName) {
+  const suffix = HOUSE_IMAGE_NAMES[leaderHouseDisplayName];
+  if (!suffix) return null;
+  const stem = buildingStemFromNormalImagePath(normalPath);
+  const key = `${stem}_${suffix}`;
+  const file = BUILDING_HOUSE_FILE_QUIRKS[key] ?? `${key}.png`;
+  return `/images/Buildings No Backgrounds/${file}`;
+}
+
 const RANKING_PAGE_COUNT = 2;
 const DONATION_AMOUNTS = [
   { amount: 20000, label: '$20.000 ARS' },
@@ -439,26 +468,57 @@ export default function DashboardPage() {
     if (!ranking) return null;
     const buildingGoal = BUILDING_GOALS[ranking.buildingIndex];
     const buildingUnlocked = buildingGoal && totalRaised >= buildingGoal.amount;
+    const leaderRow = ranking.rows[0];
+    const houseLeaderSrc = buildingGoal && leaderRow
+      ? houseColoredBuildingSrc(buildingGoal.image, leaderRow.name)
+      : null;
+    const thumbTitle = buildingGoal && leaderRow
+      ? `${buildingGoal.name} · Líder: ${leaderRow.name}`
+      : buildingGoal?.name;
     return (
       <div key={ranking.key} className={`${cardBase} p-3 relative`} style={cardStyle}>
         {buildingGoal ? (
-          <div className="pointer-events-none absolute right-2 top-2 z-10 flex h-10 w-10 items-center justify-center" title={buildingGoal.name}>
+          <div
+            className="pointer-events-none absolute right-2 top-2 z-10 flex h-10 w-10 items-center justify-center"
+            title={thumbTitle}
+          >
             <div className="relative h-10 w-10">
-              <Image
-                src={encodeURI(buildingGoal.image)}
-                alt={buildingGoal.name}
-                width={40}
-                height={40}
-                className="h-10 w-10 object-contain"
-                style={
-                  buildingUnlocked
-                    ? undefined
-                    : { filter: 'grayscale(100%)', opacity: 0.5 }
-                }
-              />
-              {!buildingUnlocked ? (
-                <span className="absolute inset-0 flex items-center justify-center text-sm leading-none select-none" aria-hidden>🔒</span>
-              ) : null}
+              {buildingUnlocked && houseLeaderSrc ? (
+                <div className="ranking-building-thumb-anim relative h-10 w-10">
+                  <Image
+                    src={encodeURI(buildingGoal.image)}
+                    alt={buildingGoal.name}
+                    width={40}
+                    height={40}
+                    className="ranking-building-thumb-normal pointer-events-none absolute left-1/2 top-1/2 max-h-10 max-w-10 -translate-x-1/2 -translate-y-1/2 object-contain"
+                  />
+                  <Image
+                    src={encodeURI(houseLeaderSrc)}
+                    alt=""
+                    width={40}
+                    height={40}
+                    className="ranking-building-thumb-house pointer-events-none absolute left-1/2 top-1/2 max-h-10 max-w-10 -translate-x-1/2 -translate-y-1/2 object-contain"
+                  />
+                </div>
+              ) : (
+                <>
+                  <Image
+                    src={encodeURI(buildingGoal.image)}
+                    alt={buildingGoal.name}
+                    width={40}
+                    height={40}
+                    className="h-10 w-10 object-contain"
+                    style={
+                      buildingUnlocked
+                        ? undefined
+                        : { filter: 'grayscale(100%)', opacity: 0.5 }
+                    }
+                  />
+                  {!buildingUnlocked ? (
+                    <span className="absolute inset-0 flex items-center justify-center text-sm leading-none select-none" aria-hidden>🔒</span>
+                  ) : null}
+                </>
+              )}
             </div>
           </div>
         ) : null}
