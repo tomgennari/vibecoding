@@ -484,35 +484,35 @@ export default function DashboardPage() {
       >
         {buildingGoal ? (
           <div
-            className="pointer-events-none absolute -right-4 -top-6 z-20 flex h-[80px] w-[80px] items-center justify-center"
+            className="pointer-events-none absolute right-2 -top-6 z-20 flex h-[60px] w-[60px] items-center justify-center lg:-right-4 lg:h-[80px] lg:w-[80px]"
             style={{ transform: `scale(${rankingScale})` }}
             title={thumbTitle}
           >
             {buildingUnlocked && houseLeaderSrc ? (
-              <div className="ranking-building-thumb-anim relative h-[80px] w-[80px]">
+              <div className="ranking-building-thumb-anim relative h-[60px] w-[60px] lg:h-[80px] lg:w-[80px]">
                 <Image
                   src={encodeURI(buildingGoal.image)}
                   alt={buildingGoal.name}
                   width={80}
                   height={80}
-                  className="ranking-building-thumb-normal pointer-events-none absolute left-1/2 top-1/2 max-h-[80px] max-w-[80px] -translate-x-1/2 -translate-y-1/2 object-contain"
+                  className="ranking-building-thumb-normal pointer-events-none absolute left-1/2 top-1/2 max-h-[60px] max-w-[60px] -translate-x-1/2 -translate-y-1/2 object-contain lg:max-h-[80px] lg:max-w-[80px]"
                 />
                 <Image
                   src={encodeURI(houseLeaderSrc)}
                   alt=""
                   width={80}
                   height={80}
-                  className="ranking-building-thumb-house pointer-events-none absolute left-1/2 top-1/2 max-h-[80px] max-w-[80px] -translate-x-1/2 -translate-y-1/2 object-contain"
+                  className="ranking-building-thumb-house pointer-events-none absolute left-1/2 top-1/2 max-h-[60px] max-w-[60px] -translate-x-1/2 -translate-y-1/2 object-contain lg:max-h-[80px] lg:max-w-[80px]"
                 />
               </div>
             ) : (
-              <div className="relative h-[80px] w-[80px]">
+              <div className="relative h-[60px] w-[60px] lg:h-[80px] lg:w-[80px]">
                 <Image
                   src={encodeURI(buildingGoal.image)}
                   alt={buildingGoal.name}
                   width={80}
                   height={80}
-                  className="h-[80px] w-[80px] object-contain"
+                  className="h-[60px] w-[60px] object-contain lg:h-[80px] lg:w-[80px]"
                   style={
                     buildingUnlocked
                       ? undefined
@@ -520,13 +520,13 @@ export default function DashboardPage() {
                   }
                 />
                 {!buildingUnlocked ? (
-                  <span className="absolute inset-0 flex items-center justify-center text-2xl leading-none select-none" aria-hidden>🔒</span>
+                  <span className="absolute inset-0 flex items-center justify-center text-xl leading-none select-none lg:text-2xl" aria-hidden>🔒</span>
                 ) : null}
               </div>
             )}
           </div>
         ) : null}
-        <h3 className="mb-2 truncate pr-[92px] text-sm font-bold" style={{ color: text }}>{ranking.title}</h3>
+        <h3 className="mb-2 truncate pr-20 text-sm font-bold lg:pr-[92px]" style={{ color: text }}>{ranking.title}</h3>
         <div className="space-y-1.5">
           {ranking.rows.map((row) => {
             const pct = ranking.max > 0 ? (row.value / ranking.max) * 100 : 0;
@@ -925,8 +925,14 @@ export default function DashboardPage() {
                     >
                       ${formatArs(currentGoal)} ARS
                     </p>
-                    <p className="text-sm mb-2" style={{ color: textMuted }}>
-                      Recaudado: ${formatArs(totalRaised)} ARS de ${formatArs(currentGoal)} ARS
+                    <p className="mb-2 leading-snug" style={{ color: textMuted }}>
+                      <span className="text-lg font-black tabular-nums" style={{ color: text }}>
+                        Recaudado: ${formatArs(totalRaised)} ARS
+                      </span>
+                      {' '}
+                      <span className="text-base font-bold tabular-nums">
+                        de ${formatArs(currentGoal)} ARS
+                      </span>
                     </p>
                     <div className="rounded-full overflow-hidden h-3" style={{ background: progressBarBg }}>
                       <div
@@ -1087,16 +1093,29 @@ export default function DashboardPage() {
               className="px-4 py-2 flex items-stretch gap-2.5 min-w-0 border-t"
               style={{ background: objetivoBg, borderColor: border }}
             >
-              <div className="flex-1 min-w-0 rounded-lg border p-2 flex flex-col justify-center" style={{ ...cardStyle, background: cardBg }}>
-                <p className="text-xs font-black tabular-nums mb-0.5 leading-tight" style={{ color: accent }}>
-                  🏗️ <span className="font-bold">{currentBuilding.name}</span>
-                  {' '}
-                  <span className="tabular-nums">${formatArs(currentGoal)} ARS</span>
-                </p>
-                <div className="rounded-full overflow-hidden h-1.5 mb-0.5" style={{ background: progressBarBg }}>
-                  <div className="h-full rounded-full transition-[width] duration-300" style={{ width: `${progress}%`, background: 'linear-gradient(90deg, #7c3aed 0%, #06b6d4 100%)' }} />
+              <div className="flex min-w-0 flex-1 items-center gap-2 rounded-lg border p-2" style={{ ...cardStyle, background: cardBg }}>
+                <Image
+                  src={encodeURI(currentBuilding.image)}
+                  alt={currentBuilding.name}
+                  width={50}
+                  height={50}
+                  className="h-[50px] w-[50px] flex-shrink-0 object-contain"
+                />
+                <div className="flex min-w-0 flex-1 flex-col justify-center">
+                  <p className="mb-0.5 text-xs font-black leading-tight tabular-nums" style={{ color: accent }}>
+                    🏗️ <span className="font-bold">{currentBuilding.name}</span>
+                    {' '}
+                    <span className="tabular-nums">${formatArs(currentGoal)} ARS</span>
+                  </p>
+                  <div className="mb-0.5 h-1.5 overflow-hidden rounded-full" style={{ background: progressBarBg }}>
+                    <div className="h-full rounded-full transition-[width] duration-300" style={{ width: `${progress}%`, background: 'linear-gradient(90deg, #7c3aed 0%, #06b6d4 100%)' }} />
+                  </div>
+                  <p className="leading-tight tabular-nums" style={{ color: textMuted }}>
+                    <span className="text-lg font-black" style={{ color: text }}>Recaudado: ${formatArs(totalRaised)}</span>
+                    {' '}
+                    <span className="text-base font-bold">de ${formatArs(currentGoal)}</span>
+                  </p>
                 </div>
-                <p className="text-[10px] tabular-nums leading-tight" style={{ color: textMuted }}>Recaudado: ${formatArs(totalRaised)} de ${formatArs(currentGoal)}</p>
               </div>
               <button type="button" onClick={() => setDonationModalOpen(true)} className="vibe-btn-gradient flex-shrink-0 rounded-xl px-3 py-2 font-bold text-white text-sm self-center">
                 Donar
