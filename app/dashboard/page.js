@@ -408,18 +408,18 @@ export default function DashboardPage() {
       if (game?.house) timeByHouse[game.house] = (timeByHouse[game.house] || 0) + (Number(s.duration_seconds) || 0);
     });
 
-    const base = [
+    const baseOrdered = [
       { key: 'students', title: 'Más alumnos registrados', values: studentsByHouse, formatValue: formatInt },
       { key: 'parents', title: 'Más padres registrados', values: parentsByHouse, formatValue: formatInt },
       { key: 'games', title: 'Más juegos creados', values: gamesByHouse, formatValue: formatInt },
-      { key: 'likes', title: 'Ranking de Likes', values: likesByHouse, formatValue: formatInt },
       { key: 'unlocks', title: 'Juegos Desbloqueados', values: unlocksByHouse, formatValue: formatMoney },
+      { key: 'likes', title: 'Ranking de Likes', values: likesByHouse, formatValue: formatInt },
+      { key: 'time', title: 'Tiempo Jugado', values: timeByHouse, formatValue: formatTime },
       { key: 'donations', title: 'Donaciones', values: donationsByHouse, formatValue: formatMoney },
-      { key: 'time', title: 'Tiempo jugado', values: timeByHouse, formatValue: formatTime },
     ];
 
     const totalByHouse = emptyByHouse();
-    base.forEach((r) => {
+    baseOrdered.forEach((r) => {
       const sum = HOUSES.reduce((acc, h) => acc + (Number(r.values[h.id]) || 0), 0);
       if (sum <= 0) return;
       HOUSES.forEach((h) => {
@@ -428,8 +428,8 @@ export default function DashboardPage() {
     });
 
     const cards = [
-      { key: 'total', title: 'Ranking Total', ...toRows(totalByHouse, formatScore) },
-      ...base.map((r) => ({ key: r.key, title: r.title, ...toRows(r.values, r.formatValue) })),
+      ...baseOrdered.map((r, i) => ({ key: r.key, title: r.title, buildingIndex: i, ...toRows(r.values, r.formatValue) })),
+      { key: 'total', title: 'Ranking Total', buildingIndex: 7, ...toRows(totalByHouse, formatScore) },
     ];
 
     return [cards.slice(0, 4), cards.slice(4, 8)];
@@ -437,9 +437,32 @@ export default function DashboardPage() {
 
   function renderRankingCard(ranking) {
     if (!ranking) return null;
+    const buildingGoal = BUILDING_GOALS[ranking.buildingIndex];
+    const buildingUnlocked = buildingGoal && totalRaised >= buildingGoal.amount;
     return (
-      <div key={ranking.key} className={`${cardBase} p-3`} style={cardStyle}>
-        <h3 className="text-sm font-bold mb-2 truncate" style={{ color: text }}>{ranking.title}</h3>
+      <div key={ranking.key} className={`${cardBase} p-3 relative`} style={cardStyle}>
+        {buildingGoal ? (
+          <div className="pointer-events-none absolute right-2 top-2 z-10 flex h-10 w-10 items-center justify-center" title={buildingGoal.name}>
+            <div className="relative h-10 w-10">
+              <Image
+                src={encodeURI(buildingGoal.image)}
+                alt={buildingGoal.name}
+                width={40}
+                height={40}
+                className="h-10 w-10 object-contain"
+                style={
+                  buildingUnlocked
+                    ? undefined
+                    : { filter: 'grayscale(100%)', opacity: 0.5 }
+                }
+              />
+              {!buildingUnlocked ? (
+                <span className="absolute inset-0 flex items-center justify-center text-sm leading-none select-none" aria-hidden>🔒</span>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
+        <h3 className="mb-2 truncate pr-12 text-sm font-bold" style={{ color: text }}>{ranking.title}</h3>
         <div className="space-y-1.5">
           {ranking.rows.map((row) => {
             const pct = ranking.max > 0 ? (row.value / ranking.max) * 100 : 0;
