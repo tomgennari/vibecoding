@@ -20,7 +20,16 @@ const HOUSES = [
   { id: 'john_monteith', name: 'John Monteith', color: '#22c55e', image: '/images/houses/house-monteith.png' },
 ];
 
-const GOALS_ARS = [20000, 100000, 500000, 2000000, 5000000, 10000000, 25000000, 50000000, 100000000, 1000000000];
+const BUILDING_GOALS = [
+  { amount: 200000, name: 'Kinder', image: '/images/Buildings No Backgrounds/Kinder_Normal.png' },
+  { amount: 500000, name: 'Primary School', image: '/images/Buildings No Backgrounds/Primary_School_Normal.png' },
+  { amount: 1500000, name: 'Sports Pavilion', image: '/images/Buildings No Backgrounds/Sports_Pavilion_Normal.png' },
+  { amount: 5000000, name: 'Natatorio', image: '/images/Buildings No Backgrounds/Natatorio_normal.png' },
+  { amount: 15000000, name: 'Dinning Hall', image: '/images/Buildings No Backgrounds/Dinning_Hall_normal.png' },
+  { amount: 40000000, name: 'Performing Arts Center', image: '/images/Buildings No Backgrounds/Performing_Arts_Center_Normal.png' },
+  { amount: 80000000, name: 'Secondary School', image: '/images/Buildings No Backgrounds/Secondary_Normal.png' },
+  { amount: 150000000, name: 'Symmetry Boat', image: '/images/Buildings No Backgrounds/Symmetry_Normal.png' },
+];
 const RANKING_PAGE_COUNT = 2;
 const DONATION_AMOUNTS = [
   { amount: 20000, label: '$20.000 ARS' },
@@ -790,20 +799,21 @@ export default function DashboardPage() {
 
         {/* Columna derecha (1/3) */}
         <div className="flex-1 flex flex-col min-w-0 overflow-auto px-4 py-4 border-l" style={{ borderColor: border }}>
-          {/* Próximo objetivo — barra de progreso por recaudación */}
+          {/* Próximo edificio — barra de progreso por recaudación */}
           {(() => {
             const formatArs = (n) => Number(n).toLocaleString('es-AR');
-            const currentIndex = GOALS_ARS.findIndex((g) => totalRaised < g);
-            const currentGoal = currentIndex === -1 ? GOALS_ARS[GOALS_ARS.length - 1] : GOALS_ARS[currentIndex];
-            const completedGoals = currentIndex <= 0 ? [] : GOALS_ARS.slice(0, currentIndex);
+            const currentIndex = BUILDING_GOALS.findIndex((g) => totalRaised < g.amount);
+            const currentBuilding = currentIndex === -1 ? BUILDING_GOALS[BUILDING_GOALS.length - 1] : BUILDING_GOALS[currentIndex];
+            const currentGoal = currentBuilding.amount;
+            const completedBuildings = currentIndex <= 0 ? [] : BUILDING_GOALS.slice(0, currentIndex);
             const progress = currentGoal ? Math.min(100, (totalRaised / currentGoal) * 100) : 0;
             return (
               <section className="flex-shrink-0 mb-6">
-                <h2 className="text-lg font-bold mb-2" style={{ color: text }}>🎯 Próximo objetivo</h2>
-                {completedGoals.length > 0 && (
+                <h2 className="text-lg font-bold mb-2" style={{ color: text }}>🏗️ Próximo Edificio a Desbloquear</h2>
+                {completedBuildings.length > 0 && (
                   <div className="flex flex-wrap gap-x-2 gap-y-0.5 mb-2 text-[11px]" style={{ color: textMuted }}>
-                    {completedGoals.map((g) => (
-                      <span key={g}>✅ ${formatArs(g)} ARS</span>
+                    {completedBuildings.map((b) => (
+                      <span key={`${b.amount}-${b.name}`}>✅ {b.name}</span>
                     ))}
                   </div>
                 )}
@@ -812,8 +822,18 @@ export default function DashboardPage() {
                   style={{ background: 'linear-gradient(135deg, #7c3aed 0%, #06b6d4 100%)' }}
                 >
                   <div className="rounded-[10px] p-4 min-w-0 h-full" style={{ background: cardBg }}>
+                    <div className="flex justify-center mb-2 h-20 w-full">
+                      <Image
+                        src={encodeURI(currentBuilding.image)}
+                        alt={currentBuilding.name}
+                        width={200}
+                        height={80}
+                        className="object-contain h-[80px] w-auto max-w-full"
+                      />
+                    </div>
+                    <p className="text-sm font-bold text-center mb-2" style={{ color: text }}>{currentBuilding.name}</p>
                     <p
-                      className="text-xl font-black tabular-nums mb-2"
+                      className="text-xl font-black tabular-nums mb-2 text-center"
                       style={{ color: accent, fontFamily: "'Burbank Big', sans-serif", fontWeight: 900 }}
                     >
                       ${formatArs(currentGoal)} ARS
@@ -958,11 +978,12 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Próximo objetivo (mobile) — compacto + botón Donar, separado de stats */}
+        {/* Próximo edificio (mobile) — compacto + botón Donar, separado de stats */}
         {(() => {
           const formatArs = (n) => Number(n).toLocaleString('es-AR');
-          const currentIndex = GOALS_ARS.findIndex((g) => totalRaised < g);
-          const currentGoal = currentIndex === -1 ? GOALS_ARS[GOALS_ARS.length - 1] : GOALS_ARS[currentIndex];
+          const currentIndex = BUILDING_GOALS.findIndex((g) => totalRaised < g.amount);
+          const currentBuilding = currentIndex === -1 ? BUILDING_GOALS[BUILDING_GOALS.length - 1] : BUILDING_GOALS[currentIndex];
+          const currentGoal = currentBuilding.amount;
           const progress = currentGoal ? Math.min(100, (totalRaised / currentGoal) * 100) : 0;
           const objetivoBg = isDark ? '#16161f' : '#f1f5f9';
           return (
@@ -971,7 +992,11 @@ export default function DashboardPage() {
               style={{ background: objetivoBg, borderColor: border }}
             >
               <div className="flex-1 min-w-0 rounded-lg border p-2 flex flex-col justify-center" style={{ ...cardStyle, background: cardBg }}>
-                <p className="text-xs font-black tabular-nums truncate mb-0.5" style={{ color: accent }}>🎯 ${formatArs(currentGoal)} ARS</p>
+                <p className="text-xs font-black tabular-nums mb-0.5 leading-tight" style={{ color: accent }}>
+                  🏗️ <span className="font-bold">{currentBuilding.name}</span>
+                  {' '}
+                  <span className="tabular-nums">${formatArs(currentGoal)} ARS</span>
+                </p>
                 <div className="rounded-full overflow-hidden h-1.5 mb-0.5" style={{ background: progressBarBg }}>
                   <div className="h-full rounded-full transition-[width] duration-300" style={{ width: `${progress}%`, background: 'linear-gradient(90deg, #7c3aed 0%, #06b6d4 100%)' }} />
                 </div>
