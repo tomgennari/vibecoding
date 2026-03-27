@@ -68,8 +68,8 @@ export async function GET(request) {
   ] = await Promise.all([
     admin.rpc('get_total_raised'),
     admin.from('pack_purchases').select('*'),
-    admin.from('game_unlocks').select('user_id, game_id, amount_paid, payment_id, created_at'),
-    admin.from('donations').select('user_id, amount, payment_id, created_at'),
+    admin.from('game_unlocks').select('user_id, game_id, amount_paid, payment_id, unlocked_at'),
+    admin.from('donations').select('user_id, amount, payment_id, donated_at'),
     admin.from('profiles').select('id', { count: 'exact', head: true }),
   ]);
 
@@ -138,7 +138,7 @@ export async function GET(request) {
   });
 
   exclusiveUnlocks.forEach((u, idx) => {
-    const at = rowDate(u, ['created_at']) || new Date(0).toISOString();
+    const at = rowDate(u, ['unlocked_at']) || new Date(0).toISOString();
     transactions.push({
       id: `unlock-${idx}-${u.payment_id ?? u.game_id ?? idx}`,
       at,
@@ -151,7 +151,7 @@ export async function GET(request) {
   });
 
   donations.forEach((d, idx) => {
-    const at = rowDate(d, ['created_at']) || new Date(0).toISOString();
+    const at = rowDate(d, ['donated_at']) || new Date(0).toISOString();
     transactions.push({
       id: `don-${idx}-${d.payment_id ?? idx}`,
       at,
