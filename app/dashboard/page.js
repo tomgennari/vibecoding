@@ -12,23 +12,13 @@ import { MobileBottomNav } from '@/components/mobile-bottom-nav.js';
 import { UnlockGameModal } from '@/components/unlock-game-modal.js';
 import { effectiveIndividualGamePrice } from '@/lib/pricing.js';
 import { getTodayArgentina } from '@/lib/dates';
+import { BUILDING_GOALS } from '@/lib/building-goals.js';
 
 const HOUSES = [
   { id: 'william_brown', name: 'William Brown', color: '#3b82f6', image: '/images/houses/house-brown.png' },
   { id: 'james_dodds', name: 'James Dodds', color: '#eab308', image: '/images/houses/house-dodds.png' },
   { id: 'james_fleming', name: 'James Fleming', color: '#ef4444', image: '/images/houses/house-fleming.png' },
   { id: 'john_monteith', name: 'John Monteith', color: '#22c55e', image: '/images/houses/house-monteith.png' },
-];
-
-const BUILDING_GOALS = [
-  { amount: 200000, name: 'Kinder', image: '/images/Buildings No Backgrounds/Kinder_Normal.png' },
-  { amount: 500000, name: 'Primary School', image: '/images/Buildings No Backgrounds/Primary_School_Normal.png' },
-  { amount: 1500000, name: 'Sports Pavilion', image: '/images/Buildings No Backgrounds/Sports_Pavilion_Normal.png' },
-  { amount: 5000000, name: 'Natatorio', image: '/images/Buildings No Backgrounds/Natatorio_normal.png' },
-  { amount: 15000000, name: 'Dinning Hall', image: '/images/Buildings No Backgrounds/Dinning_Hall_normal.png' },
-  { amount: 40000000, name: 'Performing Arts Center', image: '/images/Buildings No Backgrounds/Performing_Arts_Center_Normal.png' },
-  { amount: 80000000, name: 'Secondary School', image: '/images/Buildings No Backgrounds/Secondary_Normal.png', rankingScale: 0.9 },
-  { amount: 150000000, name: 'Symmetry Boat', image: '/images/Buildings No Backgrounds/Symmetry_Normal.png', rankingScale: 1.1 },
 ];
 
 const HOUSE_IMAGE_NAMES = {

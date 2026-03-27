@@ -10,7 +10,7 @@ import AdminGamesSection from './components/AdminGamesSection.js';
 import AdminDailyGamesSection from './components/AdminDailyGamesSection.js';
 import AdminUsersSection from './components/AdminUsersSection.js';
 import AdminMetricsSection from './components/AdminMetricsSection.js';
-import AdminBuildingsSection from './components/AdminBuildingsSection.js';
+import AdminFinanzasSection from './components/AdminFinanzasSection.js';
 
 export default function AdminPage() {
   const router = useRouter();
@@ -66,7 +66,7 @@ export default function AdminPage() {
           {section === 'juegos-dia' && <AdminDailyGamesSection />}
           {section === 'usuarios' && <AdminUsersSection />}
           {section === 'metricas' && <AdminMetricsSection />}
-          {section === 'edificios' && <AdminBuildingsSection />}
+          {section === 'finanzas' && <AdminFinanzasSection />}
         </main>
       </div>
     </div>
