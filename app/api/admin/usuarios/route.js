@@ -19,13 +19,6 @@ async function requireAdmin(request) {
   return { ok: true, user };
 }
 
-function rowDate(row, keys) {
-  for (const k of keys) {
-    if (row[k]) return row[k];
-  }
-  return null;
-}
-
 async function fetchAllLastSignIns(adminAuth) {
   const byId = {};
   let page = 1;
@@ -76,8 +69,8 @@ export async function GET(request) {
       .order('created_at', { ascending: false }),
     admin.from('games').select('submitted_by'),
     admin.from('game_unlocks').select('user_id, amount_paid, payment_id, unlocked_at'),
-    admin.from('pack_purchases').select('user_id, pack_type, amount_paid, payment_id, purchased_at, created_at'),
-    admin.from('donations').select('user_id, amount, payment_id, donated_at, created_at'),
+    admin.from('pack_purchases').select('user_id, pack_type, amount_paid, payment_id, purchased_at'),
+    admin.from('donations').select('user_id, amount, payment_id, donated_at'),
     admin.from('game_sessions').select('user_id, duration_seconds, started_at'),
     admin.from('house_points').select('house, total_points'),
     fetchAllLastSignIns(admin.auth.admin),
@@ -155,7 +148,7 @@ export async function GET(request) {
     packsByUser[uid].push({
       pack_type: p.pack_type,
       amount_paid: amt,
-      purchased_at: rowDate(p, ['purchased_at', 'created_at']) || null,
+      purchased_at: p.purchased_at || null,
     });
   }
 
@@ -169,7 +162,7 @@ export async function GET(request) {
     if (!donationsByUser[uid]) donationsByUser[uid] = [];
     donationsByUser[uid].push({
       amount: amt,
-      donated_at: rowDate(d, ['donated_at', 'created_at']) || null,
+      donated_at: d.donated_at || null,
       payment_id: d.payment_id ?? null,
     });
   }
