@@ -476,53 +476,51 @@ export default function DashboardPage() {
       ? `${buildingGoal.name} · Líder: ${leaderRow.name}`
       : buildingGoal?.name;
     return (
-      <div key={ranking.key} className={`${cardBase} p-3 relative`} style={cardStyle}>
+      <div key={ranking.key} className="relative min-w-0 overflow-visible rounded-xl border p-3" style={cardStyle}>
         {buildingGoal ? (
           <div
-            className="pointer-events-none absolute right-2 top-2 z-10 flex h-10 w-10 items-center justify-center"
+            className="pointer-events-none absolute -right-4 -top-4 z-10 flex h-[120px] w-[120px] items-center justify-center"
             title={thumbTitle}
           >
-            <div className="relative h-10 w-10">
-              {buildingUnlocked && houseLeaderSrc ? (
-                <div className="ranking-building-thumb-anim relative h-10 w-10">
-                  <Image
-                    src={encodeURI(buildingGoal.image)}
-                    alt={buildingGoal.name}
-                    width={40}
-                    height={40}
-                    className="ranking-building-thumb-normal pointer-events-none absolute left-1/2 top-1/2 max-h-10 max-w-10 -translate-x-1/2 -translate-y-1/2 object-contain"
-                  />
-                  <Image
-                    src={encodeURI(houseLeaderSrc)}
-                    alt=""
-                    width={40}
-                    height={40}
-                    className="ranking-building-thumb-house pointer-events-none absolute left-1/2 top-1/2 max-h-10 max-w-10 -translate-x-1/2 -translate-y-1/2 object-contain"
-                  />
-                </div>
-              ) : (
-                <>
-                  <Image
-                    src={encodeURI(buildingGoal.image)}
-                    alt={buildingGoal.name}
-                    width={40}
-                    height={40}
-                    className="h-10 w-10 object-contain"
-                    style={
-                      buildingUnlocked
-                        ? undefined
-                        : { filter: 'grayscale(100%)', opacity: 0.5 }
-                    }
-                  />
-                  {!buildingUnlocked ? (
-                    <span className="absolute inset-0 flex items-center justify-center text-sm leading-none select-none" aria-hidden>🔒</span>
-                  ) : null}
-                </>
-              )}
-            </div>
+            {buildingUnlocked && houseLeaderSrc ? (
+              <div className="ranking-building-thumb-anim relative h-[120px] w-[120px]">
+                <Image
+                  src={encodeURI(buildingGoal.image)}
+                  alt={buildingGoal.name}
+                  width={120}
+                  height={120}
+                  className="ranking-building-thumb-normal pointer-events-none absolute left-1/2 top-1/2 max-h-[120px] max-w-[120px] -translate-x-1/2 -translate-y-1/2 object-contain"
+                />
+                <Image
+                  src={encodeURI(houseLeaderSrc)}
+                  alt=""
+                  width={120}
+                  height={120}
+                  className="ranking-building-thumb-house pointer-events-none absolute left-1/2 top-1/2 max-h-[120px] max-w-[120px] -translate-x-1/2 -translate-y-1/2 object-contain"
+                />
+              </div>
+            ) : (
+              <div className="relative h-[120px] w-[120px]">
+                <Image
+                  src={encodeURI(buildingGoal.image)}
+                  alt={buildingGoal.name}
+                  width={120}
+                  height={120}
+                  className="h-[120px] w-[120px] object-contain"
+                  style={
+                    buildingUnlocked
+                      ? undefined
+                      : { filter: 'grayscale(100%)', opacity: 0.5 }
+                  }
+                />
+                {!buildingUnlocked ? (
+                  <span className="absolute inset-0 flex items-center justify-center text-3xl leading-none select-none" aria-hidden>🔒</span>
+                ) : null}
+              </div>
+            )}
           </div>
         ) : null}
-        <h3 className="mb-2 truncate pr-12 text-sm font-bold" style={{ color: text }}>{ranking.title}</h3>
+        <h3 className="mb-2 truncate pr-[132px] text-sm font-bold" style={{ color: text }}>{ranking.title}</h3>
         <div className="space-y-1.5">
           {ranking.rows.map((row) => {
             const pct = ranking.max > 0 ? (row.value / ranking.max) * 100 : 0;
@@ -975,7 +973,7 @@ export default function DashboardPage() {
                 </button>
               </div>
             </div>
-            <div className="overflow-hidden min-w-0" onWheel={handleRankingWheel}>
+            <div className="min-w-0 overflow-hidden pt-7 pr-7" onWheel={handleRankingWheel}>
               <div
                 className="flex"
                 style={{
@@ -989,7 +987,7 @@ export default function DashboardPage() {
                     className="w-full shrink-0"
                     style={{ transition: 'opacity 350ms ease-in-out', opacity: rankingPage === pageIdx ? 1 : 0.9 }}
                   >
-                    <div className="grid grid-cols-2 gap-3 min-w-0">
+                    <div className="grid min-w-0 grid-cols-2 gap-3">
                       {pageRankings.map((ranking) => renderRankingCard(ranking))}
                     </div>
                   </div>
@@ -1363,7 +1361,7 @@ export default function DashboardPage() {
                 </button>
               </div>
             </div>
-            <div className="overflow-hidden min-w-0" onWheel={handleRankingWheel}>
+            <div className="min-w-0 overflow-hidden pt-7 pr-7" onWheel={handleRankingWheel}>
               <div
                 className="flex"
                 style={{
@@ -1377,7 +1375,7 @@ export default function DashboardPage() {
                     className="w-full shrink-0"
                     style={{ transition: 'opacity 350ms ease-in-out', opacity: rankingPage === pageIdx ? 1 : 0.9 }}
                   >
-                    <div className="grid grid-cols-1 gap-3 min-w-0">
+                    <div className="grid min-w-0 grid-cols-1 gap-3">
                       {pageRankings.map((ranking) => renderRankingCard(ranking))}
                     </div>
                   </div>
