@@ -200,9 +200,9 @@ export default function DashboardPage() {
         supabase.from('games').select('*').eq('status', 'approved').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('game_likes').select('game_id').eq('user_id', uid).then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('buildings').select('*').order('display_order', { ascending: true }).then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => supabase.from('buildings').select('*').order('name', { ascending: true }).then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true }))),
-        supabase.from('game_unlocks').select('game_id, amount_paid').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
-        supabase.from('profiles').select('house, user_type').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
-        supabase.from('game_sessions').select('game_id, duration_seconds').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
+        supabase.from('game_unlocks').select('user_id, game_id, amount_paid').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
+        supabase.from('profiles').select('id, house, user_type, has_all_access').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
+        supabase.from('game_sessions').select('user_id, game_id, duration_seconds').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('donations').select('house, amount').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('profiles').select('has_all_access').eq('id', uid).maybeSingle().then((r) => ({ data: r.data, error: r.error })).catch(() => ({ data: null, error: true })),
       ]);
@@ -407,10 +407,29 @@ export default function DashboardPage() {
       if (g?.house) likesByHouse[g.house] = (likesByHouse[g.house] || 0) + (Number(g.total_likes) || 0);
     });
 
+    const profileById = {};
+    (allProfiles || []).forEach((p) => {
+      if (p?.id) profileById[p.id] = p;
+    });
+
     const unlocksByHouse = emptyByHouse();
     (allUnlocks || []).forEach((u) => {
+      const prof = u.user_id ? profileById[u.user_id] : null;
+      if (prof?.has_all_access) return;
       const game = gameById[u.game_id];
       if (game?.house) unlocksByHouse[game.house] = (unlocksByHouse[game.house] || 0) + (Number(u.amount_paid) || 0);
+    });
+
+    const aaPlayedPairs = new Set();
+    (allSessions || []).forEach((s) => {
+      if (!s.user_id || !s.game_id) return;
+      const prof = profileById[s.user_id];
+      if (!prof?.has_all_access) return;
+      const key = `${s.user_id}:${s.game_id}`;
+      if (aaPlayedPairs.has(key)) return;
+      aaPlayedPairs.add(key);
+      const game = gameById[s.game_id];
+      if (game?.house) unlocksByHouse[game.house] = (unlocksByHouse[game.house] || 0) + 1;
     });
 
     const donationsByHouse = emptyByHouse();
@@ -428,7 +447,7 @@ export default function DashboardPage() {
       { key: 'students', title: 'Más alumnos registrados', values: studentsByHouse, formatValue: formatInt },
       { key: 'parents', title: 'Más padres registrados', values: parentsByHouse, formatValue: formatInt },
       { key: 'games', title: 'Más juegos creados', values: gamesByHouse, formatValue: formatInt },
-      { key: 'unlocks', title: 'Juegos Desbloqueados', values: unlocksByHouse, formatValue: formatMoney },
+      { key: 'unlocks', title: 'Juegos Desbloqueados', values: unlocksByHouse, formatValue: formatInt },
       { key: 'likes', title: 'Ranking de Likes', values: likesByHouse, formatValue: formatInt },
       { key: 'time', title: 'Tiempo Jugado', values: timeByHouse, formatValue: formatTime },
       { key: 'donations', title: 'Donaciones', values: donationsByHouse, formatValue: formatMoney },
