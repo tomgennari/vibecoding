@@ -7,6 +7,7 @@ export const maxDuration = 300;
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
 const MODEL = 'claude-sonnet-4-6';
 const MAX_TOKENS = 16000;
@@ -77,9 +78,100 @@ function buildSystemPrompt(docs, context = {}) {
   ].join('\n\n');
 }
 
+/** Igual idea que en game-lab/page: texto fuera del HTML embebido. */
+function extractAssistantParts(fullText) {
+  if (!fullText || typeof fullText !== 'string') {
+    return { reply: '', html: null, generatedHtml: false };
+  }
+  const htmlMatch = fullText.match(/```html\s*([\s\S]*?)```/i);
+  if (htmlMatch) {
+    const html = htmlMatch[1].trim();
+    const reply = fullText.replace(htmlMatch[0], '').trim();
+    return { reply: reply || '', html: html || null, generatedHtml: true };
+  }
+  const startDoctype = fullText.indexOf('<!DOCTYPE html>');
+  const startHtml = fullText.indexOf('<html');
+  let start = -1;
+  if (startDoctype !== -1) start = startDoctype;
+  if (startHtml !== -1 && (start === -1 || startHtml < start)) start = startHtml;
+  if (start === -1) {
+    return { reply: fullText, html: null, generatedHtml: false };
+  }
+  const endTag = '</html>';
+  const lastClose = fullText.lastIndexOf(endTag);
+  if (lastClose === -1) {
+    return { reply: fullText, html: null, generatedHtml: false };
+  }
+  const html = fullText.slice(start, lastClose + endTag.length).trim();
+  const reply = (fullText.slice(0, start) + fullText.slice(lastClose + endTag.length)).trim();
+  return { reply: reply || '', html: html || null, generatedHtml: true };
+}
+
+function detectFrameworkFromHtml(html) {
+  if (!html || typeof html !== 'string') return null;
+  if (/kaplay/i.test(html)) return 'kaplay';
+  if (/p5\.|createCanvas|p5\.min\.js/i.test(html)) return 'p5js';
+  if (/THREE\.|three\.js|threejs/i.test(html)) return 'threejs';
+  if (/<canvas/i.test(html)) return 'canvas2d';
+  return null;
+}
+
+function lastUserContent(messages, fallbackNewMessage) {
+  if (typeof fallbackNewMessage === 'string' && fallbackNewMessage.trim()) {
+    return fallbackNewMessage.trim();
+  }
+  for (let i = messages.length - 1; i >= 0; i--) {
+    if (messages[i]?.role === 'user' && typeof messages[i].content === 'string') {
+      return messages[i].content;
+    }
+  }
+  return '';
+}
+
+async function ensureAndySession(admin, userId, sessionKey) {
+  const { data: existing, error: selErr } = await admin
+    .from('andy_sessions')
+    .select('id, messages_count, credits_consumed, had_errors, had_auto_retry, framework_used, started_at')
+    .eq('user_id', userId)
+    .eq('session_key', sessionKey)
+    .maybeSingle();
+  if (selErr) throw selErr;
+  if (existing) return existing;
+
+  const { data: inserted, error: insErr } = await admin
+    .from('andy_sessions')
+    .insert({
+      user_id: userId,
+      session_key: sessionKey,
+      messages_count: 0,
+      credits_consumed: 0,
+      had_errors: false,
+      had_auto_retry: false,
+      ended_in_submission: false,
+      started_at: new Date().toISOString(),
+    })
+    .select('id, messages_count, credits_consumed, had_errors, had_auto_retry, framework_used, started_at')
+    .single();
+
+  if (insErr) {
+    const { data: again } = await admin
+      .from('andy_sessions')
+      .select('id, messages_count, credits_consumed, had_errors, had_auto_retry, framework_used, started_at')
+      .eq('user_id', userId)
+      .eq('session_key', sessionKey)
+      .maybeSingle();
+    if (again) return again;
+    throw insErr;
+  }
+  return inserted;
+}
+
 export async function POST(request) {
   if (!supabaseUrl || !supabaseAnonKey) {
     return NextResponse.json({ error: 'Configuración del servidor incompleta' }, { status: 500 });
+  }
+  if (!supabaseServiceKey) {
+    return NextResponse.json({ error: 'Game Lab no configurado (SUPABASE_SERVICE_ROLE_KEY)' }, { status: 503 });
   }
   if (!anthropicApiKey) {
     return NextResponse.json({ error: 'Game Lab no configurado (ANTHROPIC_API_KEY)' }, { status: 503 });
@@ -95,7 +187,10 @@ export async function POST(request) {
     return NextResponse.json({ error: 'Sesión inválida o expirada' }, { status: 401 });
   }
 
-  const supabaseAdmin = createClient(supabaseUrl, process.env.SUPABASE_SERVICE_ROLE_KEY);
+  const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+
   const { data: userProfile } = await supabaseAdmin
     .from('profiles')
     .select('tokens_used, tokens_limit, is_admin')
@@ -124,10 +219,41 @@ export async function POST(request) {
     return NextResponse.json({ error: 'Body JSON inválido' }, { status: 400 });
   }
 
+  const sessionKey = typeof body?.sessionKey === 'string' ? body.sessionKey.trim() : '';
+  if (!sessionKey) {
+    return NextResponse.json({ error: 'Falta sessionKey' }, { status: 400 });
+  }
+
+  const isErrorFix = body?.isErrorFix === true;
+  const newMessage = typeof body?.newMessage === 'string' ? body.newMessage : '';
+
   const messages = Array.isArray(body?.messages) ? body.messages : [];
   const context = body?.context || {};
   if (messages.length === 0) {
     return NextResponse.json({ error: 'Faltan mensajes' }, { status: 400 });
+  }
+
+  let andySession;
+  try {
+    andySession = await ensureAndySession(supabaseAdmin, user.id, sessionKey);
+  } catch (e) {
+    console.error('andy_sessions ensure:', e);
+    return NextResponse.json({ error: 'No se pudo iniciar la sesión de Andy' }, { status: 500 });
+  }
+
+  const userLogContent = lastUserContent(messages, newMessage);
+  if (userLogContent) {
+    const { error: umErr } = await supabaseAdmin.from('andy_messages').insert({
+      session_id: andySession.id,
+      role: 'user',
+      content: userLogContent,
+      generated_html: false,
+      tokens_input: 0,
+      tokens_output: 0,
+      cost_usd: 0,
+      is_error_fix: isErrorFix,
+    });
+    if (umErr) console.error('andy_messages user log:', umErr);
   }
 
   const docs = loadAndyDocs();
@@ -160,9 +286,17 @@ export async function POST(request) {
   if (!anthropicRes.ok) {
     const errBody = await anthropicRes.text();
     console.error('Anthropic API error:', anthropicRes.status, errBody);
+    await supabaseAdmin
+      .from('andy_sessions')
+      .update({
+        had_errors: true,
+        messages_count: (andySession.messages_count || 0) + (userLogContent ? 1 : 0),
+      })
+      .eq('id', andySession.id);
     return NextResponse.json({ error: 'Error al hablar con Andy. Intentá de nuevo.' }, { status: 502 });
   }
 
+  const sessionRow = andySession;
   const encoder = new TextEncoder();
   const readable = new ReadableStream({
     async start(controller) {
@@ -171,6 +305,8 @@ export async function POST(request) {
       let buffer = '';
       let totalInputTokens = 0;
       let totalOutputTokens = 0;
+      let fullAssistant = '';
+      let streamHadError = false;
 
       try {
         while (true) {
@@ -201,6 +337,7 @@ export async function POST(request) {
                 parsed.delta?.type === 'text_delta' &&
                 parsed.delta?.text
               ) {
+                fullAssistant += parsed.delta.text;
                 controller.enqueue(
                   encoder.encode(`data: ${JSON.stringify({ chunk: parsed.delta.text })}\n\n`)
                 );
@@ -210,9 +347,46 @@ export async function POST(request) {
             }
           }
         }
+      } catch (e) {
+        streamHadError = true;
+        console.error('Stream Andy:', e);
       } finally {
+        const costUsd = (totalInputTokens * 3 / 1000000) + (totalOutputTokens * 15 / 1000000);
+        const { reply, html: htmlExtracted, generatedHtml } = extractAssistantParts(fullAssistant);
+
+        try {
+          await supabaseAdmin.from('andy_messages').insert({
+            session_id: sessionRow.id,
+            role: 'assistant',
+            content: reply,
+            generated_html: generatedHtml,
+            tokens_input: totalInputTokens,
+            tokens_output: totalOutputTokens,
+            cost_usd: costUsd,
+            is_error_fix: isErrorFix,
+          });
+        } catch (e) {
+          console.error('andy_messages assistant log:', e);
+        }
+
+        const frameworkDetected = detectFrameworkFromHtml(htmlExtracted || fullAssistant);
+        const sessionUpdate = {
+          messages_count: (sessionRow.messages_count || 0) + (userLogContent ? 2 : 1),
+          credits_consumed: Number(sessionRow.credits_consumed || 0) + costUsd,
+          had_errors: !!(sessionRow.had_errors || streamHadError),
+          had_auto_retry: !!(sessionRow.had_auto_retry || isErrorFix),
+        };
+        if (!sessionRow.framework_used && frameworkDetected) {
+          sessionUpdate.framework_used = frameworkDetected;
+        }
+
+        try {
+          await supabaseAdmin.from('andy_sessions').update(sessionUpdate).eq('id', sessionRow.id);
+        } catch (e) {
+          console.error('andy_sessions update:', e);
+        }
+
         if (!isAdmin) {
-          const costUsd = (totalInputTokens * 3 / 1000000) + (totalOutputTokens * 15 / 1000000);
           if (costUsd > 0) {
             const newTokensUsed = (userProfile.tokens_used || 0) + costUsd;
             await supabaseAdmin

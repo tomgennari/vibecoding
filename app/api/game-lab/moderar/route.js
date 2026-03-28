@@ -50,6 +50,7 @@ export async function POST(request) {
   const description = typeof body?.description === 'string' ? body.description.trim() : '';
   const gameId = body?.gameId || null;
   const showAuthor = body?.showAuthor !== false;
+  const sessionKey = typeof body?.sessionKey === 'string' ? body.sessionKey.trim() : '';
 
   const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
     auth: { autoRefreshToken: false, persistSession: false },
@@ -133,6 +134,28 @@ export async function POST(request) {
       }
     }
 
+    if (sessionKey) {
+      const { data: sess } = await supabaseAdmin
+        .from('andy_sessions')
+        .select('id, started_at')
+        .eq('user_id', user.id)
+        .eq('session_key', sessionKey)
+        .maybeSingle();
+      if (sess?.id) {
+        const now = Date.now();
+        const started = sess.started_at ? new Date(sess.started_at).getTime() : now;
+        const durationSeconds = Math.max(0, Math.floor((now - started) / 1000));
+        await supabaseAdmin
+          .from('andy_sessions')
+          .update({
+            ended_in_submission: true,
+            game_id: gameId,
+            duration_seconds: durationSeconds,
+          })
+          .eq('id', sess.id);
+      }
+    }
+
     return NextResponse.json({ ok: true, gameId, updated: true });
   }
 
@@ -158,6 +181,28 @@ export async function POST(request) {
     console.error('Error insertando juego:', insertError);
     await supabaseAdmin.storage.from('games').remove([filename]).catch(() => {});
     return NextResponse.json({ error: 'No se pudo guardar el juego. Intentá de nuevo.' }, { status: 502 });
+  }
+
+  if (sessionKey) {
+    const { data: sess } = await supabaseAdmin
+      .from('andy_sessions')
+      .select('id, started_at')
+      .eq('user_id', user.id)
+      .eq('session_key', sessionKey)
+      .maybeSingle();
+    if (sess?.id) {
+      const now = Date.now();
+      const started = sess.started_at ? new Date(sess.started_at).getTime() : now;
+      const durationSeconds = Math.max(0, Math.floor((now - started) / 1000));
+      await supabaseAdmin
+        .from('andy_sessions')
+        .update({
+          ended_in_submission: true,
+          game_id: inserted.id,
+          duration_seconds: durationSeconds,
+        })
+        .eq('id', sess.id);
+    }
   }
 
   return NextResponse.json({ ok: true, gameId: inserted.id });

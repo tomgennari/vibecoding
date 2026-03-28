@@ -132,6 +132,35 @@
 | points_by_time | decimal | |
 | points_by_donations | decimal | |
 
+### `andy_sessions`
+| Columna | Tipo | Notas |
+|---------|------|-------|
+| id | uuid | PK |
+| user_id | uuid | FK → profiles |
+| session_key | text | Idempotente con user_id (Game Lab sessionStorage) |
+| messages_count | integer | Cuenta de mensajes persistidos |
+| credits_consumed | numeric | Suma costo USD de la sesión |
+| had_errors | boolean | |
+| had_auto_retry | boolean | Continuación / retry / auto-fix |
+| framework_used | text | Nullable — `kaplay` \| `p5js` \| `threejs` \| `canvas2d` (primera detección) |
+| started_at | timestamptz | Inicio sesión |
+| ended_in_submission | boolean | True al enviar a moderación |
+| game_id | uuid | Nullable — juego creado/actualizado al moderar |
+| duration_seconds | integer | Nullable — al cerrar por moderación |
+
+### `andy_messages`
+| Columna | Tipo | Notas |
+|---------|------|-------|
+| id | uuid | PK |
+| session_id | uuid | FK → andy_sessions |
+| role | text | `user` \| `assistant` |
+| content | text | Texto conversacional (sin bloque HTML) |
+| generated_html | boolean | |
+| tokens_input | integer | |
+| tokens_output | integer | |
+| cost_usd | numeric | |
+| is_error_fix | boolean | Retry por truncado / autofix / continuación |
+
 ---
 
 ## RPCs (Funciones de Supabase)

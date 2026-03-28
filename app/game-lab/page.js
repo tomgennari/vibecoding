@@ -26,6 +26,8 @@ const HTML_INCOMPLETE_WARNING = '⚠️ El juego es muy complejo para generarlo 
 
 const AUTOFIX_PROMPT = 'El juego que generaste tiene errores y no funciona. Estos son los errores detectados:\n\n{ERRORS}\n\nCorregí estos errores y devolvé el HTML completo y funcional. No cambies nada más del juego, solo arreglá los errores.';
 
+const GAMELAB_SESSION_KEY_STORAGE = 'gamelab_session_key';
+
 // 30 ideas de juegos para inspirar a alumnos de primaria y secundaria (SASS). prompt = texto que se envía al chat al hacer clic.
 const IDEAS_JUEGOS = [
   { emoji: '🚀', titulo: 'Naves espaciales', descripcion: 'Dispará a asteroides y enemigos en el espacio', prompt: 'Quiero un juego de naves espaciales donde tenga que esquivar asteroides y disparar a enemigos. Con power-ups y varios niveles.' },
@@ -278,6 +280,7 @@ export default function GameLabPage() {
   const [creditsLoaded, setCreditsLoaded] = useState(false);
   const [showCreditsInfo, setShowCreditsInfo] = useState(false);
   const [showAuthor, setShowAuthor] = useState(true);
+  const sessionKeyRef = useRef('');
 
   // 6 ideas al azar para la columna desktop; en mobile se usa el mismo set para el carrusel
   const inspirationCards = useMemo(() => pickRandom(IDEAS_JUEGOS, 6), []);
@@ -312,6 +315,17 @@ export default function GameLabPage() {
     }
   }, [userLoading, profile, router]);
 
+  // Clave de sesión Game Lab (misma para restaurar chat desde sessionStorage)
+  useEffect(() => {
+    if (!profile) return;
+    let k = sessionStorage.getItem(GAMELAB_SESSION_KEY_STORAGE);
+    if (!k) {
+      k = crypto.randomUUID();
+      sessionStorage.setItem(GAMELAB_SESSION_KEY_STORAGE, k);
+    }
+    sessionKeyRef.current = k;
+  }, [profile]);
+
   // Mensaje inicial de Andy al montar, o restaurar sesión anterior
   useEffect(() => {
     if (!profile) return;
@@ -324,6 +338,9 @@ export default function GameLabPage() {
       sessionStorage.removeItem('gamelab_edit_url');
       sessionStorage.removeItem('gamelab_html');
       sessionStorage.removeItem('gamelab_messages');
+      const editSk = crypto.randomUUID();
+      sessionStorage.setItem(GAMELAB_SESSION_KEY_STORAGE, editSk);
+      sessionKeyRef.current = editSk;
 
       fetch(editUrl)
         .then((res) => (res.ok ? res.text() : null))
@@ -600,6 +617,7 @@ export default function GameLabPage() {
           Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
+          sessionKey: sessionKeyRef.current || sessionStorage.getItem(GAMELAB_SESSION_KEY_STORAGE),
           messages: apiMessages,
           newMessage: trimmed,
           context: {
@@ -713,6 +731,8 @@ export default function GameLabPage() {
             Authorization: `Bearer ${session.access_token}`,
           },
           body: JSON.stringify({
+            sessionKey: sessionKeyRef.current || sessionStorage.getItem(GAMELAB_SESSION_KEY_STORAGE),
+            isErrorFix: true,
             messages: apiMessagesContinuation,
             context: {
               hasGame: !!currentHtml,
@@ -791,6 +811,8 @@ export default function GameLabPage() {
                 Authorization: `Bearer ${session.access_token}`,
               },
               body: JSON.stringify({
+                sessionKey: sessionKeyRef.current || sessionStorage.getItem(GAMELAB_SESSION_KEY_STORAGE),
+                isErrorFix: true,
                 messages: compactMessages,
                 context: {
                   hasGame: !!currentHtml,
@@ -879,6 +901,8 @@ export default function GameLabPage() {
                   Authorization: `Bearer ${session.access_token}`,
                 },
                 body: JSON.stringify({
+                  sessionKey: sessionKeyRef.current || sessionStorage.getItem(GAMELAB_SESSION_KEY_STORAGE),
+                  isErrorFix: true,
                   messages: fixMessages,
                   context: {
                     hasGame: true,
@@ -1041,7 +1065,10 @@ export default function GameLabPage() {
     const res = await fetch('/api/game-lab/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-      body: JSON.stringify({ messages: apiMessages }),
+      body: JSON.stringify({
+        sessionKey: sessionKeyRef.current || sessionStorage.getItem(GAMELAB_SESSION_KEY_STORAGE),
+        messages: apiMessages,
+      }),
     });
     if (!res.ok || !res.body) {
       setSugiriendoTitulo(false);
@@ -1122,6 +1149,7 @@ export default function GameLabPage() {
           description: descripcionModal.trim() || 'Generado con Andy en el Game Lab',
           gameId: sessionStorage.getItem('gamelab_editing_id') || null,
           showAuthor,
+          sessionKey: sessionKeyRef.current || sessionStorage.getItem(GAMELAB_SESSION_KEY_STORAGE),
         }),
       });
       const data = await res.json().catch(() => ({}));
@@ -1136,6 +1164,9 @@ export default function GameLabPage() {
       sessionStorage.removeItem('gamelab_html');
       sessionStorage.removeItem('gamelab_messages');
       sessionStorage.removeItem('gamelab_editing_id');
+      const postModerationSk = crypto.randomUUID();
+      sessionStorage.setItem(GAMELAB_SESSION_KEY_STORAGE, postModerationSk);
+      sessionKeyRef.current = postModerationSk;
     } catch (err) {
       setError(err?.message || 'Error al enviar a moderación. Intentá de nuevo.');
     } finally {
@@ -1151,6 +1182,9 @@ export default function GameLabPage() {
     if (!confirm('¿Seguro querés empezar un juego nuevo? El juego actual se va a perder.')) return;
     sessionStorage.removeItem('gamelab_html');
     sessionStorage.removeItem('gamelab_messages');
+    const nuevoSk = crypto.randomUUID();
+    sessionStorage.setItem(GAMELAB_SESSION_KEY_STORAGE, nuevoSk);
+    sessionKeyRef.current = nuevoSk;
     setCurrentHtml('');
     setEnviadoModeracion(false);
     setError('');
