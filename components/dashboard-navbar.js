@@ -83,10 +83,12 @@ export function DashboardNavbar({ theme, onToggleTheme, onLogout }) {
               🎮 {profile.unlock_credits} créditos disponibles
             </span>
           ) : null}
-          <div className="flex items-center gap-1.5 flex-shrink-0">
-            <span className="text-sm font-black tabular-nums" style={{ color: accent }}>{statValues.juegos}</span>
-            <span className="text-xs font-medium whitespace-nowrap" style={{ color: textMuted }}>{STATS_KEYS[0].label}</span>
-          </div>
+          {!profile?.has_all_access && (
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              <span className="text-sm font-black tabular-nums" style={{ color: accent }}>{statValues.juegos}</span>
+              <span className="text-xs font-medium whitespace-nowrap" style={{ color: textMuted }}>{STATS_KEYS[0].label}</span>
+            </div>
+          )}
           <div className="flex items-center gap-1.5 flex-shrink-0">
             <span className="text-sm font-black tabular-nums" style={{ color: accent }}>{statValues.tiempo}</span>
             <span className="text-xs font-medium whitespace-nowrap" style={{ color: textMuted }}>{STATS_KEYS[1].label}</span>
