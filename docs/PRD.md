@@ -1,5 +1,5 @@
 # Campus San Andrés — Vibe Coding San Andrés
-## Product Requirements Document (PRD) v3.9
+## Product Requirements Document (PRD) v4.0
 
 **Fecha:** Marzo 2026  
 **Autor:** Tomás Gennari  
