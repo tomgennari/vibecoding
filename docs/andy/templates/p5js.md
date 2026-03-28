@@ -87,7 +87,9 @@ function dibujarGameOver() {
 
 // === LÓGICA ===
 function update() {
-  // Mover entidades, detectar colisiones...
+  const dt = deltaTime / 1000; // deltaTime de p5.js viene en ms, convertir a segundos
+  // Mover entidades usando dt, detectar colisiones...
+  // Ejemplo: jugador.x += velocidad * dt;
   // Usar keyIsDown(LEFT_ARROW), keyIsDown(UP_ARROW), etc.
 }
 
@@ -130,12 +132,15 @@ function gameOverFn() {
 
 - p5.js crea su propio canvas — no necesitás `<canvas>` en el HTML
 - `setup()` se ejecuta una vez, `draw()` es el game loop (60fps default)
-- Para movimiento continuo: usar `keyIsDown(LEFT_ARROW)` dentro de `draw()` o `update()`
+- `deltaTime` es una variable global de p5.js que da **milisegundos** desde el último frame
+- **SIEMPRE** al inicio de `update()`: `const dt = deltaTime / 1000;`
+- **TODO** movimiento y cambios graduales deben multiplicar por `dt`: `jugador.x += velocidad * dt;`
+- Para movimiento continuo: usar `keyIsDown(LEFT_ARROW)` dentro de `draw()` o `update()` con velocidades × `dt`
 - Para acciones discretas (saltar, disparar): usar `keyPressed()`
 - Emojis: `textSize(48); text('🚀', x, y);` — funcionan perfecto
 - Formas: `rect()`, `ellipse()`, `triangle()`, `line()` con `fill()` y `stroke()`
 - Colores: `fill(255, 100, 50)` o `fill('#FF6432')`
 - Para partículas y efectos: usar arrays de objetos con posición, velocidad, vida
-- `frameCount` es útil para timing (ej: `if (frameCount % 60 === 0)` = cada segundo)
+- **NUNCA** basar spawns o dificultad solo en `frameCount % N` — depende del FPS; usar timers con `dt` (ej: `spawnTimer += dt; if (spawnTimer >= 1) { ... }`)
 - `random()`, `noise()`, `map()`, `constrain()` son funciones built-in muy útiles
 - Para colisiones: `dist(x1, y1, x2, y2)` para distancia entre puntos

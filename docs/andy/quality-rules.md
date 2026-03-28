@@ -41,6 +41,61 @@ kaplay({
 
 ---
 
+## GAME LOOP — DELTA TIME OBLIGATORIO
+
+Todo movimiento, spawn, timer y animación debe usar **delta time** para ser **independiente del framerate**. Sin delta time, un dispositivo a 120 FPS mueve el juego al **doble de velocidad** que uno a 60 FPS; a 30 FPS va a la mitad. Eso rompe la experiencia y el balance.
+
+**Regla:** **NUNCA** mover ni cambiar estado una cantidad fija por frame. **SIEMPRE** multiplicar velocidades, incrementos y fades por `dt` (delta time en **segundos**).
+
+### Implementación por framework
+
+**Canvas 2D:**
+```javascript
+let lastTime = 0;
+function gameLoop(timestamp) {
+  const dt = (timestamp - lastTime) / 1000;
+  lastTime = timestamp;
+  if (dt > 0.1) { requestAnimationFrame(gameLoop); return; } // evitar saltos grandes (tab inactiva)
+  update(dt);
+  draw();
+  requestAnimationFrame(gameLoop);
+}
+requestAnimationFrame(gameLoop);
+```
+En `update(dt)`: `jugador.x += velocidad * dt;` en vez de `jugador.x += velocidad;`.
+
+**p5.js:**
+```javascript
+// p5.js provee deltaTime en milisegundos como variable global
+function update() {
+  const dt = deltaTime / 1000;
+  jugador.x += velocidad * dt;
+}
+```
+
+**Kaplay:**
+```javascript
+// move(vx, vy) = píxeles por SEGUNDO — Kaplay aplica dt() adentro; NO multiplicar por dt() acá
+onKeyDown("left", () => jugador.move(-300, 0));
+onKeyDown("right", () => jugador.move(300, 0));
+
+// dt() OBLIGATORIO para lo que no sea move()/moveTo() en px/s: rotación, timers, moveBy en px/frame, etc.
+onUpdate(() => {
+  spawnTimer += dt();
+  if (spawnTimer >= 1.5) { spawnEnemigo(); spawnTimer = 0; }
+});
+```
+
+### Bien vs mal
+
+| ❌ Mal | ✅ Bien |
+|--------|--------|
+| `jugador.x += 5;` (5px por frame — depende del FPS) | `jugador.x += 300 * dt;` (300px por segundo — igual en todos los dispositivos) |
+| `if (frameCount % 60 === 0) spawnEnemigo();` (cada 60 frames — variable según FPS) | Timer acumulativo: `spawnTimer += dt; if (spawnTimer >= 1) { spawnEnemigo(); spawnTimer = 0; }` |
+| `opacity -= 0.02;` (fade depende del FPS) | `opacity -= 1.2 * dt;` (fade-out en ~0.83 s siempre) |
+
+---
+
 ## CONTROLES — TECLADO + TOUCH NATIVO
 
 Andy implementa controles de teclado SIEMPRE. Además, para ciertos tipos de juego, Andy agrega controles touch nativos directamente en el código del juego.

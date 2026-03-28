@@ -91,7 +91,7 @@ scene("juego", ({ nivel: nivelActual, score: scoreActual }) => {
     { update() { this.text = "Score: " + score; } },
   ]);
 
-  // Controles
+  // Controles — move(vx, vy) ya es en px/s (Kaplay aplica dt internamente)
   onKeyDown("left", () => jugador.move(-200, 0));
   onKeyDown("right", () => jugador.move(200, 0));
   onKeyPress("space", () => {
@@ -198,7 +198,7 @@ const cosa = add([
 - `choose([a, b, c])` — elegir random de array
 - `width()`, `height()` — dimensiones del canvas
 - `vec2(x, y)` — crear vector
-- `dt()` — delta time (para movimiento frame-independent)
+- `dt()` — delta time en segundos — **OBLIGATORIO** en `onUpdate()` para rotaciones, timers, fades y cualquier lógica “por segundo” que **no** use `move(vx,vy)` (ese método ya va en px/s y Kaplay aplica `dt` adentro). Para `moveBy(dx,dy)` los deltas son **por frame**; si querés px/s, usá `moveBy(vel * dt(), 0)` o directamente `move(vel, 0)`.
 
 ### ASCII Maps para Niveles (MUY PODEROSO)
 ```javascript

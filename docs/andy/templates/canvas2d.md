@@ -108,9 +108,10 @@ function dibujarGameOver() {
 }
 
 // === GAME LOOP ===
-function update() {
+function update(dt) {
   if (estado !== ESTADO.JUGANDO) return;
-  // Actualizar lógica del juego...
+  // Actualizar lógica del juego usando dt...
+  // Ejemplo: jugador.x += velocidad * dt;
 }
 
 function draw() {
@@ -121,13 +122,16 @@ function draw() {
   dibujarHUD();
 }
 
-function gameLoop() {
-  update();
+let lastTime = 0;
+function gameLoop(timestamp) {
+  const dt = (timestamp - lastTime) / 1000;
+  lastTime = timestamp;
+  if (dt > 0.1) { requestAnimationFrame(gameLoop); return; }
+  update(dt);
   draw();
   requestAnimationFrame(gameLoop);
 }
-
-gameLoop();
+requestAnimationFrame(gameLoop);
 </script>
 </body>
 </html>
@@ -138,7 +142,10 @@ gameLoop();
 - El canvas siempre es 480x640 (portrait) o 640x480 (landscape)
 - `image-rendering: pixelated` en CSS hace que los emojis y formas se vean nítidos
 - El game loop usa `requestAnimationFrame` — nunca `setInterval`
+- `update(dt)` recibe delta time en segundos — **TODO** movimiento debe multiplicar por `dt`
+- El guard `if (dt > 0.1)` evita saltos enormes cuando el tab estaba inactivo
+- **NUNCA** usar `gameLoop()` sin parámetro — siempre `requestAnimationFrame(gameLoop)` para que el browser pase el `timestamp`
 - Para emojis como sprites: `ctx.font = '48px serif'; ctx.fillText('🚀', x, y);`
 - Para colisiones simples: comparar rectangulos con función utilitaria
 - Estados del juego con constantes numéricas (rápido y eficiente)
-- Controles con objeto `teclas` — consultar `teclas['ArrowLeft']` en update()
+- Controles con objeto `teclas` — consultar `teclas['ArrowLeft']` en update(dt); al mover con teclas, usar `velocidad * dt`
