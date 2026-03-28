@@ -275,7 +275,7 @@ Los milestones están definidos en el array `BUILDING_GOALS` en `app/dashboard/p
 
 ### 4.6 Panel de Administración ✅ Implementado
 
-El panel de admin está construido en Next.js en `/app/admin` con 5 hojas definidas en `app/admin/constants.js`:
+El panel de admin está construido en Next.js en `/app/admin` con 6 hojas definidas en `app/admin/constants.js`:
 
 **🎮 Juegos (`AdminGamesSection`) — ✅ Implementado:**
 - Tabla completa de juegos con datos enriquecidos via `/api/admin/juegos`
@@ -318,12 +318,23 @@ El panel de admin está construido en Next.js en `/app/admin` con 5 hojas defini
 - Filtros: tipo, House, rango de fechas. Paginación 20 por página
 - Métricas adicionales: Ticket promedio, Conversión (usuarios que pagaron vs registrados), Top 5 compradores
 
+**🤖 Andy / Game Lab (`AdminAndySection`) — ✅ Implementado:**
+- Datos via `/api/admin/andy/stats` y `/api/admin/andy/sessions` (listado paginado con filtros: todas, con errores, abandonadas, exitosas)
+- KPIs: totales de sesiones, últimos 7 días, tasa de envío a moderación, mensajes y créditos por sesión, framework más usado, créditos USD agregados
+- Tabla de sesiones con alumno, House, framework, flags de error/auto-retry, resultado (enviado vs abandonado), créditos y fechas
+- Modal de detalle por sesión: conversación completa (mensajes alumno/Andy) con metadatos de tokens y coste
+- **Analizar patrones con IA:** `POST /api/admin/andy/analyze` — toma hasta las últimas 50 sesiones problemáticas (errores o no enviadas a moderación), arma contexto desde `andy_messages` (sin HTML) y devuelve análisis en streaming (SSE) para mostrar en modal con markdown
+
 **API routes de admin:**
 - `GET /api/admin/juegos` — juegos enriquecidos con métricas
 - `POST /api/admin/juegos/update-html` — editor inline y resubida de HTML
 - `GET /api/admin/usuarios` — usuarios enriquecidos con datos agregados
 - `GET /api/admin/engagement` — métricas de engagement
 - `GET /api/admin/finanzas` — métricas financieras y transacciones
+- `GET /api/admin/andy/stats` — KPIs de sesiones Andy / Game Lab
+- `GET /api/admin/andy/sessions` — listado de sesiones (filtros y paginación)
+- `GET /api/admin/andy/sessions/[id]` — detalle y mensajes de una sesión
+- `POST /api/admin/andy/analyze` — análisis con IA de patrones (stream SSE)
 - `POST /api/admin/daily-games` — programar juego del día
 - `DELETE /api/admin/daily-games?gameId=` — quitar juego programado
 - `POST /api/admin/notify-rejection` — email de rechazo al alumno
@@ -514,6 +525,8 @@ Tablas principales (todas con RLS habilitado):
 | `buildings` | Edificios (legacy, ya no se usa en admin) | — |
 | `daily_free_games` | Juegos gratuitos del día | `active_date`, `scheduled_for` |
 | `house_points` | Puntos por House | — |
+| `andy_sessions` | Sesiones Game Lab (alumno + Andy): métricas, framework, cierre | `started_at` ⚠️ |
+| `andy_messages` | Mensajes persistidos por sesión (roles user/assistant, costes) | `created_at` ⚠️ |
 
 ⚠️ = NO tiene `created_at`. Usar la columna indicada.
 
@@ -653,7 +666,7 @@ Tablas principales (todas con RLS habilitado):
 - [x] Streaming visual, input por voz, auto-retry, pipeline de validación HTML
 - [x] Flujo completo: generar → previsualizar → iterar → enviar a moderación
 - 🔲 Pendiente: Persistencia robusta en Supabase (reemplazar sessionStorage)
-- 🔲 Pendiente: Guardar interacciones alumno-Andy para análisis
+- [x] Guardar interacciones alumno-Andy para análisis (`andy_sessions`, `andy_messages`, panel admin + análisis IA)
 - 🔲 Pendiente: Videos tutoriales de cómo usar Game Lab y subir juegos
 
 ### Fase 2.6 — Landing Page Pública ✅ Implementada
@@ -757,7 +770,7 @@ Los valores son configurables por el admin.
 - [ ] Sentry para logging de errores
 - [ ] Persistencia robusta en Game Lab (reemplazar sessionStorage por Supabase)
 - [ ] Métrica `total_time_played` en tabla games (actualmente se calcula al vuelo)
-- [ ] Guardar interacciones alumno-Andy para análisis y mejora
+- [x] Guardar interacciones alumno-Andy para análisis y mejora — ver `andy_sessions` / `andy_messages` y pestaña Andy en admin
 - [ ] Videos tutoriales de cómo usar Game Lab y subir juegos
 
 ---

@@ -3,7 +3,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/utils/supabase/client.js';
 import { ADMIN_THEME, HOUSES } from '../constants.js';
-import { AlertCircle, RefreshCw, Check, X } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import { AlertCircle, RefreshCw, Check, X, Sparkles } from 'lucide-react';
 
 function formatInt(n) {
   return Number(n ?? 0).toLocaleString('es-AR');
@@ -88,6 +89,11 @@ export default function AdminAndySection() {
   const [detailError, setDetailError] = useState('');
   const [detail, setDetail] = useState(null);
 
+  const [analyzeOpen, setAnalyzeOpen] = useState(false);
+  const [analyzeLoading, setAnalyzeLoading] = useState(false);
+  const [analyzeError, setAnalyzeError] = useState('');
+  const [analyzeMarkdown, setAnalyzeMarkdown] = useState('');
+
   const loadStats = useCallback(async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -137,6 +143,7 @@ export default function AdminAndySection() {
   }, [filter, page]);
 
   const sessionsInitialLoaded = useRef(false);
+  const analyzeAbortRef = useRef(null);
 
   const refreshStatsAndList = useCallback(async () => {
     setError('');
@@ -197,6 +204,88 @@ export default function AdminAndySection() {
     setModalSessionId(null);
     setDetail(null);
     setDetailError('');
+  }
+
+  function closeAnalyzeModal() {
+    analyzeAbortRef.current?.abort();
+    analyzeAbortRef.current = null;
+    setAnalyzeOpen(false);
+    setAnalyzeLoading(false);
+    setAnalyzeError('');
+    setAnalyzeMarkdown('');
+  }
+
+  async function runAnalyzeWithAI() {
+    analyzeAbortRef.current?.abort();
+    const ac = new AbortController();
+    analyzeAbortRef.current = ac;
+    setAnalyzeOpen(true);
+    setAnalyzeMarkdown('');
+    setAnalyzeError('');
+    setAnalyzeLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        setAnalyzeError('Sin sesión');
+        setAnalyzeLoading(false);
+        return;
+      }
+      const res = await fetch('/api/admin/andy/analyze', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session.access_token}` },
+        signal: ac.signal,
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        setAnalyzeError(body.error || `Error ${res.status}`);
+        setAnalyzeLoading(false);
+        return;
+      }
+      const reader = res.body?.getReader();
+      if (!reader) {
+        setAnalyzeError('Sin cuerpo de respuesta');
+        setAnalyzeLoading(false);
+        return;
+      }
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let streamDone = false;
+      function processLines(lines) {
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const payload = line.slice(6).trim();
+          if (payload === '[DONE]') return true;
+          try {
+            const data = JSON.parse(payload);
+            if (data.chunk != null && typeof data.chunk === 'string') {
+              setAnalyzeMarkdown((prev) => prev + data.chunk);
+            }
+          } catch {
+            // ignorar
+          }
+        }
+        return false;
+      }
+      while (!streamDone) {
+        const { done, value } = await reader.read();
+        if (done) {
+          if (buffer.trim()) streamDone = processLines(buffer.split('\n'));
+          break;
+        }
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() ?? '';
+        streamDone = processLines(lines);
+      }
+    } catch (e) {
+      if (e?.name === 'AbortError') return;
+      setAnalyzeError(e.message || 'Error al analizar');
+    } finally {
+      if (analyzeAbortRef.current === ac) {
+        analyzeAbortRef.current = null;
+        setAnalyzeLoading(false);
+      }
+    }
   }
 
   if (loading) {
@@ -272,31 +361,49 @@ export default function AdminAndySection() {
         className="rounded-xl border overflow-hidden"
         style={{ borderColor: ADMIN_THEME.border, background: ADMIN_THEME.card }}
       >
-        <div className="p-4 border-b flex flex-wrap items-center gap-2" style={{ borderColor: ADMIN_THEME.border }}>
-          <span className="text-xs font-bold mr-2" style={{ color: ADMIN_THEME.textMuted }}>FILTRO</span>
-          {[
-            { id: 'all', label: 'Todas' },
-            { id: 'errors', label: 'Con errores' },
-            { id: 'abandoned', label: 'Abandonadas' },
-            { id: 'successful', label: 'Exitosas' },
-          ].map((f) => {
-            const active = filter === f.id;
-            return (
-              <button
-                key={f.id}
-                type="button"
-                onClick={() => setFilter(f.id)}
-                className="text-xs font-bold px-3 py-1.5 rounded-lg border transition-colors"
-                style={{
-                  borderColor: active ? ADMIN_THEME.accent : ADMIN_THEME.border,
-                  background: active ? `${ADMIN_THEME.accent}22` : 'transparent',
-                  color: active ? ADMIN_THEME.text : ADMIN_THEME.textMuted,
-                }}
-              >
-                {f.label}
-              </button>
-            );
-          })}
+        <div className="p-4 border-b flex flex-wrap items-center justify-between gap-3" style={{ borderColor: ADMIN_THEME.border }}>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-bold mr-2" style={{ color: ADMIN_THEME.textMuted }}>FILTRO</span>
+            {[
+              { id: 'all', label: 'Todas' },
+              { id: 'errors', label: 'Con errores' },
+              { id: 'abandoned', label: 'Abandonadas' },
+              { id: 'successful', label: 'Exitosas' },
+            ].map((f) => {
+              const active = filter === f.id;
+              return (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => setFilter(f.id)}
+                  className="text-xs font-bold px-3 py-1.5 rounded-lg border transition-colors"
+                  style={{
+                    borderColor: active ? ADMIN_THEME.accent : ADMIN_THEME.border,
+                    background: active ? `${ADMIN_THEME.accent}22` : 'transparent',
+                    color: active ? ADMIN_THEME.text : ADMIN_THEME.textMuted,
+                  }}
+                >
+                  {f.label}
+                </button>
+              );
+            })}
+          </div>
+          <button
+            type="button"
+            disabled={analyzeLoading}
+            onClick={() => {
+              void runAnalyzeWithAI();
+            }}
+            className="inline-flex items-center gap-2 text-xs font-bold px-3 py-2 rounded-lg border transition-colors disabled:opacity-50 shrink-0"
+            style={{
+              borderColor: ADMIN_THEME.accentSecondary,
+              color: ADMIN_THEME.accentSecondary,
+              background: `${ADMIN_THEME.accentSecondary}14`,
+            }}
+          >
+            <Sparkles className="w-4 h-4" aria-hidden />
+            {analyzeLoading ? 'Analizando…' : 'Analizar patrones con IA'}
+          </button>
         </div>
 
         <div className="overflow-x-auto">
@@ -518,6 +625,58 @@ export default function AdminAndySection() {
                     })}
                   </div>
                 </>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {analyzeOpen ? (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.8)' }}
+          onClick={closeAnalyzeModal}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="andy-analyze-title"
+        >
+          <div
+            className="rounded-2xl border shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden"
+            style={{ borderColor: ADMIN_THEME.border, background: ADMIN_THEME.card }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-4 border-b shrink-0" style={{ borderColor: ADMIN_THEME.border }}>
+              <h3 id="andy-analyze-title" className="font-bold flex items-center gap-2" style={{ color: ADMIN_THEME.text }}>
+                <Sparkles className="w-5 h-5 text-cyan-400" aria-hidden />
+                Análisis con IA
+              </h3>
+              <button
+                type="button"
+                onClick={closeAnalyzeModal}
+                className="p-1 rounded-lg hover:bg-white/10"
+                style={{ color: ADMIN_THEME.textMuted }}
+                aria-label="Cerrar"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto min-h-0 p-4 text-sm">
+              {analyzeError ? (
+                <p className="text-sm" style={{ color: '#fca5a5' }}>{analyzeError}</p>
+              ) : null}
+              {analyzeLoading && !analyzeMarkdown ? (
+                <p style={{ color: ADMIN_THEME.textMuted }}>Generando análisis en tiempo real…</p>
+              ) : null}
+              {analyzeMarkdown ? (
+                <div
+                  className="prose prose-sm max-w-none prose-invert [&>p]:mb-3 [&>ul]:mb-3 [&>ol]:mb-3 [&>h2]:text-base [&>h3]:text-sm"
+                  style={{ color: ADMIN_THEME.text }}
+                >
+                  <ReactMarkdown>{analyzeMarkdown}</ReactMarkdown>
+                </div>
+              ) : null}
+              {!analyzeLoading && !analyzeError && !analyzeMarkdown ? (
+                <p className="text-sm" style={{ color: ADMIN_THEME.textMuted }}>No hubo respuesta del modelo.</p>
               ) : null}
             </div>
           </div>

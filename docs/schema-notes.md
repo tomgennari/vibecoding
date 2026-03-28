@@ -135,31 +135,32 @@
 ### `andy_sessions`
 | Columna | Tipo | Notas |
 |---------|------|-------|
-| id | uuid | PK |
-| user_id | uuid | FK → profiles |
-| session_key | text | Idempotente con user_id (Game Lab sessionStorage) |
-| messages_count | integer | Cuenta de mensajes persistidos |
-| credits_consumed | numeric | Suma costo USD de la sesión |
-| had_errors | boolean | |
-| had_auto_retry | boolean | Continuación / retry / auto-fix |
-| framework_used | text | Nullable — `kaplay` \| `p5js` \| `threejs` \| `canvas2d` (primera detección) |
-| started_at | timestamptz | Inicio sesión |
-| ended_in_submission | boolean | True al enviar a moderación |
-| game_id | uuid | Nullable — juego creado/actualizado al moderar |
-| duration_seconds | integer | Nullable — al cerrar por moderación |
+| id | uuid | PK, default `gen_random_uuid()` |
+| user_id | uuid | FK → `profiles.id`, NOT NULL |
+| session_key | text | NOT NULL — idempotente con `user_id` (clave del Game Lab en `sessionStorage`) |
+| messages_count | integer | NOT NULL, default 0 — filas persistidas en `andy_messages` (user+assistant) |
+| credits_consumed | numeric | NOT NULL, default 0 — suma USD consumidos en la sesión (costes de mensajes assistant) |
+| had_errors | boolean | NOT NULL, default false — fallos de API / stream u otros errores server-side |
+| had_auto_retry | boolean | NOT NULL, default false — hubo continuación, autofix o reintento por error |
+| framework_used | text | Nullable — `kaplay` \| `p5js` \| `threejs` \| `canvas2d` (primera detección en HTML generado) |
+| started_at | timestamptz | NOT NULL, default `now()` — inicio de la sesión |
+| ended_in_submission | boolean | NOT NULL, default false — `true` cuando el alumno envía el juego a moderación |
+| game_id | uuid | Nullable, FK → `games.id` — juego asociado tras moderar (si aplica) |
+| duration_seconds | integer | Nullable — duración al cerrar sesión (p. ej. moderación) |
 
 ### `andy_messages`
 | Columna | Tipo | Notas |
 |---------|------|-------|
-| id | uuid | PK |
-| session_id | uuid | FK → andy_sessions |
-| role | text | `user` \| `assistant` |
-| content | text | Texto conversacional (sin bloque HTML) |
-| generated_html | boolean | |
-| tokens_input | integer | |
-| tokens_output | integer | |
-| cost_usd | numeric | |
-| is_error_fix | boolean | Retry por truncado / autofix / continuación |
+| id | uuid | PK, default `gen_random_uuid()` |
+| session_id | uuid | FK → `andy_sessions.id`, NOT NULL — ON DELETE típicamente CASCADE |
+| role | text | NOT NULL — `user` \| `assistant` |
+| content | text | NOT NULL — texto conversacional del turno (el HTML del juego no se guarda acá; va implícito en respuestas del asistente en el producto, acá suele ir el `reply` sin bloque) |
+| generated_html | boolean | NOT NULL, default false — `true` si ese turno assistant incluyó generación de HTML/juego |
+| tokens_input | integer | NOT NULL, default 0 — tokens de entrada reportados por Anthropic (solo turnos assistant con coste) |
+| tokens_output | integer | NOT NULL, default 0 — tokens de salida |
+| cost_usd | numeric | NOT NULL, default 0 — coste estimado USD del turno (API Anthropic) |
+| is_error_fix | boolean | NOT NULL, default false — mensaje asociado a continuación por truncado, autofix o flujo de error |
+| created_at | timestamptz | NOT NULL, default `now()` — orden cronológico del turno |
 
 ---
 
