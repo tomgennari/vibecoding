@@ -210,7 +210,7 @@ export default function DashboardPage() {
         supabase.from('game_unlocks').select('user_id, game_id, amount_paid').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('profiles').select('id, house, user_type, has_all_access').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('game_sessions').select('user_id, game_id, duration_seconds').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
-        supabase.from('donations').select('house, amount').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
+        supabase.from('donations').select('user_id, amount').then((r) => ({ data: r.data ?? [], error: r.error })).catch(() => ({ data: [], error: true })),
         supabase.from('profiles').select('has_all_access').eq('id', uid).maybeSingle().then((r) => ({ data: r.data, error: r.error })).catch(() => ({ data: null, error: true })),
       ]);
 
@@ -493,7 +493,8 @@ export default function DashboardPage() {
 
     const donationsByHouse = emptyByHouse();
     (allDonations || []).forEach((d) => {
-      if (d?.house) donationsByHouse[d.house] = (donationsByHouse[d.house] || 0) + (Number(d.amount) || 0);
+      const houseDon = d?.user_id ? profileById[d.user_id]?.house : null;
+      if (houseDon) donationsByHouse[houseDon] = (donationsByHouse[houseDon] || 0) + (Number(d.amount) || 0);
     });
 
     const timeByHouse = emptyByHouse();

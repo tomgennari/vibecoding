@@ -140,6 +140,7 @@ export async function POST(request) {
     const amountPaid = Number(payment.transaction_amount) || 0;
     const paymentIdStr = String(payment.id);
 
+    // Cliente con service role (SUPABASE_SERVICE_ROLE_KEY): bypass RLS en todo el webhook
     const supabase = createClient(supabaseUrl, supabaseServiceKey, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
@@ -150,12 +151,32 @@ export async function POST(request) {
       const { data: profile } = await supabase.from('profiles').select('house').eq('id', userId).single();
       const house = profile?.house ?? null;
 
-      await supabase.from('donations').insert({
+      const amountInt = Math.round(Number(amountPaid)) || 0;
+      const insertPayload = {
         user_id: userId,
-        amount: amountPaid,
+        amount: amountInt,
         payment_id: paymentIdStr,
-        ...(house && { house }),
+        building_id: null,
+        donated_at: new Date().toISOString(),
+      };
+      console.log('Insertando donación:', {
+        user_id: insertPayload.user_id,
+        amount: insertPayload.amount,
+        payment_id: insertPayload.payment_id,
       });
+
+      const { data: insertedDonation, error: donationInsertError } = await supabase
+        .from('donations')
+        .insert(insertPayload)
+        .select('id, user_id, amount, payment_id, donated_at')
+        .single();
+
+      if (donationInsertError) {
+        console.error('Error insertando donación:', donationInsertError.message, donationInsertError);
+        return NextResponse.json({ ok: true }, { status: 200 });
+      }
+      console.log('Donación insertada:', insertedDonation);
+
       if (house) {
         const pointsToAdd = Math.max(1, Math.floor(amountPaid / 1000));
         const { data: row } = await supabase.from('house_points').select('total_points, points_by_donations').eq('house', house).single();
