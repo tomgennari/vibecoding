@@ -103,7 +103,7 @@ Tareas:
 
 Si el contexto viene recortado, mencioná que el análisis puede estar incompleto.`;
 
-export async function POST() {
+export async function POST(request) {
   if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceKey) {
     return NextResponse.json({ error: 'Configuración incompleta' }, { status: 500 });
   }
