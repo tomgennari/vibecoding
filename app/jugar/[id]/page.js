@@ -3,9 +3,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { supabase } from '@/utils/supabase/client.js';
 import { UnlockGameModal } from '@/components/unlock-game-modal.js';
 import { getTodayArgentina } from '@/lib/dates';
+import { HOUSES } from '@/app/admin/constants.js';
 
 const BASE_URL = typeof window !== 'undefined' && window.location.origin ? window.location.origin : 'https://sass.vibecoding.ar';
 
@@ -96,7 +98,7 @@ export default function JugarPage() {
 
           const { data: scores } = await supabase
             .from('game_scores')
-            .select('score, played_at, user_id, profiles(first_name, house)')
+            .select('score, played_at, user_id, profiles(first_name, last_name, house)')
             .eq('game_id', id)
             .order('score', { ascending: false })
             .limit(10);
@@ -164,7 +166,7 @@ export default function JugarPage() {
       // Cargar top 10 highscores
       const { data: scores } = await supabase
         .from('game_scores')
-        .select('score, played_at, user_id, profiles(first_name, house)')
+        .select('score, played_at, user_id, profiles(first_name, last_name, house)')
         .eq('game_id', id)
         .order('score', { ascending: false })
         .limit(10);
@@ -444,7 +446,7 @@ export default function JugarPage() {
           onClick={() => setShowHighScores(false)}
         >
           <div
-            className="rounded-2xl border p-6 max-w-sm w-full"
+            className="rounded-2xl border p-6 max-w-md w-full"
             style={{ background: '#13131a', borderColor: '#2a2a3a' }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -456,20 +458,25 @@ export default function JugarPage() {
               <p className="text-sm text-center py-6" style={{ color: '#94a3b8' }}>Todavía no hay puntajes. ¡Sé el primero!</p>
             ) : (
               <div className="space-y-2">
-                {highScores.map((s, i) => (
-                  <div key={i} className="flex items-center justify-between rounded-lg px-3 py-2"
+                {highScores.map((s, i) => {
+                  const profile = s.profiles;
+                  const nameParts = [profile?.first_name, profile?.last_name].filter(Boolean);
+                  const displayName = nameParts.length ? nameParts.join(' ') : 'Anónimo';
+                  const houseMeta = HOUSES.find((h) => h.id === profile?.house) || HOUSES[0];
+                  return (
+                  <div key={i} className="flex items-center gap-2 rounded-lg px-3 py-2"
                     style={{
                       background: i === 0 ? 'rgba(234,179,8,0.15)' : i === 1 ? 'rgba(148,163,184,0.1)' : i === 2 ? 'rgba(180,83,9,0.1)' : 'transparent',
                       borderLeft: i < 3 ? `3px solid ${i === 0 ? '#eab308' : i === 1 ? '#94a3b8' : '#b45309'}` : '3px solid transparent',
                     }}
                   >
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="text-sm font-bold w-6 text-center" style={{ color: i === 0 ? '#eab308' : i === 1 ? '#94a3b8' : i === 2 ? '#b45309' : '#64748b' }}>{i + 1}</span>
-                      <span className="text-sm truncate" style={{ color: '#f1f5f9' }}>{s.profiles?.first_name || 'Anónimo'}</span>
-                    </div>
-                    <span className="text-sm font-black tabular-nums" style={{ color: '#7c3aed' }}>{Number(s.score).toLocaleString()}</span>
+                    <span className="text-sm font-bold w-6 flex-shrink-0 text-center" style={{ color: i === 0 ? '#eab308' : i === 1 ? '#94a3b8' : i === 2 ? '#b45309' : '#64748b' }}>{i + 1}</span>
+                    <Image src={houseMeta.image} alt="" width={24} height={24} className="object-contain flex-shrink-0" />
+                    <span className="text-sm truncate min-w-0 flex-1" style={{ color: '#f1f5f9' }}>{displayName}</span>
+                    <span className="text-sm font-black tabular-nums flex-shrink-0" style={{ color: '#7c3aed' }}>{Number(s.score).toLocaleString()}</span>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
