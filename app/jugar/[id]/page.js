@@ -7,6 +7,7 @@ import Image from 'next/image';
 import { supabase } from '@/utils/supabase/client.js';
 import { UnlockGameModal } from '@/components/unlock-game-modal.js';
 import { getTodayArgentina } from '@/lib/dates';
+import { injectFrameCap } from '@/lib/game-frame-cap.js';
 import { HOUSES } from '@/app/admin/constants.js';
 
 const BASE_URL = typeof window !== 'undefined' && window.location.origin ? window.location.origin : 'https://sass.vibecoding.ar';
@@ -228,7 +229,7 @@ export default function JugarPage() {
         if (gameRes.ok) {
           const html = await gameRes.text();
           bestScoreRef.current = 0;
-          setGameHtml(html);
+          setGameHtml(injectFrameCap(html));
         } else {
           const errData = await gameRes.json().catch(() => ({}));
           if (errData.code === 'LOCKED') {

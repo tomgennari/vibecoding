@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { supabase } from '@/utils/supabase/client.js';
 import { useDashboardTheme } from '@/lib/use-dashboard-theme.js';
+import { injectFrameCap } from '@/lib/game-frame-cap.js';
 import { useUser } from '@/lib/user-context.js';
 import { DashboardNavbar } from '@/components/dashboard-navbar.js';
 import { MobileBottomNav } from '@/components/mobile-bottom-nav.js';
@@ -1559,7 +1560,7 @@ export default function GameLabPage() {
                     <iframe
                       title="Vista previa del juego generado"
                       sandbox="allow-scripts allow-same-origin"
-                      srcDoc={currentHtml}
+                      srcDoc={injectFrameCap(currentHtml)}
                       className={`absolute top-0 left-0 w-full h-full border-0 transition-all duration-300 ease-out ${iframeRevealed ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-4'}`}
                       style={{ touchAction: 'auto' }}
                     />
@@ -1596,7 +1597,7 @@ export default function GameLabPage() {
             <iframe
               title="Juego en pantalla completa"
               sandbox="allow-scripts allow-same-origin"
-              srcDoc={currentHtml}
+              srcDoc={injectFrameCap(currentHtml)}
               className="w-full h-full border-0"
               style={{ touchAction: 'auto' }}
             />
