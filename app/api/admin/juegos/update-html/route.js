@@ -96,5 +96,10 @@ export async function POST(request) {
     return NextResponse.json({ error: upErr.message || 'Error al subir' }, { status: 500 });
   }
 
+  // Cache busting: actualizar file_url con timestamp para forzar recarga
+  const baseUrl = game.file_url.split('?')[0]; // quitar query params viejos si hay
+  const newUrl = baseUrl + '?v=' + Date.now();
+  await admin.from('games').update({ file_url: newUrl }).eq('id', gameId);
+
   return NextResponse.json({ ok: true });
 }
