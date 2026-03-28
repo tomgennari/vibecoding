@@ -37,6 +37,9 @@ export default function JugarPage() {
   const startTimeRef = useRef(null);
   const accessTokenRef = useRef(null);
   const gameContainerRef = useRef(null);
+  const bestScoreRef = useRef(0);
+  const scoreSubmittedRef = useRef(false);
+  const scoreTimeoutRef = useRef(null);
 
   const [gameHtml, setGameHtml] = useState(null);
   const [needsUnlock, setNeedsUnlock] = useState(false);
@@ -63,40 +66,70 @@ export default function JugarPage() {
   }, []);
 
   useEffect(() => {
-    function handleMessage(event) {
-      if (event.data?.type === 'GAME_SCORE' && event.data?.score != null) {
-        const scoreValue = Number(event.data.score);
-        if (isNaN(scoreValue) || scoreValue < 0) return;
+    function handler(event) {
+      if (event.data?.type === 'GAME_SCORE') {
+        const newScore = Number(event.data.score);
+        if (isNaN(newScore) || newScore <= 0) return;
 
-        // Guardar score en la base de datos
-        supabase.auth.getSession().then(({ data: { session } }) => {
-          if (!session?.user?.id || !id) return;
+        if (newScore > bestScoreRef.current) {
+          bestScoreRef.current = newScore;
+        }
 
-          supabase
-            .from('game_scores')
-            .insert({
+        if (scoreTimeoutRef.current) {
+          clearTimeout(scoreTimeoutRef.current);
+        }
+
+        scoreTimeoutRef.current = setTimeout(async () => {
+          if (scoreSubmittedRef.current && bestScoreRef.current <= scoreSubmittedRef.current) return;
+
+          try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) return;
+
+            const { error } = await supabase.from('game_scores').insert({
               user_id: session.user.id,
               game_id: id,
-              score: scoreValue,
-            })
-            .then(({ error }) => {
-              if (error) {
-                console.error('Error guardando score:', error);
-              }
-              // Recargar highscores después de insertar
-              supabase
-                .from('game_scores')
-                .select('score, played_at, user_id, profiles(first_name, house)')
-                .eq('game_id', id)
-                .order('score', { ascending: false })
-                .limit(10)
-                .then(({ data }) => { if (data) setHighScores(data); });
+              score: bestScoreRef.current,
             });
-        });
+
+            if (error) {
+              console.error('Error guardando score:', error);
+              return;
+            }
+
+            scoreSubmittedRef.current = bestScoreRef.current;
+
+            const { data: scores } = await supabase
+              .from('game_scores')
+              .select('score, played_at, user_id, profiles(first_name, house)')
+              .eq('game_id', id)
+              .order('score', { ascending: false })
+              .limit(10);
+            if (scores) setHighScores(scores);
+          } catch (err) {
+            console.error('Error guardando score:', err);
+          }
+        }, 3000);
       }
     }
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
+
+    window.addEventListener('message', handler);
+    return () => {
+      window.removeEventListener('message', handler);
+      if (scoreTimeoutRef.current) clearTimeout(scoreTimeoutRef.current);
+
+      if (bestScoreRef.current > (scoreSubmittedRef.current || 0)) {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          if (session) {
+            supabase.from('game_scores').insert({
+              user_id: session.user.id,
+              game_id: id,
+              score: bestScoreRef.current,
+            });
+          }
+        });
+      }
+    };
   }, [id]);
 
   useEffect(() => {
@@ -192,6 +225,12 @@ export default function JugarPage() {
         });
         if (gameRes.ok) {
           const html = await gameRes.text();
+          if (scoreTimeoutRef.current) {
+            clearTimeout(scoreTimeoutRef.current);
+            scoreTimeoutRef.current = null;
+          }
+          bestScoreRef.current = 0;
+          scoreSubmittedRef.current = false;
           setGameHtml(html);
         } else {
           const errData = await gameRes.json().catch(() => ({}));
