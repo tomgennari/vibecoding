@@ -669,6 +669,11 @@ Tablas principales (todas con RLS habilitado):
 - [x] Guardar interacciones alumno-Andy para análisis (`andy_sessions`, `andy_messages`, panel admin + análisis IA)
 - 🔲 Pendiente: Videos tutoriales de cómo usar Game Lab y subir juegos
 
+#### Estado actual de la Fase 2.5 (Mar 2026)
+
+- ✅ Delta time obligatorio: quality-rules y templates de Canvas 2D, p5.js y Kaplay actualizados para movimiento frame-independent
+- ✅ Frame cap ~60fps: `lib/game-frame-cap.js` inyecta throttle de requestAnimationFrame en todos los iframes (jugar, game-lab, admin preview, perfil) sin modificar el HTML guardado en Storage
+
 ### Fase 2.6 — Landing Page Pública ✅ Implementada
 
 - [x] Landing page pública en sass.vibecoding.ar como home principal
