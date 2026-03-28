@@ -1,10 +1,65 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { MercadoPagoConfig, Payment } from 'mercadopago';
+import { ADMIN_EMAIL } from '@/lib/constants.js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const mpAccessToken = process.env.MP_ACCESS_TOKEN;
+
+function escapeHtml(text) {
+  return String(text ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+async function sendDonationThankYouEmail({ resendApiKey, to, firstName, amountPaid }) {
+  const name = escapeHtml(firstName || 'donante');
+  const amountStr = Number(amountPaid).toLocaleString('es-AR', { maximumFractionDigits: 0 });
+  const html = `
+    <div style="font-family:Inter,system-ui,Arial,sans-serif;max-width:520px;margin:0 auto;padding:28px 20px;background:linear-gradient(180deg,#13131a 0%,#0a0a0f 100%);border-radius:16px;border:1px solid #2a2a3a;">
+      <div style="text-align:center;margin-bottom:24px;">
+        <span style="font-size:22px;font-weight:800;color:#7c3aed;letter-spacing:-0.02em;">Campus San Andrés</span>
+      </div>
+      <p style="color:#f1f5f9;font-size:16px;line-height:1.6;margin:0 0 16px;">Hola ${name},</p>
+      <p style="color:#cbd5e1;font-size:15px;line-height:1.65;margin:0 0 16px;">
+        Recibimos tu donación de <strong style="color:#06b6d4;">$${amountStr} ARS</strong>. ¡Muchas gracias por tu generosidad y por acompañar este proyecto!
+      </p>
+      <p style="color:#cbd5e1;font-size:15px;line-height:1.65;margin:0 0 20px;">
+        El <strong style="color:#a78bfa;">100% del neto</strong> de tu aporte va a la construcción del campus — sin intermediarios, con total transparencia para la comunidad del St. Andrew&apos;s Scots School.
+      </p>
+      <p style="color:#94a3b8;font-size:14px;line-height:1.6;margin:24px 0 0;padding-top:20px;border-top:1px solid #2a2a3a;">
+        Con gratitud,<br/>
+        <span style="color:#7c3aed;font-weight:600;">el equipo de Campus San Andrés</span>
+      </p>
+      <p style="margin-top:20px;color:#64748b;font-size:11px;text-align:center;line-height:1.5;">
+        <em>Sic itur ad astra</em>
+      </p>
+    </div>
+  `;
+  const body = {
+    from: 'Campus San Andrés <noreply@sass.vibecoding.ar>',
+    to,
+    subject: '¡Gracias por tu donación a Campus San Andrés!',
+    html,
+  };
+  if (ADMIN_EMAIL) body.cc = [ADMIN_EMAIL];
+
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${resendApiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const errText = await res.text().catch(() => '');
+    throw new Error(`Resend ${res.status}: ${errText || res.statusText}`);
+  }
+}
 
 async function grantAndyTokens(supabase, userId) {
   const { data: buyerProfile } = await supabase
@@ -118,6 +173,26 @@ export async function POST(request) {
             points_by_donations: pointsToAdd,
           });
         }
+      }
+      try {
+        const resendApiKey = process.env.RESEND_API_KEY;
+        if (resendApiKey) {
+          const { data: donor } = await supabase
+            .from('profiles')
+            .select('first_name, email')
+            .eq('id', userId)
+            .single();
+          if (donor?.email) {
+            await sendDonationThankYouEmail({
+              resendApiKey,
+              to: donor.email,
+              firstName: donor.first_name,
+              amountPaid,
+            });
+          }
+        }
+      } catch (mailErr) {
+        console.error('donation thank-you email:', mailErr);
       }
       return NextResponse.json({ ok: true }, { status: 200 });
     }

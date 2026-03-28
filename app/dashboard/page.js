@@ -51,11 +51,14 @@ function houseColoredBuildingSrc(normalPath, leaderHouseDisplayName) {
 
 const RANKING_PAGE_COUNT = 2;
 const DONATION_AMOUNTS = [
-  { amount: 20000, label: '$20.000 ARS' },
-  { amount: 100000, label: '$100.000 ARS' },
-  { amount: 200000, label: '$200.000 ARS' },
-  { amount: 500000, label: '$500.000 ARS', gold: true },
+  { amount: 50_000, label: '$50.000 ARS' },
+  { amount: 200_000, label: '$200.000 ARS' },
+  { amount: 500_000, label: '$500.000 ARS' },
+  { amount: 1_000_000, label: '$1.000.000 ARS', gold: true },
 ];
+
+const DONATION_CUSTOM_MIN = 5_000;
+const DONATION_CUSTOM_MAX = 10_000_000;
 
 const STATS_KEYS = [
   { key: 'juegos', label: 'Juegos desbloqueados' },
@@ -156,7 +159,11 @@ export default function DashboardPage() {
   const [rankingAutoSeed, setRankingAutoSeed] = useState(0);
   const [donationModalOpen, setDonationModalOpen] = useState(false);
   const [donatingAmount, setDonatingAmount] = useState(null);
-  const [hoveredDonationAmount, setHoveredDonationAmount] = useState(null);
+  const [hoveredDonationKey, setHoveredDonationKey] = useState(null);
+  const [donationCustomActive, setDonationCustomActive] = useState(false);
+  const [donationOtherDisplay, setDonationOtherDisplay] = useState('');
+  const [donationOtherError, setDonationOtherError] = useState('');
+  const [donationFlowError, setDonationFlowError] = useState('');
   const [gameAuthors, setGameAuthors] = useState({});
   const [hoveredGameId, setHoveredGameId] = useState(null);
   const [tappedGameId, setTappedGameId] = useState(null);
@@ -325,9 +332,20 @@ export default function DashboardPage() {
     setUnlockModalGame(game);
   }
 
+  useEffect(() => {
+    if (!donationModalOpen) {
+      setHoveredDonationKey(null);
+      setDonationCustomActive(false);
+      setDonationOtherDisplay('');
+      setDonationOtherError('');
+      setDonationFlowError('');
+    }
+  }, [donationModalOpen]);
+
   async function handleDonationAmount(amount) {
     if (donatingAmount != null) return;
     setDonatingAmount(amount);
+    setDonationFlowError('');
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) {
@@ -344,9 +362,46 @@ export default function DashboardPage() {
         window.location.href = data.init_point;
         return;
       }
+      setDonationFlowError(data.error || 'No se pudo iniciar el pago.');
     } finally {
       setDonatingAmount(null);
     }
+  }
+
+  function onDonationOtherInputChange(e) {
+    const digits = e.target.value.replace(/\D/g, '');
+    if (!digits) {
+      setDonationOtherDisplay('');
+      setDonationOtherError('');
+      return;
+    }
+    const n = parseInt(digits, 10);
+    if (!Number.isFinite(n)) {
+      setDonationOtherDisplay('');
+      return;
+    }
+    const capped = Math.min(n, DONATION_CUSTOM_MAX);
+    setDonationOtherDisplay(capped.toLocaleString('es-AR'));
+    setDonationOtherError('');
+  }
+
+  function submitCustomDonation() {
+    const digits = donationOtherDisplay.replace(/\D/g, '');
+    if (!digits) {
+      setDonationOtherError('Ingresá un monto.');
+      return;
+    }
+    const amt = parseInt(digits, 10);
+    if (!Number.isFinite(amt) || amt < DONATION_CUSTOM_MIN) {
+      setDonationOtherError(`El monto mínimo es $${DONATION_CUSTOM_MIN.toLocaleString('es-AR')} ARS.`);
+      return;
+    }
+    if (amt > DONATION_CUSTOM_MAX) {
+      setDonationOtherError(`El monto máximo es $${DONATION_CUSTOM_MAX.toLocaleString('es-AR')} ARS.`);
+      return;
+    }
+    setDonationOtherError('');
+    handleDonationAmount(amt);
   }
 
   const userHouse = profile?.house || 'william_brown';
@@ -1572,9 +1627,12 @@ export default function DashboardPage() {
                   <h2 id="donation-modal-title" className="text-2xl font-bold mb-6 text-center" style={{ color: text }}>
                     Donar al Campus San Andrés
                   </h2>
-                  <div className="grid grid-cols-2 gap-4 mb-8">
+                  {donationFlowError ? (
+                    <p className="text-sm text-center mb-4 px-2" style={{ color: '#f87171' }}>{donationFlowError}</p>
+                  ) : null}
+                  <div className={`grid grid-cols-2 gap-4 ${donationCustomActive ? 'mb-4' : 'mb-8'}`}>
                     {DONATION_AMOUNTS.map((item) => {
-                      const isHovered = hoveredDonationAmount === item.amount && donatingAmount == null;
+                      const isHovered = hoveredDonationKey === item.amount && donatingAmount == null;
                       const glow = item.gold
                         ? '0 0 0 3px rgba(234,179,8,0.5), 0 8px 24px rgba(234,179,8,0.25)'
                         : '0 0 0 3px rgba(124,58,237,0.5), 0 8px 24px rgba(124,58,237,0.25)';
@@ -1583,9 +1641,14 @@ export default function DashboardPage() {
                           key={item.amount}
                           type="button"
                           disabled={donatingAmount != null}
-                          onClick={() => handleDonationAmount(item.amount)}
-                          onMouseEnter={() => setHoveredDonationAmount(item.amount)}
-                          onMouseLeave={() => setHoveredDonationAmount(null)}
+                          onClick={() => {
+                            setDonationCustomActive(false);
+                            setDonationOtherDisplay('');
+                            setDonationOtherError('');
+                            handleDonationAmount(item.amount);
+                          }}
+                          onMouseEnter={() => setHoveredDonationKey(item.amount)}
+                          onMouseLeave={() => setHoveredDonationKey(null)}
                           className="rounded-xl border-2 py-5 px-4 font-bold text-sm transition-all duration-200 active:scale-[0.98] disabled:opacity-70 disabled:pointer-events-none"
                           style={{
                             borderColor: item.gold ? '#eab308' : border,
@@ -1600,7 +1663,62 @@ export default function DashboardPage() {
                         </button>
                       );
                     })}
+                    <button
+                      type="button"
+                      disabled={donatingAmount != null}
+                      onClick={() => {
+                        setDonationCustomActive(true);
+                        setDonationOtherError('');
+                        setDonationFlowError('');
+                      }}
+                      onMouseEnter={() => setHoveredDonationKey('other')}
+                      onMouseLeave={() => setHoveredDonationKey(null)}
+                      className="col-span-2 rounded-xl border-2 py-4 px-4 font-bold text-sm transition-all duration-200 active:scale-[0.98] disabled:opacity-70 disabled:pointer-events-none"
+                      style={{
+                        borderColor: donationCustomActive ? accent : border,
+                        background: isDark ? '#1a1a24' : '#f1f5f9',
+                        color: text,
+                        transform: hoveredDonationKey === 'other' && donatingAmount == null ? 'scale(1.02)' : 'scale(1)',
+                        boxShadow: donationCustomActive ? `0 0 0 3px rgba(124,58,237,0.35)` : (hoveredDonationKey === 'other' ? '0 0 0 3px rgba(124,58,237,0.25)' : 'none'),
+                      }}
+                    >
+                      Otro valor
+                    </button>
                   </div>
+                  {donationCustomActive ? (
+                    <div className="mb-8 space-y-3">
+                      <label className="block text-sm font-semibold" style={{ color: textMuted }}>
+                        Monto en ARS (solo números enteros)
+                      </label>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        autoComplete="off"
+                        placeholder="Ej: 75.000"
+                        value={donationOtherDisplay}
+                        onChange={onDonationOtherInputChange}
+                        disabled={donatingAmount != null}
+                        className="w-full rounded-xl border-2 px-4 py-3 text-base font-bold outline-none transition-colors disabled:opacity-60"
+                        style={{
+                          borderColor: border,
+                          background: isDark ? '#0a0a0f' : '#fff',
+                          color: text,
+                        }}
+                      />
+                      {donationOtherError ? (
+                        <p className="text-sm" style={{ color: '#f87171' }}>{donationOtherError}</p>
+                      ) : null}
+                      <button
+                        type="button"
+                        disabled={donatingAmount != null}
+                        onClick={submitCustomDonation}
+                        className="w-full rounded-xl py-3 px-4 font-bold text-sm text-white transition-opacity disabled:opacity-60"
+                        style={{ background: accent }}
+                      >
+                        {donatingAmount != null ? 'Abriendo Mercado Pago…' : 'Continuar con este monto'}
+                      </button>
+                    </div>
+                  ) : null}
                   <p className="text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: textMuted }}>
                     Importante
                   </p>

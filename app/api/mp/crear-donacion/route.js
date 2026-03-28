@@ -9,7 +9,21 @@ const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL?.startsWith('http://localhost'
   ? 'https://sass.vibecoding.ar'
   : (process.env.NEXT_PUBLIC_BASE_URL || 'https://sass.vibecoding.ar');
 
-const ALLOWED_AMOUNTS = [20000, 100000, 200000, 500000];
+const MIN_AMOUNT_ARS = 5_000;
+const MAX_AMOUNT_ARS = 10_000_000;
+
+function parseValidDonationAmount(raw) {
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n <= 0) return { ok: false, error: 'Monto inválido' };
+  if (!Number.isInteger(n)) return { ok: false, error: 'El monto debe ser un número entero (pesos).' };
+  if (n < MIN_AMOUNT_ARS) {
+    return { ok: false, error: `El monto mínimo es $${MIN_AMOUNT_ARS.toLocaleString('es-AR')} ARS` };
+  }
+  if (n > MAX_AMOUNT_ARS) {
+    return { ok: false, error: `El monto máximo es $${MAX_AMOUNT_ARS.toLocaleString('es-AR')} ARS` };
+  }
+  return { ok: true, amount: n };
+}
 
 export async function POST(request) {
   if (!supabaseUrl || !supabaseAnonKey || !mpAccessToken) {
@@ -39,13 +53,11 @@ export async function POST(request) {
   if (!userId) {
     return NextResponse.json({ error: 'Falta userId' }, { status: 400 });
   }
-  const amountNum = Number(amount);
-  if (!ALLOWED_AMOUNTS.includes(amountNum)) {
-    return NextResponse.json(
-      { error: 'Monto no permitido. Valores: 20000, 100000, 200000, 500000' },
-      { status: 400 }
-    );
+  const parsed = parseValidDonationAmount(amount);
+  if (!parsed.ok) {
+    return NextResponse.json({ error: parsed.error }, { status: 400 });
   }
+  const amountNum = parsed.amount;
 
   if (userId !== user.id) {
     return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
