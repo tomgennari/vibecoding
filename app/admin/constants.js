@@ -11,6 +11,7 @@ export const ADMIN_SECTIONS = [
   { id: 'usuarios', label: 'Usuarios', icon: '👥' },
   { id: 'engagement', label: 'Engagement', icon: '📈' },
   { id: 'finanzas', label: 'Finanzas', icon: '💰' },
+  { id: 'andy', label: 'Andy', icon: '🤖' },
 ];
 
 export const GAME_STATUS = {
