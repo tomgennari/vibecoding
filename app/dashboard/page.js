@@ -413,11 +413,15 @@ export default function DashboardPage() {
     });
 
     const unlocksByHouse = emptyByHouse();
+    const normalUnlockedPairs = new Set();
     (allUnlocks || []).forEach((u) => {
       const prof = u.user_id ? profileById[u.user_id] : null;
       if (prof?.has_all_access) return;
-      const game = gameById[u.game_id];
-      if (game?.house) unlocksByHouse[game.house] = (unlocksByHouse[game.house] || 0) + (Number(u.amount_paid) || 0);
+      if (!prof?.house) return;
+      const key = `${u.user_id}:${u.game_id}`;
+      if (normalUnlockedPairs.has(key)) return;
+      normalUnlockedPairs.add(key);
+      unlocksByHouse[prof.house] = (unlocksByHouse[prof.house] || 0) + 1;
     });
 
     const aaPlayedPairs = new Set();
@@ -425,11 +429,11 @@ export default function DashboardPage() {
       if (!s.user_id || !s.game_id) return;
       const prof = profileById[s.user_id];
       if (!prof?.has_all_access) return;
+      if (!prof?.house) return;
       const key = `${s.user_id}:${s.game_id}`;
       if (aaPlayedPairs.has(key)) return;
       aaPlayedPairs.add(key);
-      const game = gameById[s.game_id];
-      if (game?.house) unlocksByHouse[game.house] = (unlocksByHouse[game.house] || 0) + 1;
+      unlocksByHouse[prof.house] = (unlocksByHouse[prof.house] || 0) + 1;
     });
 
     const donationsByHouse = emptyByHouse();
