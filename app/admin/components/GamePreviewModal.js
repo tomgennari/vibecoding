@@ -30,6 +30,8 @@ export default function GamePreviewModal({
   const replaceInputRef = useRef(null);
   const [scanPanelOpen, setScanPanelOpen] = useState(false);
   const [scanDetailIdx, setScanDetailIdx] = useState(() => ({}));
+  const [runtimeAlerts, setRuntimeAlerts] = useState([]);
+  const [runtimeDetailOpen, setRuntimeDetailOpen] = useState(() => ({}));
 
   const scanResult = useMemo(() => {
     if (editedHtml == null || typeof editedHtml !== 'string') return null;
@@ -49,6 +51,68 @@ export default function GamePreviewModal({
   useEffect(() => {
     setScanDetailIdx({});
   }, [game?.id, editedHtml]);
+
+  useEffect(() => {
+    setRuntimeAlerts([]);
+    setRuntimeDetailOpen({});
+  }, [game?.id, game?.file_url]);
+
+  useEffect(() => {
+    if (!game?.id) return;
+
+    function onRuntimeMessage(event) {
+      const d = event.data;
+      if (!d || typeof d !== 'object') return;
+
+      if (d.type === 'SECURITY_VIOLATION') {
+        const message =
+          d.detail?.message ||
+          'Se bloqueó una acción por la política de seguridad mientras el juego se ejecutaba.';
+        const detail = [
+          d.detail?.directive ? `Directiva: ${d.detail.directive}` : null,
+          d.detail?.blocked ? `Recurso: ${d.detail.blocked}` : null,
+        ]
+          .filter(Boolean)
+          .join('\n');
+        const detailText = detail || JSON.stringify(d.detail ?? {});
+        setRuntimeAlerts((prev) => [
+          ...prev,
+          {
+            id: `rt-sev-${Date.now()}-${prev.length}`,
+            level: 'error',
+            message,
+            detail: detailText,
+          },
+        ]);
+        return;
+      }
+
+      if (d.type === 'GAME_ERROR') {
+        const message =
+          'El juego encontró un error al ejecutarse (por ejemplo, un script falló). Suele deberse a código del propio juego.';
+        const detail = [
+          d.detail?.message != null ? String(d.detail.message) : null,
+          d.detail?.source ? `Origen: ${d.detail.source}` : null,
+          d.detail?.line != null ? `Línea aprox.: ${d.detail.line}` : null,
+        ]
+          .filter(Boolean)
+          .join('\n');
+        const detailText = detail || JSON.stringify(d.detail ?? {});
+        setRuntimeAlerts((prev) => [
+          ...prev,
+          {
+            id: `rt-err-${Date.now()}-${prev.length}`,
+            level: 'warning',
+            message,
+            detail: detailText,
+          },
+        ]);
+      }
+    }
+
+    window.addEventListener('message', onRuntimeMessage);
+    return () => window.removeEventListener('message', onRuntimeMessage);
+  }, [game?.id]);
 
   useEffect(() => {
     if (!game?.file_url) {
@@ -313,6 +377,51 @@ export default function GamePreviewModal({
                         <pre
                           className="mt-1 p-2 rounded-lg text-[10px] whitespace-pre-wrap break-all"
                           style={{ background: '#0a0a0f', color: '#94a3b8', border: '1px solid var(--vibe-border)' }}
+                        >
+                          {a.detail}
+                        </pre>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {runtimeAlerts.length > 0 && (
+              <div
+                className="border-t"
+                style={{ borderColor: 'var(--vibe-border)' }}
+              >
+                <p
+                  className="px-3 pt-2 pb-1 text-[11px] font-bold uppercase tracking-wide"
+                  style={{ color: 'var(--vibe-text-muted)' }}
+                >
+                  Alertas durante la ejecución
+                </p>
+                <ul className="px-3 pb-3 space-y-2">
+                  {runtimeAlerts.map((a) => (
+                    <li key={a.id} className="text-xs" style={{ color: 'var(--vibe-text-muted)' }}>
+                      <span className="font-medium" style={{ color: 'var(--vibe-text)' }}>
+                        {a.level === 'error' ? '🔴' : '🟡'} {a.message}
+                      </span>
+                      <button
+                        type="button"
+                        className="ml-2 underline underline-offset-2 text-[11px]"
+                        style={{ color: 'var(--vibe-accent)' }}
+                        onClick={() =>
+                          setRuntimeDetailOpen((open) => ({ ...open, [a.id]: !open[a.id] }))
+                        }
+                      >
+                        {runtimeDetailOpen[a.id] ? 'Ocultar detalle' : 'Ver detalle'}
+                      </button>
+                      {runtimeDetailOpen[a.id] ? (
+                        <pre
+                          className="mt-1 p-2 rounded-lg text-[10px] whitespace-pre-wrap break-all"
+                          style={{
+                            background: '#0a0a0f',
+                            color: '#94a3b8',
+                            border: '1px solid var(--vibe-border)',
+                          }}
                         >
                           {a.detail}
                         </pre>

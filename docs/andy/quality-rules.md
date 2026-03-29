@@ -589,9 +589,7 @@ Para juegos donde cada nivel tiene mecánicas REALMENTE diferentes (no solo dist
 
 ## PROHIBIDO EN EL CÓDIGO
 
-- ❌ `localStorage` ni `sessionStorage`
 - ❌ `fetch()` ni `XMLHttpRequest`
-- ❌ `alert()` ni `prompt()` ni `confirm()`
 - ❌ TypeScript
 - ❌ Librerías externas que no sean p5.js, Kaplay o Three.js hosteados en Supabase (`libs/`)
 - ❌ CDNs externos (unpkg, jsdelivr, cdnjs, etc.) — solo URLs de Supabase
@@ -599,7 +597,10 @@ Para juegos donde cada nivel tiene mecánicas REALMENTE diferentes (no solo dist
 - ❌ Botones HTML clickeables para controlar el juego (usar touch events nativos o gamepad overlay en su lugar)
 - ❌ Más de un archivo HTML
 - ❌ `document.write()`
+- ❌ `eval()`
 - ❌ Inline event handlers en HTML (`onclick="..."`)
+
+**Nota:** Estos ítems están prohibidos en **juegos generados por Andy**. Los juegos subidos manualmente por alumnos pueden usar `localStorage`, `sessionStorage`, `alert()`, `confirm()` y `prompt()` cuando haga falta — el CSP de la plataforma se encarga de bloquear lo peligroso automáticamente.
 
 ---
 

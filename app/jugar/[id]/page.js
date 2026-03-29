@@ -68,45 +68,51 @@ export default function JugarPage() {
 
   useEffect(() => {
     async function handler(event) {
-      if (event.data?.type === 'GAME_SCORE') {
-        const newScore = Number(event.data.score);
-        if (isNaN(newScore) || newScore <= 0) return;
-        if (newScore <= bestScoreRef.current) return;
+      const data = event.data;
+      if (data?.type !== 'GAME_SCORE') return;
 
-        bestScoreRef.current = newScore;
+      const newScore = Number(data.score);
+      if (!Number.isFinite(newScore) || newScore < 0 || newScore > 999999) {
+        console.warn('[GAME_SCORE] Mensaje ignorado: puntaje no válido o fuera de rango (0–999999)', data);
+        return;
+      }
 
-        try {
-          const { data: { session } } = await supabase.auth.getSession();
-          if (!session) return;
+      if (newScore <= 0) return;
+      if (newScore <= bestScoreRef.current) return;
 
-          const { error } = await supabase.from('game_scores').upsert(
-            {
-              user_id: session.user.id,
-              game_id: id,
-              score: newScore,
-              played_at: new Date().toISOString(),
-            },
-            {
-              onConflict: 'user_id,game_id',
-              ignoreDuplicates: false,
-            },
-          );
+      bestScoreRef.current = newScore;
 
-          if (error) {
-            console.error('Error guardando score:', error);
-            return;
-          }
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
 
-          const { data: scores } = await supabase
-            .from('game_scores')
-            .select('score, played_at, user_id, profiles(first_name, last_name, house)')
-            .eq('game_id', id)
-            .order('score', { ascending: false })
-            .limit(10);
-          if (scores) setHighScores(scores);
-        } catch (err) {
-          console.error('Error guardando score:', err);
+        const { error } = await supabase.from('game_scores').upsert(
+          {
+            user_id: session.user.id,
+            game_id: id,
+            score: newScore,
+            played_at: new Date().toISOString(),
+          },
+          {
+            onConflict: 'user_id,game_id',
+            ignoreDuplicates: false,
+          },
+        );
+
+        if (error) {
+          console.error('Error guardando score:', error);
+          return;
         }
+
+        const { data: scores } = await supabase
+          .from('game_scores')
+          .select('score, played_at, user_id, profiles(first_name, last_name, house)')
+          .eq('game_id', id)
+          .order('score', { ascending: false })
+          .limit(10);
+        if (scores) setHighScores(scores);
+      } catch (err) {
+        console.error('Error guardando score:', err);
       }
     }
 
