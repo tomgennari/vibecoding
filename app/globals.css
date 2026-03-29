@@ -125,6 +125,17 @@ body {
   border-radius: 1rem;
 }
 
+/* Botón secundario (borde violeta) */
+.vibe-btn-secondary {
+  background: transparent;
+  border: 1px solid var(--vibe-accent);
+  color: var(--vibe-text);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
+}
+.vibe-btn-secondary:hover:not(:disabled) {
+  box-shadow: var(--vibe-glow);
+}
+
 /* Barra de progreso con gradiente */
 .vibe-progress {
   height: 0.5rem;
