@@ -86,6 +86,13 @@ export default function AdminGamesSection() {
   const [analyzing, setAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState(null);
   const [copiedId, setCopiedId] = useState(null);
+  /** @type {Record<string, 'clean' | 'warnings' | 'blocked'>} */
+  const [securityScanByGameId, setSecurityScanByGameId] = useState({});
+
+  const handleSecurityScanResult = useCallback((gameId, summary) => {
+    if (!gameId) return;
+    setSecurityScanByGameId((prev) => ({ ...prev, [gameId]: summary }));
+  }, []);
 
   const fetchGames = useCallback(async () => {
     setLoading(true);
@@ -464,7 +471,7 @@ export default function AdminGamesSection() {
       ) : (
         <>
           <div className="rounded-xl border overflow-x-auto min-w-0" style={{ borderColor: ADMIN_THEME.border }}>
-            <table className="w-full text-xs min-w-[1100px]">
+            <table className="w-full text-xs min-w-[1160px]">
               <thead style={{ background: ADMIN_THEME.card }}>
                 <tr>
                   <th className="w-24">{thBtn('id', 'ID')}</th>
@@ -481,6 +488,7 @@ export default function AdminGamesSection() {
                   <th className="text-right">{thBtn('max_score', 'High', true)}</th>
                   <th>{thBtn('last_played', 'Últ.part.')}</th>
                   <th className="px-2">Badges</th>
+                  <th className="px-2 w-10 text-center" title="Seguridad (se actualiza al abrir Ver)">Seg.</th>
                   <th className="px-2 min-w-[8rem]">Acciones</th>
                 </tr>
               </thead>
@@ -568,6 +576,9 @@ export default function AdminGamesSection() {
                             </span>
                           )}
                         </span>
+                      </td>
+                      <td className="px-2 py-2 text-center text-sm tabular-nums" title={securityScanByGameId[game.id] ? `Scan: ${securityScanByGameId[game.id]}` : 'Abrí la vista previa (Ver) para analizar el HTML'}>
+                        {securityScanByGameId[game.id] === 'clean' ? '🟢' : securityScanByGameId[game.id] === 'warnings' ? '🟡' : securityScanByGameId[game.id] === 'blocked' ? '🔴' : '—'}
                       </td>
                       <td className="px-2 py-2">
                         <span className="flex flex-wrap gap-1">
@@ -681,6 +692,7 @@ export default function AdminGamesSection() {
           analysisResult={analysisResult}
           onAnalyze={handleAnalyze}
           onHtmlUpdated={fetchGames}
+          onSecurityScanResult={handleSecurityScanResult}
         />
       )}
     </div>

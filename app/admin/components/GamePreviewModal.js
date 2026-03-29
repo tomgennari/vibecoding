@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { X, Loader2, Code, Gamepad2 } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { X, Loader2, Code, Gamepad2, ChevronDown, ChevronRight } from 'lucide-react';
 import { supabase } from '@/utils/supabase/client.js';
 import { ADMIN_THEME } from '../constants.js';
 import { prepareGameHtml } from '@/lib/game-security.js';
+import { scanGameHtml } from '@/lib/game-scan.js';
 
 const MAX_FILE_BYTES = 500 * 1024;
 
@@ -18,6 +19,7 @@ export default function GamePreviewModal({
   analysisResult = null,
   onAnalyze,
   onHtmlUpdated,
+  onSecurityScanResult,
 }) {
   const [editedHtml, setEditedHtml] = useState(null);
   const [loadError, setLoadError] = useState(false);
@@ -26,6 +28,27 @@ export default function GamePreviewModal({
   const [saveMsg, setSaveMsg] = useState('');
   const [saving, setSaving] = useState(false);
   const replaceInputRef = useRef(null);
+  const [scanPanelOpen, setScanPanelOpen] = useState(false);
+  const [scanDetailIdx, setScanDetailIdx] = useState(() => ({}));
+
+  const scanResult = useMemo(() => {
+    if (editedHtml == null || typeof editedHtml !== 'string') return null;
+    return scanGameHtml(editedHtml);
+  }, [editedHtml]);
+
+  useEffect(() => {
+    if (!game?.id || !scanResult) return;
+    onSecurityScanResult?.(game.id, scanResult.summary);
+  }, [game?.id, scanResult, onSecurityScanResult]);
+
+  useEffect(() => {
+    if (scanResult?.summary === 'blocked') setScanPanelOpen(true);
+    if (scanResult?.summary === 'warnings') setScanPanelOpen(false);
+  }, [scanResult?.summary, game?.id]);
+
+  useEffect(() => {
+    setScanDetailIdx({});
+  }, [game?.id, editedHtml]);
 
   useEffect(() => {
     if (!game?.file_url) {
@@ -200,6 +223,106 @@ export default function GamePreviewModal({
           <p className={`text-sm mb-2 ${saveMsg.startsWith('✅') ? 'text-green-400' : 'text-red-400'}`}>
             {saveMsg}
           </p>
+        )}
+
+        {editedHtml != null && scanResult && (
+          <div
+            className="mb-3 rounded-xl border text-sm"
+            style={{
+              borderColor: 'var(--vibe-border)',
+              background: 'var(--vibe-card)',
+              color: 'var(--vibe-text)',
+            }}
+          >
+            {scanResult.summary === 'clean' && (
+              <div
+                className="px-3 py-2 text-xs font-medium rounded-xl"
+                style={{ color: '#22c55e' }}
+              >
+                ✅ Sin problemas de seguridad
+              </div>
+            )}
+            {scanResult.summary === 'warnings' && (
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setScanPanelOpen((o) => !o)}
+                  className="w-full flex items-center justify-between gap-2 px-3 py-2 text-left rounded-xl transition-colors hover:opacity-90"
+                  style={{ color: '#eab308' }}
+                >
+                  <span className="text-xs font-bold">
+                    ⚠️ {scanResult.alerts.filter((a) => a.level === 'warning').length} advertencia
+                    {scanResult.alerts.filter((a) => a.level === 'warning').length !== 1 ? 's' : ''}
+                    {scanResult.alerts.some((a) => a.level === 'info') ? ` · ${scanResult.alerts.filter((a) => a.level === 'info').length} nota(s)` : ''}
+                  </span>
+                  {scanPanelOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                </button>
+                {scanPanelOpen && (
+                  <ul className="px-3 pb-3 space-y-2 border-t" style={{ borderColor: 'var(--vibe-border)' }}>
+                    {scanResult.alerts.map((a, idx) => (
+                      <li key={idx} className="pt-2 text-xs" style={{ color: 'var(--vibe-text-muted)' }}>
+                        <span className="font-medium" style={{ color: 'var(--vibe-text)' }}>
+                          {a.level === 'warning' ? '🟡' : '🔵'} {a.message}
+                        </span>
+                        <button
+                          type="button"
+                          className="ml-2 underline underline-offset-2 text-[11px]"
+                          style={{ color: 'var(--vibe-accent)' }}
+                          onClick={() => setScanDetailIdx((d) => ({ ...d, [idx]: !d[idx] }))}
+                        >
+                          {scanDetailIdx[idx] ? 'Ocultar detalle' : 'Ver detalle'}
+                        </button>
+                        {scanDetailIdx[idx] ? (
+                          <pre
+                            className="mt-1 p-2 rounded-lg text-[10px] whitespace-pre-wrap break-all"
+                            style={{ background: '#0a0a0f', color: '#94a3b8', border: '1px solid var(--vibe-border)' }}
+                          >
+                            {a.detail}
+                          </pre>
+                        ) : null}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+            {scanResult.summary === 'blocked' && (
+              <div>
+                <div
+                  className="px-3 py-2 text-xs font-bold rounded-t-xl"
+                  style={{ background: 'rgba(239,68,68,0.2)', color: '#f87171', borderBottom: '1px solid var(--vibe-border)' }}
+                >
+                  🔴 {scanResult.alerts.filter((a) => a.level === 'error').length} problema
+                  {scanResult.alerts.filter((a) => a.level === 'error').length !== 1 ? 's' : ''} de seguridad detectados
+                </div>
+                <ul className="px-3 py-2 space-y-2 max-h-48 overflow-y-auto">
+                  {scanResult.alerts.map((a, idx) => (
+                    <li key={idx} className="text-xs" style={{ color: 'var(--vibe-text-muted)' }}>
+                      <span className="font-medium" style={{ color: 'var(--vibe-text)' }}>
+                        {a.level === 'error' ? '🔴' : a.level === 'warning' ? '🟡' : '🔵'} {a.message}
+                      </span>
+                      <button
+                        type="button"
+                        className="ml-2 underline underline-offset-2 text-[11px]"
+                        style={{ color: 'var(--vibe-accent)' }}
+                        onClick={() => setScanDetailIdx((d) => ({ ...d, [idx]: !d[idx] }))}
+                      >
+                        {scanDetailIdx[idx] ? 'Ocultar detalle' : 'Ver detalle'}
+                      </button>
+                      {scanDetailIdx[idx] ? (
+                        <pre
+                          className="mt-1 p-2 rounded-lg text-[10px] whitespace-pre-wrap break-all"
+                          style={{ background: '#0a0a0f', color: '#94a3b8', border: '1px solid var(--vibe-border)' }}
+                        >
+                          {a.detail}
+                        </pre>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
         )}
 
         <div
