@@ -1130,12 +1130,14 @@ export default function DashboardPage() {
 
       {/* ========== MOBILE: scroll vertical + barra inferior fija ========== */}
       <div className="lg:hidden flex-1 overflow-auto min-h-0" style={{ paddingBottom: '60px' }}>
-        {/* Stats — 3 chips */}
-        <div className="grid grid-cols-3 gap-2 px-4 py-3 min-w-0" style={{ background: cardBg, borderBottom: `1px solid ${border}` }}>
-          <div className="rounded-xl border py-2.5 px-2 text-center min-w-0 overflow-hidden" style={cardStyle}>
-            <p className="text-lg font-black tabular-nums truncate" style={{ color: accent }}>{stats.juegos}</p>
-            <p className="text-[10px] font-medium break-words hyphens-auto mt-0.5 leading-tight" style={{ color: textMuted }}>{STATS_KEYS[0].label}</p>
-          </div>
+        {/* Stats — 3 chips (2 si ALL ACCESS: sin contador de juegos desbloqueados) */}
+        <div className={`grid gap-2 px-4 py-3 min-w-0 ${hasAllAccess ? 'grid-cols-2' : 'grid-cols-3'}`} style={{ background: cardBg, borderBottom: `1px solid ${border}` }}>
+          {!hasAllAccess && (
+            <div className="rounded-xl border py-2.5 px-2 text-center min-w-0 overflow-hidden" style={cardStyle}>
+              <p className="text-lg font-black tabular-nums truncate" style={{ color: accent }}>{stats.juegos}</p>
+              <p className="text-[10px] font-medium break-words hyphens-auto mt-0.5 leading-tight" style={{ color: textMuted }}>{STATS_KEYS[0].label}</p>
+            </div>
+          )}
           <div className="rounded-xl border py-2.5 px-2 text-center min-w-0 overflow-hidden" style={cardStyle}>
             <p className="text-lg font-black tabular-nums truncate" style={{ color: accent }}>{formatDuration(stats.tiempoSeconds)}</p>
             <p className="text-[10px] font-medium break-words hyphens-auto mt-0.5 leading-tight" style={{ color: textMuted }}>{STATS_KEYS[1].label}</p>
