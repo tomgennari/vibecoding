@@ -10,7 +10,7 @@ import { DashboardNavbar } from '@/components/dashboard-navbar.js';
 import { MobileBottomNav } from '@/components/mobile-bottom-nav.js';
 import { useUser } from '@/lib/user-context.js';
 import { PRICING } from '@/lib/pricing.js';
-import { injectFrameCap } from '@/lib/game-frame-cap.js';
+import { prepareGameHtml } from '@/lib/game-security.js';
 
 const HOUSES = [
   { id: 'william_brown', name: 'William Brown', color: '#3b82f6', image: '/images/houses/house-brown.png' },
@@ -179,7 +179,7 @@ export default function PerfilPage() {
     }
     fetch(playingGame.file_url)
       .then((res) => (res.ok ? res.text() : null))
-      .then((html) => setPlayingGameHtml(html != null ? injectFrameCap(html) : null))
+      .then((html) => setPlayingGameHtml(html != null ? prepareGameHtml(html) : null))
       .catch(() => setPlayingGameHtml(null));
   }, [playingGame]);
 

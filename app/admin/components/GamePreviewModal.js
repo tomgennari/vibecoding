@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Loader2, Code, Gamepad2 } from 'lucide-react';
 import { supabase } from '@/utils/supabase/client.js';
 import { ADMIN_THEME } from '../constants.js';
-import { injectFrameCap } from '@/lib/game-frame-cap.js';
+import { prepareGameHtml } from '@/lib/game-security.js';
 
 const MAX_FILE_BYTES = 500 * 1024;
 
@@ -224,7 +224,7 @@ export default function GamePreviewModal({
           )}
           {editedHtml != null && !verCodigo && (
             <iframe
-              srcDoc={injectFrameCap(editedHtml)}
+              srcDoc={prepareGameHtml(editedHtml)}
               sandbox="allow-scripts allow-same-origin"
               title={game.title || 'Vista previa del juego'}
               className="absolute inset-0 w-full h-full"
