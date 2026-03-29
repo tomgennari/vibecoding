@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { Gamepad2, Sun, Moon, LogOut } from 'lucide-react';
+import { Gamepad2, Sun, Moon, LogOut, HelpCircle } from 'lucide-react';
 import { useCreateGameModal } from '@/lib/create-game-context.js';
 import { useUser } from '@/lib/user-context.js';
 
@@ -130,6 +130,16 @@ export function DashboardNavbar({ theme, onToggleTheme, onLogout }) {
             {isDark ? <Sun size={18} /> : <Moon size={18} />}
           </button>
 
+          <Link
+            href="/soporte"
+            title="Soporte"
+            aria-label="Soporte"
+            className="h-10 w-10 rounded-full flex items-center justify-center border transition-colors"
+            style={{ borderColor: border, background: cardBg, color: textMuted }}
+          >
+            <HelpCircle size={18} aria-hidden />
+          </Link>
+
           <button
             type="button"
             onClick={onLogout}
@@ -167,6 +177,15 @@ export function DashboardNavbar({ theme, onToggleTheme, onLogout }) {
           <button type="button" onClick={onToggleTheme} aria-label={isDark ? 'Modo claro' : 'Modo oscuro'} className="p-2 rounded-lg" style={navStyle}>
             {isDark ? <IconSun /> : <IconMoon />}
           </button>
+          <Link
+            href="/soporte"
+            title="Soporte"
+            aria-label="Soporte"
+            className="p-2 rounded-lg inline-flex items-center justify-center"
+            style={navStyle}
+          >
+            <HelpCircle className="w-5 h-5" strokeWidth={2} aria-hidden />
+          </Link>
           <button type="button" onClick={onLogout} className="p-2 rounded-lg" style={{ color: '#ef4444' }} aria-label="Cerrar sesión">
             <IconLogout />
           </button>
