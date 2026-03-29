@@ -47,6 +47,40 @@
   --vibe-gradient-primary: linear-gradient(135deg, #7c3aed 0%, #06b6d4 100%);
 }
 
+/* Tokens alineados a useDashboardTheme (perfil, juegos, soporte, etc.) */
+[data-dashboard-theme="light"] {
+  --dashboard-text: #00478e;
+  --dashboard-text-muted: #64748b;
+  --dashboard-border: #e2e8f0;
+  --dashboard-bg: #ffffff;
+  --dashboard-surface: #f8fafc;
+  --dashboard-dropzone-bg: #f1f5f9;
+  --dashboard-error: #dc2626;
+  --dashboard-success: #16a34a;
+  --dashboard-toast-error-bg: rgba(254, 242, 242, 0.98);
+  --dashboard-toast-error-border: #fecaca;
+  --dashboard-toast-error-text: #991b1b;
+  /* Alinear tokens --vibe-* con el tema claro del dashboard (.vibe-card, textos, .vibe-input, etc.) */
+  --vibe-card: var(--dashboard-surface);
+  --vibe-border: var(--dashboard-border);
+  --vibe-text: var(--dashboard-text);
+  --vibe-text-muted: var(--dashboard-text-muted);
+}
+
+[data-dashboard-theme="dark"] {
+  --dashboard-text: #f1f5f9;
+  --dashboard-text-muted: #94a3b8;
+  --dashboard-border: #2a2a3a;
+  --dashboard-bg: #0a0a0f;
+  --dashboard-surface: #13131a;
+  --dashboard-dropzone-bg: rgba(19, 19, 26, 0.5);
+  --dashboard-error: #f87171;
+  --dashboard-success: #22c55e;
+  --dashboard-toast-error-bg: rgba(127, 29, 29, 0.95);
+  --dashboard-toast-error-border: #f87171;
+  --dashboard-toast-error-text: #fecaca;
+}
+
 @theme inline {
   --color-background: var(--vibe-bg);
   --color-foreground: var(--vibe-text);

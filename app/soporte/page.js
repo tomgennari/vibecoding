@@ -42,16 +42,19 @@ export default function SoportePage() {
   const [submitErrorToast, setSubmitErrorToast] = useState(false);
 
   const fileInputRef = useRef(null);
-
-  const isDark = theme === 'dark';
-  const bg = isDark ? '#0a0a0f' : '#ffffff';
-  const text = isDark ? '#f1f5f9' : '#00478E';
-  const textMuted = isDark ? '#94a3b8' : '#64748b';
-  const border = isDark ? '#2a2a3a' : '#e2e8f0';
+  const previewsRef = useRef(null);
+  const prevImagesLengthRef = useRef(0);
 
   useEffect(() => {
     if (!userLoading && !profile) router.replace('/login');
   }, [userLoading, profile, router]);
+
+  useEffect(() => {
+    if (images.length > prevImagesLengthRef.current) {
+      previewsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+    prevImagesLengthRef.current = images.length;
+  }, [images.length]);
 
   useEffect(() => {
     if (!submitErrorToast) return;
@@ -192,35 +195,33 @@ export default function SoportePage() {
 
   if (userLoading || !profile) {
     return (
-      <div className="min-h-screen font-sans flex flex-col" style={{ background: bg }}>
+      <div
+        className="min-h-screen font-sans flex flex-col bg-[var(--dashboard-bg)]"
+        data-dashboard-theme={theme}
+      >
         <DashboardNavbar theme={theme} onToggleTheme={toggleTheme} onLogout={() => {}} />
         <div className="flex-1 flex items-center justify-center p-8">
-          <p style={{ color: textMuted }}>Cargando…</p>
+          <p className="text-[var(--dashboard-text-muted)]">Cargando…</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen font-sans flex flex-col" style={{ background: bg, color: text }}>
+    <div
+      className="min-h-screen font-sans flex flex-col bg-[var(--dashboard-bg)] text-[var(--dashboard-text)]"
+      data-dashboard-theme={theme}
+    >
       <DashboardNavbar
         theme={theme}
         onToggleTheme={toggleTheme}
         onLogout={handleLogout}
       />
 
-      <div
-        className="flex-1 min-h-0 overflow-auto px-4 py-6 lg:px-6 pb-[60px] lg:pb-6 w-full max-w-2xl mx-auto"
-        style={{ color: text }}
-      >
+      <div className="flex-1 min-h-0 overflow-auto px-4 py-6 lg:px-6 pb-[60px] lg:pb-6 w-full max-w-2xl mx-auto">
         {submitErrorToast ? (
           <div
-            className="fixed top-4 left-4 right-4 z-[70] mx-auto max-w-md rounded-xl border px-4 py-3 text-sm font-medium shadow-lg"
-            style={{
-              background: 'rgba(127,29,29,0.95)',
-              borderColor: '#f87171',
-              color: '#fecaca',
-            }}
+            className="fixed top-4 left-4 right-4 z-[70] mx-auto max-w-md rounded-xl border px-4 py-3 text-sm font-medium shadow-lg bg-[var(--dashboard-toast-error-bg)] border-[var(--dashboard-toast-error-border)] text-[var(--dashboard-toast-error-text)]"
             role="alert"
           >
             Hubo un error al enviar el mensaje. Por favor intentá de nuevo.
@@ -229,9 +230,13 @@ export default function SoportePage() {
 
         {success ? (
           <div className="vibe-card p-8 text-center flex flex-col items-center gap-4">
-            <CheckCircle2 className="w-16 h-16 flex-shrink-0" style={{ color: '#22c55e' }} strokeWidth={1.75} aria-hidden />
-            <h2 className="text-xl font-bold" style={{ color: text }}>¡Mensaje enviado!</h2>
-            <p className="text-sm leading-relaxed max-w-md" style={{ color: textMuted }}>
+            <CheckCircle2
+              className="w-16 h-16 flex-shrink-0 text-[var(--dashboard-success)]"
+              strokeWidth={1.75}
+              aria-hidden
+            />
+            <h2 className="text-xl font-bold text-[var(--vibe-text)]">¡Mensaje enviado!</h2>
+            <p className="text-sm leading-relaxed max-w-md text-[var(--vibe-text-muted)]">
               Tu consulta fue enviada correctamente. Recibirás una copia en tu email y te responderemos en 24 a 48 horas hábiles.
             </p>
             <Link
@@ -244,16 +249,19 @@ export default function SoportePage() {
         ) : (
           <>
             <div className="vibe-card p-6 mb-6">
-              <h2 className="text-xl font-bold mb-3" style={{ color: text }}>Soporte</h2>
-              <p className="text-sm leading-relaxed mb-4" style={{ color: textMuted }}>
+              <h2 className="text-xl font-bold mb-3 text-[var(--vibe-text)]">Soporte</h2>
+              <p className="text-sm leading-relaxed mb-4 text-[var(--vibe-text-muted)]">
                 ¿Tenés algún problema o sugerencia? Completá el formulario y te responderemos en un plazo de 24 a 48 horas hábiles. Recibirás una copia del mensaje en tu email.
               </p>
-              <div className="pt-4" style={{ borderTop: `1px solid var(--vibe-border, ${border})` }} />
+              <div className="pt-4 border-t border-[var(--vibe-border)]" />
             </div>
 
             <div className="space-y-5">
               <div>
-                <label htmlFor="support-subject" className="block text-sm font-bold mb-2" style={{ color: text }}>
+                <label
+                  htmlFor="support-subject"
+                  className="block text-xs font-bold uppercase tracking-wider mb-1.5 text-[var(--dashboard-text-muted)]"
+                >
                   Asunto
                 </label>
                 <input
@@ -262,14 +270,16 @@ export default function SoportePage() {
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
                   placeholder="Ej: No puedo acceder a un juego"
-                  className="vibe-input w-full rounded-xl px-4 py-3 text-sm font-medium placeholder:text-vibe-text-muted/60"
-                  style={{ color: text }}
+                  className="vibe-input w-full rounded-xl px-4 py-3 text-sm font-medium text-[var(--vibe-text)] placeholder:text-[var(--vibe-text-muted)] placeholder:opacity-70"
                   autoComplete="off"
                 />
               </div>
 
               <div>
-                <label htmlFor="support-message" className="block text-sm font-bold mb-2" style={{ color: text }}>
+                <label
+                  htmlFor="support-message"
+                  className="block text-xs font-bold uppercase tracking-wider mb-1.5 text-[var(--dashboard-text-muted)]"
+                >
                   Mensaje
                 </label>
                 <textarea
@@ -278,15 +288,42 @@ export default function SoportePage() {
                   onChange={(e) => setMessage(e.target.value)}
                   placeholder="Describí tu consulta o problema con el mayor detalle posible..."
                   rows={6}
-                  className="vibe-input w-full rounded-xl px-4 py-3 text-sm font-medium placeholder:text-vibe-text-muted/60 min-h-[120px] resize-y"
-                  style={{ color: text }}
+                  className="vibe-input w-full rounded-xl px-4 py-3 text-sm font-medium min-h-[120px] resize-y text-[var(--vibe-text)] placeholder:text-[var(--vibe-text-muted)] placeholder:opacity-70"
                 />
               </div>
 
               <div>
-                <span className="block text-sm font-bold mb-2" style={{ color: text }}>
-                  Imágenes <span className="font-normal opacity-80">(opcional)</span>
+                <span className="block text-xs font-bold uppercase tracking-wider mb-1.5 text-[var(--dashboard-text-muted)]">
+                  Imágenes <span className="font-normal normal-case opacity-80">(opcional)</span>
                 </span>
+                <div ref={previewsRef}>
+                  {images.length > 0 ? (
+                    <div className="flex flex-wrap gap-3 mb-3">
+                      {images.map((it) => (
+                        <div key={it.id} className="relative inline-flex group">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={it.url}
+                            alt=""
+                            className="rounded-lg border object-cover border-[var(--dashboard-border)]"
+                            style={{ maxHeight: 80 }}
+                          />
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); removeImage(it.id); }}
+                            className="absolute -top-2 -right-2 w-7 h-7 rounded-full flex items-center justify-center border-2 shadow-md bg-[var(--dashboard-surface)] border-[var(--dashboard-border)] text-[var(--dashboard-text)]"
+                            aria-label="Quitar imagen"
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+                {imageError ? (
+                  <p className="mb-2 text-sm font-medium text-[var(--dashboard-error)]">{imageError}</p>
+                ) : null}
                 <div
                   role="button"
                   tabIndex={0}
@@ -299,21 +336,16 @@ export default function SoportePage() {
                   onClick={() => fileInputRef.current?.click()}
                   onDragOver={handleDragOver}
                   onDrop={handleDrop}
-                  className="cursor-pointer flex flex-col items-center justify-center gap-2 px-4 py-6 text-center transition-colors hover:opacity-95"
-                  style={{
-                    border: '2px dashed var(--vibe-border)',
-                    borderRadius: '1rem',
-                    background: isDark ? 'rgba(19,19,26,0.5)' : '#f8fafc',
-                  }}
+                  className="cursor-pointer flex flex-col items-center justify-center gap-2 px-4 py-6 text-center transition-opacity hover:opacity-95 border-2 border-dashed border-[var(--vibe-border)] rounded-2xl bg-[var(--dashboard-dropzone-bg)]"
                 >
-                  <ImagePlus className="w-10 h-10 flex-shrink-0" style={{ color: textMuted }} strokeWidth={1.5} aria-hidden />
-                  <p className="text-sm font-semibold" style={{ color: text }}>
+                  <ImagePlus className="w-10 h-10 flex-shrink-0 text-[var(--dashboard-text-muted)] stroke-[1.5]" aria-hidden />
+                  <p className="text-sm font-semibold text-[var(--dashboard-text)]">
                     Arrastrá imágenes aquí o hacé click para seleccionar
                   </p>
-                  <p className="text-xs" style={{ color: textMuted }}>
+                  <p className="text-xs text-[var(--dashboard-text-muted)]">
                     También podés pegar imágenes con Ctrl+V / Cmd+V
                   </p>
-                  <p className="text-[11px]" style={{ color: textMuted }}>
+                  <p className="text-[11px] text-[var(--dashboard-text-muted)]">
                     Máximo 3 imágenes, 2MB cada una. Formatos: PNG, JPG, GIF
                   </p>
                 </div>
@@ -328,28 +360,6 @@ export default function SoportePage() {
                     e.target.value = '';
                   }}
                 />
-                {imageError ? (
-                  <p className="mt-2 text-sm font-medium" style={{ color: '#f87171' }}>{imageError}</p>
-                ) : null}
-                {images.length > 0 ? (
-                  <div className="flex flex-wrap gap-3 mt-4">
-                    {images.map((it) => (
-                      <div key={it.id} className="relative inline-flex group">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={it.url} alt="" className="rounded-lg border object-cover" style={{ maxHeight: 80, borderColor: border }} />
-                        <button
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); removeImage(it.id); }}
-                          className="absolute -top-2 -right-2 w-7 h-7 rounded-full flex items-center justify-center border-2 shadow-md"
-                          style={{ background: isDark ? '#13131a' : '#f8fafc', borderColor: border, color: text }}
-                          aria-label="Quitar imagen"
-                        >
-                          <X size={16} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                ) : null}
               </div>
 
               <button
