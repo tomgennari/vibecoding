@@ -338,7 +338,8 @@ El panel de admin está construido en Next.js en `/app/admin` con 6 hojas defini
 - `POST /api/admin/daily-games` — programar juego del día
 - `DELETE /api/admin/daily-games?gameId=` — quitar juego programado
 - `POST /api/admin/notify-rejection` — email de rechazo al alumno
-- Todas verifican sesión activa + `is_admin` + usan service role para bypasear RLS
+- `POST /api/support` — formulario de soporte, envía email via Resend (requiere sesión, no requiere admin)
+- Todas las rutas admin verifican sesión activa + `is_admin` + usan service role para bypasear RLS
 
 **Moderación de juegos:**
 - Modal `GamePreviewModal` con iframe `srcdoc` + toggle ver juego / ver código (editable)
@@ -347,6 +348,38 @@ El panel de admin está construido en Next.js en `/app/admin` con 6 hojas defini
 - Badge "Creado con Andy" / "Subido como HTML" — análisis IA solo para HTML subidos
 - Notificación email al admin cuando hay juegos pendientes (Edge Function `notify-new-game` + Database Webhook + Resend)
 - Email de rechazo al alumno con motivo y link a editar
+
+### 4.7 Página de Soporte ✅ Implementada
+
+Formulario de contacto accesible desde el botón `HelpCircle` (?) en el navbar, entre dark mode y logout (tanto desktop como mobile).
+
+**Ruta:** `/soporte` — página protegida (requiere sesión activa)
+
+**Layout:** mismo que el resto de la plataforma — `DashboardNavbar` en desktop, `MobileBottomNav` en mobile.
+
+**Contenido:**
+- Texto introductorio en `.vibe-card`: descripción del formulario y aviso de respuesta en 24-48hs hábiles
+- Campo "Asunto" (obligatorio, `.vibe-input`)
+- Campo "Mensaje" (obligatorio, textarea `.vibe-input`)
+- Zona de imágenes opcionales: drag & drop, click para seleccionar, paste con Ctrl+V / Cmd+V. Máximo 3 imágenes, 2MB cada una. Previews con thumbnail arriba de la zona dashed + scroll automático al agregar
+- Botón "Enviar mensaje" (`.vibe-btn-gradient` con ícono `Send`)
+
+**Envío (API route `POST /api/support`):**
+- Verifica sesión activa via Supabase Auth
+- Envía email via Resend:
+  - From: `Campus San Andrés <noreply@sass.vibecoding.ar>`
+  - To: `ADMIN_EMAIL` (desde `lib/constants.js`)
+  - CC: email del usuario (recibe copia)
+  - Reply-To: email del usuario (admin responde directo)
+  - Subject: `[Soporte] {asunto}`
+  - Imágenes adjuntas como attachments (si las hay)
+- No persiste en base de datos — solo email
+
+**Post-envío:**
+- Éxito: pantalla con `CheckCircle2` verde, confirmación y botón "Volver al inicio" → `/dashboard`
+- Error: banner de error sin reemplazar el formulario (permite reintentar)
+
+**Estilos:** theme-aware con variables `--vibe-*` y `--dashboard-*` para funcionar en light y dark mode. Tokens de tema definidos con `data-dashboard-theme` en `globals.css`.
 
 ---
 
@@ -452,7 +485,7 @@ Estilo gaming tipo Discord + Fortnite. Donde los usuarios pasan la mayor parte d
 | Clase | Uso |
 |-------|-----|
 | `.vibe-btn-gradient` | Botón principal violeta→cyan, hover brillante |
-| `.vibe-btn-secondary` | Botón secundario con borde violeta |
+| `.vibe-btn-secondary` | Botón secundario con borde violeta — definido en `globals.css` |
 | `.vibe-btn-danger` | Botón destructivo rojo `#ef4444` |
 | `.vibe-input` | Input oscuro, glow violeta al foco |
 | `.vibe-card` | Tarjeta `#13131a`, borde sutil, radius 1rem |
@@ -503,6 +536,7 @@ Estilo gaming tipo Discord + Fortnite. Donde los usuarios pasan la mayor parte d
 | Game Lab — IA | Claude Sonnet 4.6 via Anthropic API | Streaming SSE, max 16K tokens, system prompt modular en `docs/andy/` |
 | Game Lab — Frameworks | Canvas 2D, p5.js, Kaplay, Three.js (r128) | Librerías hosteadas en Supabase Storage (`libs/` bucket) |
 | MobileBottomNav | Componente reutilizable | Barra de navegación inferior mobile, presente en todas las páginas excepto /jugar |
+| DashboardNavbar | Componente reutilizable | Navbar superior con botones: dark mode toggle, soporte (HelpCircle → /soporte), logout |
 | Email transaccional | Resend | SMTP custom para Supabase Auth + Edge Functions. Dominio: `sass.vibecoding.ar`. Free tier: 3.000 emails/mes, 100/día |
 | Landing Page | Server Component + Client Components | Light mode, Intersection Observer, YouTube embed |
 
@@ -689,7 +723,7 @@ Los juegos HTML corren dentro de iframes sandboxed. La seguridad se implementa e
 - [x] Email de rechazo al alumno con motivo y link a editar
 - [x] Botón compartir por WhatsApp — en perfil y en email de aprobación
 - [x] Sistema de packs de desbloqueo: Pack 10, Pack 30, ALL ACCESS
-- [x] Botón de soporte flotante con formulario de contacto (nombre, email, mensaje → envía email via Resend)
+- [x] Página de soporte `/soporte` con formulario de contacto (asunto, mensaje, imágenes opcionales → envía email via Resend con copia al usuario)
 - [x] Seguridad de iframes: CSP inyectado, scan estático con alertas, monitor de runtime, validación de scores
 - [ ] Sentry para logging de errores
 
