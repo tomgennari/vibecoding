@@ -544,8 +544,6 @@ Tablas principales (todas con RLS habilitado):
 - **RLS:** habilitado en TODAS las tablas sin excepción
 - **Auth:** Supabase Auth — bcrypt para contraseñas, JWT con expiración, refresh tokens
 - **Variables de entorno:** NUNCA en el código. `.env.local` en local, Vercel Env Vars en producción. `.env.local` en `.gitignore`
-- **iframes:** `sandbox="allow-scripts allow-same-origin"` — allow-same-origin necesario para touch events en mobile
-- **CSP:** Content Security Policy configurado en `next.config.js` para prevenir XSS
 - **Webhooks MercadoPago:** verificar firma HMAC-SHA256 antes de procesar cualquier pago
 - **Archivos subidos:** solo `.html`, máximo 500KB, revisión manual del admin obligatoria
 - **Rate limiting:** Attack Protection de Supabase habilitado (5 intentos fallidos por IP)
@@ -555,6 +553,42 @@ Tablas principales (todas con RLS habilitado):
 - **Dependencies:** `npm audit` antes de cada deploy a producción
 - **Indexación bloqueada:** `public/robots.txt` con `Disallow: /` + meta `noindex, nofollow` hasta aprobación del colegio
 - **Contraseñas seguras:** validación frontend obligatoria (8-16 chars, mayúscula, minúscula, número)
+
+#### Seguridad de iframes de juegos
+
+Los juegos HTML corren dentro de iframes sandboxed. La seguridad se implementa en tres capas:
+
+**Capa 1 — Sandbox del iframe:**
+- `sandbox="allow-scripts allow-same-origin"` en todos los iframes de juegos
+- `allow-same-origin` necesario para touch events en mobile
+- El sandbox aísla el juego: no puede acceder al DOM de la app, cookies, ni hacer requests autenticados
+
+**Capa 2 — CSP inyectado en srcdoc (`lib/game-security.js`):**
+- `prepareGameHtml(html)` inyecta un `<meta>` Content Security Policy + monitor de seguridad + frame cap en el `<head>` de cada juego
+- Reemplaza la inyección anterior de `injectFrameCap()` — ahora todo se hace en un solo paso
+- **Bloqueado por CSP:** `fetch()`/XHR a servidores no whitelisteados, WebSockets, Web Workers (previene crypto mining), iframes anidados, `<object>`/`<embed>`
+- **Whitelist de CDNs:** `cdnjs.cloudflare.com`, `cdn.jsdelivr.net`, `unpkg.com`, `*.supabase.co` — permite cargar frameworks alternativos (Phaser, PixiJS, etc.)
+- **Permitido:** `localStorage`, `sessionStorage`, `alert()`, `confirm()`, `prompt()`, `eval()` (algunos frameworks lo usan internamente), imágenes/audio/video desde cualquier URL HTTPS/HTTP
+- El monitor de seguridad escucha `securitypolicyviolation` y `window.onerror`, y envía alertas al parent via `postMessage` con `type: 'SECURITY_VIOLATION'` o `type: 'GAME_ERROR'`
+
+**Capa 3 — Scan estático + alertas para admin (`lib/game-scan.js`):**
+- `scanGameHtml(html)` analiza el código buscando patrones sospechosos antes de ejecutar el juego
+- Tres niveles de alerta: 🔴 error (WebSocket, crypto, Workers, document.cookie), 🟡 warning (fetch a dominios desconocidos, eval, window.open, navigator.geolocation/mediaDevices), 🔵 info (localStorage, alert — permitidos)
+- Excepción inteligente: `window.parent.postMessage` con `GAME_SCORE` no alerta; `fetch` a CDNs whitelisteados baja de warning a info
+- Integrado en `GamePreviewModal`: alertas estáticas al cargar + alertas de runtime mientras el admin prueba el juego
+- Columna "Seg." en tabla de juegos del admin: muestra 🟢/🟡/🔴 después de que el admin abre el preview (lazy, sin fetch masivo)
+- Mensajes en español amigable para admin no técnico, con opción "Ver detalle" mostrando el fragmento de código
+
+**Validación de postMessage GAME_SCORE:**
+- Score debe ser número finito, >= 0, <= 999999
+- Validación en `app/jugar/[id]/page.js` antes de procesar
+
+**CSP de la app (`next.config.js`):**
+- Content Security Policy configurado a nivel de la app Next.js para prevenir XSS
+
+**Diferencia entre juegos de Andy y juegos subidos:**
+- Andy tiene reglas más estrictas en `quality-rules.md` (prohibido fetch, eval, etc.)
+- Los juegos subidos manualmente pueden usar fetch, eval, localStorage, etc. — el CSP inyectado y el scan se encargan de la seguridad automáticamente
 
 ### 7.4 Reglas de Limpieza y Orden
 
@@ -655,6 +689,8 @@ Tablas principales (todas con RLS habilitado):
 - [x] Email de rechazo al alumno con motivo y link a editar
 - [x] Botón compartir por WhatsApp — en perfil y en email de aprobación
 - [x] Sistema de packs de desbloqueo: Pack 10, Pack 30, ALL ACCESS
+- [x] Botón de soporte flotante con formulario de contacto (nombre, email, mensaje → envía email via Resend)
+- [x] Seguridad de iframes: CSP inyectado, scan estático con alertas, monitor de runtime, validación de scores
 - [ ] Sentry para logging de errores
 
 ### Fase 2.5 — Generador de Juegos con IA ✅ Implementada
@@ -672,7 +708,7 @@ Tablas principales (todas con RLS habilitado):
 #### Estado actual de la Fase 2.5 (Mar 2026)
 
 - ✅ Delta time obligatorio: quality-rules y templates de Canvas 2D, p5.js y Kaplay actualizados para movimiento frame-independent
-- ✅ Frame cap ~60fps: `lib/game-frame-cap.js` inyecta throttle de requestAnimationFrame en todos los iframes (jugar, game-lab, admin preview, perfil) sin modificar el HTML guardado en Storage
+- ✅ Frame cap ~60fps + seguridad: `lib/game-security.js` → `prepareGameHtml()` inyecta CSP restrictivo, monitor de seguridad y throttle de requestAnimationFrame en todos los iframes. `lib/game-frame-cap.js` solo exporta constantes. `lib/game-scan.js` provee scan estático con alertas amigables para el admin.
 
 ### Fase 2.6 — Landing Page Pública ✅ Implementada
 
