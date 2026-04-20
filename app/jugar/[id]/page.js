@@ -49,6 +49,8 @@ export default function JugarPage() {
   const [showHighScores, setShowHighScores] = useState(false);
   const [unlockCredits, setUnlockCredits] = useState(0);
   const [userHasAllAccess, setUserHasAllAccess] = useState(false);
+  const [iframeDims, setIframeDims] = useState({ w: 0, h: 0 });
+  const iframeWrapRef = useRef(null);
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -65,6 +67,22 @@ export default function JugarPage() {
     document.addEventListener('fullscreenchange', onFsChange);
     return () => document.removeEventListener('fullscreenchange', onFsChange);
   }, []);
+
+  useEffect(() => {
+    setIframeDims({ w: 0, h: 0 });
+    const el = iframeWrapRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (!entry) return;
+      const box = entry.borderBoxSize?.[0];
+      const w = box != null ? Math.round(box.inlineSize) : Math.round(entry.contentRect.width);
+      const h = box != null ? Math.round(box.blockSize) : Math.round(entry.contentRect.height);
+      if (w > 0 && h > 0) setIframeDims({ w, h });
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [gameHtml]); // re-observar cuando aparece el juego
 
   useEffect(() => {
     async function handler(event) {
@@ -522,9 +540,10 @@ export default function JugarPage() {
               <div
                 ref={gameContainerRef}
                 className="rounded-xl overflow-hidden border-2 border-[#2a2a3a] shadow-xl fullscreen:border-0 fullscreen:rounded-none w-full fullscreen:w-screen fullscreen:h-screen"
-                style={{ background: '#000', maxWidth: `${width}px`, margin: '0 auto' }}
+                style={{ background: '#000', maxWidth: isFullscreen ? '100vw' : `${width}px`, margin: '0 auto' }}
               >
                 <div
+                  ref={iframeWrapRef}
                   style={{
                     position: 'relative',
                     width: '100%',
@@ -533,7 +552,7 @@ export default function JugarPage() {
                     overflow: 'hidden',
                   }}
                 >
-                  {!needsUnlock && gameHtml && (
+                  {!needsUnlock && gameHtml && iframeDims.w > 0 && (
                     <iframe
                       srcDoc={gameHtml}
                       title={game?.title || 'Juego'}
@@ -547,6 +566,11 @@ export default function JugarPage() {
                         height: '100%',
                       }}
                     />
+                  )}
+                  {!needsUnlock && gameHtml && iframeDims.w === 0 && (
+                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000' }}>
+                      <span style={{ color: '#94a3b8', fontSize: '0.875rem' }}>Cargando...</span>
+                    </div>
                   )}
                 </div>
               </div>
