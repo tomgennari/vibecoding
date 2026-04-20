@@ -49,8 +49,6 @@ export default function JugarPage() {
   const [showHighScores, setShowHighScores] = useState(false);
   const [unlockCredits, setUnlockCredits] = useState(0);
   const [userHasAllAccess, setUserHasAllAccess] = useState(false);
-  const [iframeDims, setIframeDims] = useState({ w: 0, h: 0 });
-  const iframeWrapRef = useRef(null);
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -67,22 +65,6 @@ export default function JugarPage() {
     document.addEventListener('fullscreenchange', onFsChange);
     return () => document.removeEventListener('fullscreenchange', onFsChange);
   }, []);
-
-  useEffect(() => {
-    setIframeDims({ w: 0, h: 0 });
-    const el = iframeWrapRef.current;
-    if (!el) return;
-    const ro = new ResizeObserver((entries) => {
-      const entry = entries[0];
-      if (!entry) return;
-      const box = entry.borderBoxSize?.[0];
-      const w = box != null ? Math.round(box.inlineSize) : Math.round(entry.contentRect.width);
-      const h = box != null ? Math.round(box.blockSize) : Math.round(entry.contentRect.height);
-      if (w > 0 && h > 0) setIframeDims({ w, h });
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [gameHtml]); // re-observar cuando aparece el juego
 
   useEffect(() => {
     async function handler(event) {
@@ -314,7 +296,6 @@ export default function JugarPage() {
 
   const width = game?.game_width ?? DEFAULT_WIDTH;
   const height = game?.game_height ?? DEFAULT_HEIGHT;
-  const aspectRatio = width / height; // ej: 800/600 = 1.333
 
   const shareUrl = `${BASE_URL}/jugar/${id}`;
   const shareText = `Jugá ${game?.title || 'este juego'} en Campus San Andrés: ${shareUrl}`;
@@ -539,40 +520,25 @@ export default function JugarPage() {
             <div className="flex-1 flex items-center justify-center w-full p-2 lg:p-4 min-h-0">
               <div
                 ref={gameContainerRef}
-                className="rounded-xl overflow-hidden border-2 border-[#2a2a3a] shadow-xl fullscreen:border-0 fullscreen:rounded-none w-full fullscreen:w-screen fullscreen:h-screen"
-                style={{ background: '#000', maxWidth: isFullscreen ? '100vw' : `${width}px`, margin: '0 auto' }}
+                className="rounded-xl overflow-hidden border-2 border-[#2a2a3a] shadow-xl fullscreen:border-0 fullscreen:rounded-none flex items-center justify-center max-w-full max-h-full"
+                style={{ background: '#000', width: 'min(100%, 100vw - 1rem)', height: 'auto' }}
               >
-                <div
-                  ref={iframeWrapRef}
-                  style={{
-                    position: 'relative',
-                    width: '100%',
-                    paddingBottom: isFullscreen ? '0' : `${(1 / aspectRatio) * 100}%`,
-                    height: isFullscreen ? '100vh' : '0',
-                    overflow: 'hidden',
-                  }}
-                >
-                  {!needsUnlock && gameHtml && iframeDims.w > 0 && (
-                    <iframe
-                      srcDoc={gameHtml}
-                      title={game?.title || 'Juego'}
-                      sandbox="allow-scripts allow-same-origin"
-                      className="border-0 bg-black"
-                      style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        width: '100%',
-                        height: '100%',
-                      }}
-                    />
-                  )}
-                  {!needsUnlock && gameHtml && iframeDims.w === 0 && (
-                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000' }}>
-                      <span style={{ color: '#94a3b8', fontSize: '0.875rem' }}>Cargando...</span>
-                    </div>
-                  )}
-                </div>
+                {!needsUnlock && gameHtml && (
+                  <iframe
+                    srcDoc={gameHtml}
+                    title={game?.title || 'Juego'}
+                    sandbox="allow-scripts allow-same-origin"
+                    width={width}
+                    height={height}
+                    className="block border-0 bg-black max-w-full"
+                    style={{
+                      maxWidth: '100%',
+                      width: isFullscreen ? '100vw' : width,
+                      height: isFullscreen ? '100vh' : height,
+                      objectFit: 'contain',
+                    }}
+                  />
+                )}
               </div>
             </div>
             {/* Barra de acciones: fija abajo en mobile, debajo del juego en desktop (una sola instancia → shareRef OK) */}
