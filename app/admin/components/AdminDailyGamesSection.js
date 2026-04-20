@@ -219,7 +219,7 @@ export default function AdminDailyGamesSection() {
   }
 
   async function unscheduleTomorrow(gameId) {
-    setActioning(gameId);
+    setActioning(`unschedule-${gameId}`);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) return;
@@ -298,7 +298,7 @@ export default function AdminDailyGamesSection() {
                       <button
                         type="button"
                         onClick={() => unscheduleTomorrow(s.game_id)}
-                        disabled={actioning === s.game_id}
+                        disabled={actioning === `unschedule-${s.game_id}`}
                         className="px-2 py-1 rounded text-xs font-medium flex-shrink-0 disabled:opacity-50"
                         style={{ color: '#ef4444', border: '1px solid #ef4444' }}
                       >
@@ -374,7 +374,11 @@ export default function AdminDailyGamesSection() {
                               <button
                                 type="button"
                                 onClick={() => assignDailyGame(g.id, 'today')}
-                                disabled={actioning === `today-${g.id}` || g.active_today}
+                                disabled={
+                                  actioning === `today-${g.id}`
+                                  || actioning === `unschedule-${g.id}`
+                                  || g.active_today
+                                }
                                 className="vibe-btn-gradient px-2 py-1 rounded text-xs font-bold text-white flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
                                 title={g.active_today ? 'Este juego ya está activo como gratis hoy' : 'Activar como gratis hoy'}
                               >
@@ -383,7 +387,11 @@ export default function AdminDailyGamesSection() {
                               <button
                                 type="button"
                                 onClick={() => assignDailyGame(g.id, 'tomorrow')}
-                                disabled={actioning === `tomorrow-${g.id}` || g.scheduled_for_tomorrow}
+                                disabled={
+                                  actioning === `tomorrow-${g.id}`
+                                  || actioning === `unschedule-${g.id}`
+                                  || g.scheduled_for_tomorrow
+                                }
                                 className="vibe-btn-secondary px-2 py-1 rounded text-xs font-medium flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
                                 title={g.scheduled_for_tomorrow ? 'Este juego ya está programado para mañana' : 'Programar como gratis para mañana'}
                               >
