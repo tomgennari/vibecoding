@@ -296,6 +296,7 @@ export default function JugarPage() {
 
   const width = game?.game_width ?? DEFAULT_WIDTH;
   const height = game?.game_height ?? DEFAULT_HEIGHT;
+  const aspectRatio = width / height; // ej: 800/600 = 1.333
 
   const shareUrl = `${BASE_URL}/jugar/${id}`;
   const shareText = `Jugá ${game?.title || 'este juego'} en Campus San Andrés: ${shareUrl}`;
@@ -520,25 +521,34 @@ export default function JugarPage() {
             <div className="flex-1 flex items-center justify-center w-full p-2 lg:p-4 min-h-0">
               <div
                 ref={gameContainerRef}
-                className="rounded-xl overflow-hidden border-2 border-[#2a2a3a] shadow-xl fullscreen:border-0 fullscreen:rounded-none flex items-center justify-center max-w-full max-h-full"
-                style={{ background: '#000', width: 'min(100%, 100vw - 1rem)', height: 'auto' }}
+                className="rounded-xl overflow-hidden border-2 border-[#2a2a3a] shadow-xl fullscreen:border-0 fullscreen:rounded-none w-full fullscreen:w-screen fullscreen:h-screen"
+                style={{ background: '#000', maxWidth: `${width}px`, margin: '0 auto' }}
               >
-                {!needsUnlock && gameHtml && (
-                  <iframe
-                    srcDoc={gameHtml}
-                    title={game?.title || 'Juego'}
-                    sandbox="allow-scripts allow-same-origin"
-                    width={width}
-                    height={height}
-                    className="block border-0 bg-black max-w-full"
-                    style={{
-                      maxWidth: '100%',
-                      width: isFullscreen ? '100vw' : width,
-                      height: isFullscreen ? '100vh' : height,
-                      objectFit: 'contain',
-                    }}
-                  />
-                )}
+                <div
+                  style={{
+                    position: 'relative',
+                    width: '100%',
+                    paddingBottom: isFullscreen ? '0' : `${(1 / aspectRatio) * 100}%`,
+                    height: isFullscreen ? '100vh' : '0',
+                    overflow: 'hidden',
+                  }}
+                >
+                  {!needsUnlock && gameHtml && (
+                    <iframe
+                      srcDoc={gameHtml}
+                      title={game?.title || 'Juego'}
+                      sandbox="allow-scripts allow-same-origin"
+                      className="border-0 bg-black"
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '100%',
+                      }}
+                    />
+                  )}
+                </div>
               </div>
             </div>
             {/* Barra de acciones: fija abajo en mobile, debajo del juego en desktop (una sola instancia → shareRef OK) */}
