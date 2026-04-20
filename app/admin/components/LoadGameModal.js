@@ -35,29 +35,73 @@ function getOrientation(width, height) {
 function parseHtmlDimensions(html) {
   if (!html || typeof html !== 'string') return null;
   const str = html.replace(/\s+/g, ' ');
+
+  // Heurística 1: Detectar si el juego es fullscreen/responsive
+  // Si usa window.innerWidth/Height, 100vw/100vh, o renderer.setSize(window...),
+  // asumimos que NO tiene dimensiones fijas y devolvemos null.
+  const fullscreenPatterns = [
+    /window\.innerWidth/i,
+    /window\.innerHeight/i,
+    /\b100vw\b/i,
+    /\b100vh\b/i,
+    /setSize\s*\(\s*window\./i,
+    /document\.documentElement\.clientWidth/i,
+    /document\.documentElement\.clientHeight/i,
+  ];
+  const looksFullscreen = fullscreenPatterns.some((re) => re.test(str));
+  if (looksFullscreen) return null;
+
   let w = null;
   let h = null;
 
+  // Heurística 2: viewport con width/height numérico explícito
   const viewportMatch = str.match(/<meta[^>]*name=["']viewport["'][^>]*content=["']([^"']+)["']/i) || str.match(/content=["']([^"']*width[^"']*)["'][^>]*name=["']viewport["']/i);
   if (viewportMatch) {
     const content = viewportMatch[1];
-    const widthMatch = content.match(/width\s*=\s*(\d+)/i);
+    const widthMatch = content.match(/width\s*=\s*(\d+)/i); // solo matchea números, no "device-width"
     const heightMatch = content.match(/height\s*=\s*(\d+)/i);
     if (widthMatch) w = parseInt(widthMatch[1], 10);
     if (heightMatch) h = parseInt(heightMatch[1], 10);
   }
+
+  // Heurística 3: <canvas> con width/height
+  // Tomamos el canvas con las dimensiones MÁS GRANDES (para evitar minimapas, HUDs)
   if ((w == null || h == null) && /<canvas/i.test(str)) {
-    const cw = str.match(/<canvas[^>]*\bwidth\s*=\s*["']?(\d+)/i);
-    const ch = str.match(/<canvas[^>]*\bheight\s*=\s*["']?(\d+)/i);
-    if (cw) w = w ?? parseInt(cw[1], 10);
-    if (ch) h = h ?? parseInt(ch[1], 10);
+    const canvasRe = /<canvas\b[^>]*>/gi;
+    let match;
+    let bestArea = 0;
+    let bestW = null;
+    let bestH = null;
+    while ((match = canvasRe.exec(str)) !== null) {
+      const tag = match[0];
+      const cw = tag.match(/\bwidth\s*=\s*["']?(\d+)/i);
+      const ch = tag.match(/\bheight\s*=\s*["']?(\d+)/i);
+      if (cw && ch) {
+        const cwN = parseInt(cw[1], 10);
+        const chN = parseInt(ch[1], 10);
+        const area = cwN * chN;
+        if (area > bestArea) {
+          bestArea = area;
+          bestW = cwN;
+          bestH = chN;
+        }
+      }
+    }
+    if (bestW && bestH) {
+      w = w ?? bestW;
+      h = h ?? bestH;
+    }
   }
+
+  // Heurística 4: CSS body/html/#game/.game con width/height en px
   if ((w == null || h == null) && /(?:body|html)\s*\{[^}]*\}/i.test(str)) {
     const widthPx = str.match(/(?:body|html|#game|\.game)[^}]*\b(?:width|max-width)\s*:\s*(\d+)\s*px/gi);
     const heightPx = str.match(/(?:body|html|#game|\.game)[^}]*\bheight\s*:\s*(\d+)\s*px/gi);
     if (widthPx && widthPx.length) w = w ?? parseInt(widthPx[0].match(/(\d+)/)[1], 10);
     if (heightPx && heightPx.length) h = h ?? parseInt(heightPx[0].match(/(\d+)/)[1], 10);
   }
+
+  // Heurística 5: CSS variables --game-width / --game-height / --width / --height
   if ((w == null || h == null) && /--(?:game-)?(?:width|height)/i.test(str)) {
     const vw = str.match(/--game-width\s*:\s*(\d+)/i) || str.match(/--width\s*:\s*(\d+)/i);
     const vh = str.match(/--game-height\s*:\s*(\d+)/i) || str.match(/--height\s*:\s*(\d+)/i);
@@ -65,7 +109,16 @@ function parseHtmlDimensions(html) {
     if (vh) h = h ?? parseInt(vh[1], 10);
   }
 
-  if (w != null && h != null && w > 0 && h > 0) return { width: w, height: h };
+  // Filtro final: si las dimensiones detectadas son sospechosamente chicas
+  // (menos de 300px en cualquier dimensión), probablemente sea un HUD o minimapa
+  // y no el juego real. Devolver null para que el usuario ajuste manualmente.
+  const MIN_REASONABLE_DIMENSION = 300;
+  if (w != null && h != null && w > 0 && h > 0) {
+    if (w < MIN_REASONABLE_DIMENSION || h < MIN_REASONABLE_DIMENSION) {
+      return null;
+    }
+    return { width: w, height: h };
+  }
   return null;
 }
 
