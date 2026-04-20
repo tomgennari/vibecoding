@@ -7,16 +7,28 @@ import { HOUSES, ADMIN_THEME } from '../constants.js';
 import { getTodayArgentina, getTomorrowArgentina } from '@/lib/dates';
 
 const PAGE_SIZE = 20;
-const MAX_SCHEDULED = 3;
+/** Tope por defecto para el fallback del cron; el admin puede superarlo con confirmación. */
+const DEFAULT_DAILY_COUNT = 3;
 
 function formatArs(n) {
   return Number(n).toLocaleString('es-AR');
+}
+
+function countAssignedForDate(rows, date) {
+  const ids = new Set();
+  for (const r of rows || []) {
+    if (!r.game_id) continue;
+    if (r.scheduled_for === date || r.active_date === date) ids.add(r.game_id);
+  }
+  return ids.size;
 }
 
 export default function AdminDailyGamesSection() {
   const [dailyGames, setDailyGames] = useState([]);
   const [allGamesWithMetrics, setAllGamesWithMetrics] = useState([]);
   const [scheduledTomorrow, setScheduledTomorrow] = useState([]);
+  const [countTodayAssigned, setCountTodayAssigned] = useState(0);
+  const [countTomorrowAssigned, setCountTomorrowAssigned] = useState(0);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
   const [sortKey, setSortKey] = useState('title');
@@ -37,6 +49,7 @@ export default function AdminDailyGamesSection() {
       unlocksRes,
       allDailyRes,
       scheduledRes,
+      slotWindowRes,
     ] = await Promise.all([
       supabase.from('daily_free_games').select('id, game_id').eq('active_date', today),
       supabase.from('games').select('id, title, house, total_revenue').eq('status', 'approved'),
@@ -45,12 +58,20 @@ export default function AdminDailyGamesSection() {
       supabase.from('game_unlocks').select('game_id, amount_paid'),
       supabase.from('daily_free_games').select('game_id, active_date'),
       supabase.from('daily_free_games').select('id, game_id').eq('scheduled_for', tomorrow),
+      supabase
+        .from('daily_free_games')
+        .select('game_id, scheduled_for, active_date')
+        .or(`active_date.eq.${today},scheduled_for.eq.${today},active_date.eq.${tomorrow},scheduled_for.eq.${tomorrow}`),
     ]);
     const daily = dailyRes.data || [];
     const todayGameIds = new Set(daily.map((d) => d.game_id));
     const gamesList = gamesRes.data || [];
     const allDaily = allDailyRes.data || [];
     const scheduled = scheduledRes.data || [];
+    const slotRows = slotWindowRes.data || [];
+
+    setCountTodayAssigned(countAssignedForDate(slotRows, today));
+    setCountTomorrowAssigned(countAssignedForDate(slotRows, tomorrow));
 
     const uniqueByGame = {};
     (sessionsRes.data || []).forEach((s) => {
@@ -93,6 +114,7 @@ export default function AdminDailyGamesSection() {
       used_before: everUsedGameIds.has(g.id),
       last_used_date: lastUsedByGame[g.id] || null,
       scheduled_for_tomorrow: scheduledGameIds.has(g.id),
+      active_today: todayGameIds.has(g.id),
     }));
     setAllGamesWithMetrics(withMetrics);
 
@@ -150,35 +172,49 @@ export default function AdminDailyGamesSection() {
     setPage(1);
   }
 
-  async function scheduleForTomorrow(gameId) {
-    console.log('scheduleForTomorrow llamado con gameId:', gameId)
-    setActioning(gameId)
+  async function assignDailyGame(gameId, when) {
+    const count = when === 'today' ? countTodayAssigned : countTomorrowAssigned;
+    const label = when === 'today' ? 'hoy' : 'mañana';
+    let force = false;
+    if (count >= DEFAULT_DAILY_COUNT) {
+      const ok = window.confirm(
+        `Ya hay ${count} juegos gratis asignados para ${label}. ¿Agregar uno más igual?`,
+      );
+      if (!ok) return;
+      force = true;
+    }
+
+    setActioning(`${when}-${gameId}`);
     try {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session?.access_token) throw new Error('No hay sesión activa')
-      
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error('No hay sesión activa');
+
       const res = await fetch('/api/admin/daily-games', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`
+          Authorization: `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ gameId })
-      })
-      
-      console.log('fetch response status:', res?.status)
+        body: JSON.stringify({ gameId, when, force }),
+      });
 
-      if (!res || !res.ok) {
-        const error = res ? await res.json().catch(() => ({})) : {}
-        throw new Error(error.error || 'Error al programar el juego')
+      const payload = await res.json().catch(() => ({}));
+
+      if (res.status === 409) {
+        alert(payload.error || 'Ese juego ya está asignado para esa fecha');
+        return;
       }
-      
-      await loadData()
+      if (res.status === 422) {
+        alert(payload.message || payload.error || 'No se pudo agregar el juego');
+        return;
+      }
+      if (!res.ok) throw new Error(payload.error || 'Error al asignar el juego');
+
+      await loadData();
     } catch (err) {
-      console.error(err)
-      alert(err.message || 'Error al programar el juego')
+      alert(err.message || 'Error al asignar el juego');
     } finally {
-      setActioning(null)
+      setActioning(null);
     }
   }
 
@@ -187,10 +223,10 @@ export default function AdminDailyGamesSection() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) return;
-      const res = await fetch(`/api/admin/daily-games?gameId=${encodeURIComponent(gameId)}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      });
+      const res = await fetch(
+        `/api/admin/daily-games?gameId=${encodeURIComponent(gameId)}&date=${encodeURIComponent(tomorrow)}`,
+        { method: 'DELETE', headers: { Authorization: `Bearer ${session.access_token}` } },
+      );
       if (res.ok) await loadData();
     } finally {
       setActioning(null);
@@ -210,14 +246,19 @@ export default function AdminDailyGamesSection() {
   return (
     <div className="p-6 min-w-0">
       <h2 className="text-xl font-bold mb-4" style={{ color: ADMIN_THEME.text }}>Juegos del día</h2>
-      <p className="text-sm mb-4" style={{ color: ADMIN_THEME.textMuted }}>Hoy: {today}. Los juegos programados para mañana se activan a las 00:00.</p>
+      <p className="text-sm mb-4" style={{ color: ADMIN_THEME.textMuted }}>
+        Hoy: {today}. Podés activar gratis hoy o programar para mañana. El cron completa hasta {DEFAULT_DAILY_COUNT} si faltan cupos (00:00 ART).
+      </p>
 
       {loading ? (
         <p style={{ color: ADMIN_THEME.textMuted }}>Cargando...</p>
       ) : (
         <>
           <section className="mb-6">
-            <h3 className="text-lg font-bold mb-2" style={{ color: ADMIN_THEME.text }}>Hoy activos</h3>
+            <h3 className="text-lg font-bold" style={{ color: ADMIN_THEME.text }}>Hoy activos</h3>
+            <p className="text-sm mb-2" style={{ color: ADMIN_THEME.textMuted }}>
+              ({countTodayAssigned} juego{countTodayAssigned === 1 ? '' : 's'} activo{countTodayAssigned === 1 ? '' : 's'})
+            </p>
             {dailyGames.length === 0 ? (
               <p className="py-4 rounded-xl border text-center text-sm" style={{ color: ADMIN_THEME.textMuted, borderColor: ADMIN_THEME.border }}>Hoy no hay juegos gratuitos.</p>
             ) : (
@@ -238,9 +279,12 @@ export default function AdminDailyGamesSection() {
           </section>
 
           <section className="mb-6">
-            <h3 className="text-lg font-bold mb-2" style={{ color: ADMIN_THEME.text }}>Juegos del día de mañana</h3>
+            <h3 className="text-lg font-bold" style={{ color: ADMIN_THEME.text }}>Juegos del día de mañana</h3>
+            <p className="text-sm mb-2" style={{ color: ADMIN_THEME.textMuted }}>
+              ({countTomorrowAssigned} juego{countTomorrowAssigned === 1 ? '' : 's'} programado{countTomorrowAssigned === 1 ? '' : 's'})
+            </p>
             {scheduledTomorrow.length === 0 ? (
-              <p className="py-3 rounded-xl border text-center text-sm" style={{ color: ADMIN_THEME.textMuted, borderColor: ADMIN_THEME.border }}>Ninguno programado. Se elegirán automáticamente a las 00:00.</p>
+              <p className="py-3 rounded-xl border text-center text-sm" style={{ color: ADMIN_THEME.textMuted, borderColor: ADMIN_THEME.border }}>Ninguno programado. Se elegirán automáticamente a las 00:00 si no completás la grilla.</p>
             ) : (
               <ul className="space-y-2 mb-2">
                 {scheduledTomorrow.map((s) => {
@@ -265,8 +309,8 @@ export default function AdminDailyGamesSection() {
                 })}
               </ul>
             )}
-            {scheduledTomorrow.length > 0 && scheduledTomorrow.length < MAX_SCHEDULED && (
-              <p className="text-xs" style={{ color: ADMIN_THEME.textMuted }}>Los juegos faltantes se elegirán automáticamente a las 00:00.</p>
+            {countTomorrowAssigned > 0 && countTomorrowAssigned < DEFAULT_DAILY_COUNT && (
+              <p className="text-xs" style={{ color: ADMIN_THEME.textMuted }}>Los juegos faltantes hasta {DEFAULT_DAILY_COUNT} se elegirán automáticamente a las 00:00.</p>
             )}
           </section>
 
@@ -326,21 +370,26 @@ export default function AdminDailyGamesSection() {
                           <td className="px-3 py-2 font-black tabular-nums" style={{ color: ADMIN_THEME.accent }}>${formatArs(g.total_revenue)}</td>
                           <td className="px-3 py-2" style={{ color: ADMIN_THEME.textMuted }}>{g.last_used_date ? g.last_used_date : 'Nunca'}</td>
                           <td className="px-3 py-2">
-                            {g.scheduled_for_tomorrow ? (
-                              <span className="px-2 py-0.5 rounded text-xs font-medium" style={{ background: ADMIN_THEME.border, color: ADMIN_THEME.textMuted }}>✓ Programado</span>
-                            ) : scheduledTomorrow.length >= MAX_SCHEDULED ? (
-                              <span className="text-xs" style={{ color: ADMIN_THEME.textMuted }}>—</span>
-                            ) : (
+                            <div className="flex flex-wrap gap-2">
                               <button
                                 type="button"
-                                onClick={() => scheduleForTomorrow(g.id)}
-                                disabled={actioning === g.id}
-                                className="px-2 py-1 rounded text-xs font-medium text-white flex-shrink-0 disabled:opacity-50"
-                                style={{ background: ADMIN_THEME.accent }}
+                                onClick={() => assignDailyGame(g.id, 'today')}
+                                disabled={actioning === `today-${g.id}` || g.active_today}
+                                className="vibe-btn-gradient px-2 py-1 rounded text-xs font-bold text-white flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                                title={g.active_today ? 'Este juego ya está activo como gratis hoy' : 'Activar como gratis hoy'}
                               >
-                                Programar para mañana
+                                Activar hoy
                               </button>
-                            )}
+                              <button
+                                type="button"
+                                onClick={() => assignDailyGame(g.id, 'tomorrow')}
+                                disabled={actioning === `tomorrow-${g.id}` || g.scheduled_for_tomorrow}
+                                className="vibe-btn-secondary px-2 py-1 rounded text-xs font-medium flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                                title={g.scheduled_for_tomorrow ? 'Este juego ya está programado para mañana' : 'Programar como gratis para mañana'}
+                              >
+                                Programar mañana
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       );

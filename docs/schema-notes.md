@@ -109,8 +109,8 @@
 |---------|------|-------|
 | id | uuid | PK |
 | game_id | uuid | FK a games.id |
-| active_date | date | Nullable — se setea por el cron |
-| scheduled_for | date | Nullable — seteada por admin o cron |
+| active_date | date | Nullable — se setea por el cron o inmediatamente si el admin usa "Activar hoy" |
+| scheduled_for | date | Nullable — programación (mañana desde el panel, u hoy si el admin activa el mismo día) |
 | auto_selected | boolean | true = cron, false = admin |
 
 ### `buildings`

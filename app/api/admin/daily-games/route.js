@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { getTomorrowArgentina } from '@/lib/dates';
+import { getTodayArgentina, getTomorrowArgentina } from '@/lib/dates';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -19,7 +19,16 @@ async function requireAdmin(request) {
   return { supabase, user };
 }
 
-/** POST: programar un juego para mañana — insertar con scheduled_for = tomorrow, auto_selected = false */
+function distinctAssignedCount(rows, targetDate) {
+  const ids = new Set();
+  for (const r of rows || []) {
+    if (!r.game_id) continue;
+    if (r.scheduled_for === targetDate || r.active_date === targetDate) ids.add(r.game_id);
+  }
+  return ids.size;
+}
+
+/** POST: asignar juego gratis para hoy o mañana */
 export async function POST(request) {
   if (!supabaseUrl || !supabaseAnonKey) {
     return NextResponse.json({ error: 'Configuración incompleta' }, { status: 500 });
@@ -38,33 +47,59 @@ export async function POST(request) {
   if (!gameId) {
     return NextResponse.json({ error: 'Falta gameId' }, { status: 400 });
   }
+  let when = body?.when ?? 'tomorrow';
+  if (when !== 'today' && when !== 'tomorrow') {
+    return NextResponse.json({ error: 'when debe ser today o tomorrow' }, { status: 400 });
+  }
+  const force = body?.force === true;
+
+  const today = getTodayArgentina();
   const tomorrow = getTomorrowArgentina();
-  const { data: existing } = await auth.supabase
+  const targetDate = when === 'today' ? today : tomorrow;
+
+  const { data: dupRows } = await auth.supabase
     .from('daily_free_games')
     .select('id')
     .eq('game_id', gameId)
-    .eq('scheduled_for', tomorrow)
-    .maybeSingle();
-  if (existing) {
-    return NextResponse.json({ error: 'Ya está programado para mañana' }, { status: 400 });
+    .or(`scheduled_for.eq.${targetDate},active_date.eq.${targetDate}`)
+    .limit(1);
+  if (dupRows?.length) {
+    return NextResponse.json(
+      { error: 'Ese juego ya está asignado como gratis para esa fecha' },
+      { status: 409 },
+    );
   }
-  const { count } = await auth.supabase
+
+  const { data: slotRows } = await auth.supabase
     .from('daily_free_games')
-    .select('id', { count: 'exact', head: true })
-    .eq('scheduled_for', tomorrow);
-  if (count >= 3) {
-    return NextResponse.json({ error: 'Ya hay 3 juegos programados para mañana' }, { status: 400 });
+    .select('game_id, scheduled_for, active_date')
+    .or(`scheduled_for.eq.${targetDate},active_date.eq.${targetDate}`);
+  const count = distinctAssignedCount(slotRows, targetDate);
+
+  if (count >= 3 && !force) {
+    return NextResponse.json(
+      {
+        error: 'limit_exceeded',
+        count,
+        message: `Ya hay ${count} juegos asignados para ${targetDate}`,
+      },
+      { status: 422 },
+    );
   }
-  const { error } = await auth.supabase
-    .from('daily_free_games')
-    .insert({ game_id: gameId, scheduled_for: tomorrow, active_date: null, auto_selected: false });
+
+  const insertPayload =
+    when === 'today'
+      ? { game_id: gameId, scheduled_for: today, active_date: today, auto_selected: false }
+      : { game_id: gameId, scheduled_for: tomorrow, active_date: null, auto_selected: false };
+
+  const { error } = await auth.supabase.from('daily_free_games').insert(insertPayload);
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
   return NextResponse.json({ ok: true });
 }
 
-/** DELETE: quitar un juego programado para mañana. Query: gameId= */
+/** DELETE: quitar asignación. Query: gameId= [& date=YYYY-MM-DD]. Sin date: solo mañana (comportamiento previo). */
 export async function DELETE(request) {
   if (!supabaseUrl || !supabaseAnonKey) {
     return NextResponse.json({ error: 'Configuración incompleta' }, { status: 500 });
@@ -78,12 +113,16 @@ export async function DELETE(request) {
   if (!gameId) {
     return NextResponse.json({ error: 'Falta gameId' }, { status: 400 });
   }
+  const dateParam = searchParams.get('date');
   const tomorrow = getTomorrowArgentina();
-  const { error } = await auth.supabase
-    .from('daily_free_games')
-    .delete()
-    .eq('game_id', gameId)
-    .eq('scheduled_for', tomorrow);
+
+  let q = auth.supabase.from('daily_free_games').delete().eq('game_id', gameId);
+  if (dateParam) {
+    q = q.or(`scheduled_for.eq.${dateParam},active_date.eq.${dateParam}`);
+  } else {
+    q = q.eq('scheduled_for', tomorrow);
+  }
+  const { error } = await q;
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }

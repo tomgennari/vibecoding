@@ -6,6 +6,12 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const cronSecret = process.env.CRON_SECRET;
 
+// Cron de fallback diario: completa hasta 3 juegos gratis si el admin
+// no asignó suficientes. Respeta asignaciones manuales (no duplica).
+// Disparado por pg_cron en Supabase a las 03:00 UTC = 00:00 ART.
+// Selección determinística: prioriza juegos nunca usados como gratis,
+// luego los de menor cantidad de jugadores únicos.
+
 export async function GET(request) {
   const authHeader = request.headers.get('authorization');
   const token = authHeader?.replace(/^Bearer\s+/i, '');

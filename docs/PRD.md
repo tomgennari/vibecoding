@@ -291,8 +291,10 @@ El panel de admin está construido en Next.js en `/app/admin` con 6 hojas defini
 **📅 Juegos del día (`AdminDailyGamesSection`):**
 - Vista de juegos activos hoy y programados para mañana
 - Tabla de todos los juegos aprobados con métricas
-- Botón "Programar para mañana", límite 3 por día
-- Fallback automático via cron a las 00:00
+- Dos acciones por juego: **Activar hoy** (primario, `.vibe-btn-gradient`) y **Programar mañana** (secundario, `.vibe-btn-secondary`)
+- Contador visible de juegos asignados para hoy y para mañana
+- Tope por defecto de 3 por fecha para avisar al admin; puede superarse con confirmación (`force` en API)
+- Fallback automático vía **pg_cron** en Supabase (00:00 ART) que llama al endpoint Next de cron si faltan cupos
 
 **👥 Usuarios (`AdminUsersSection`) — ✅ Implementado:**
 - Tabla enriquecida via `/api/admin/usuarios` con datos agregados de múltiples tablas
@@ -335,8 +337,8 @@ El panel de admin está construido en Next.js en `/app/admin` con 6 hojas defini
 - `GET /api/admin/andy/sessions` — listado de sesiones (filtros y paginación)
 - `GET /api/admin/andy/sessions/[id]` — detalle y mensajes de una sesión
 - `POST /api/admin/andy/analyze` — análisis con IA de patrones (stream SSE)
-- `POST /api/admin/daily-games` — programar juego del día
-- `DELETE /api/admin/daily-games?gameId=` — quitar juego programado
+- `POST /api/admin/daily-games` — asignar juego gratis (`when`: `today` \| `tomorrow`, `force` opcional si ya hay ≥3)
+- `DELETE /api/admin/daily-games?gameId=` — quitar asignación; query opcional `date=YYYY-MM-DD` para una fecha concreta (sin `date`: mañana, comportamiento previo)
 - `POST /api/admin/notify-rejection` — email de rechazo al alumno
 - `POST /api/support` — formulario de soporte, envía email via Resend (requiere sesión, no requiere admin)
 - Todas las rutas admin verifican sesión activa + `is_admin` + usan service role para bypasear RLS
@@ -569,8 +571,8 @@ Tablas principales (todas con RLS habilitado):
 - `get_authors(user_ids UUID[])` → tabla — nombres de autores respetando RLS. `SECURITY DEFINER`.
 
 **Lógica de `daily_free_games`:**
-- `scheduled_for`: fecha para la que está programado el juego (seteada por el admin o el cron)
-- `active_date`: fecha en que el juego fue efectivamente activado (seteada por el cron a las 00:00)
+- `scheduled_for`: fecha para la que está programado el juego (admin: "Programar mañana" con `active_date` null, o "Activar hoy" con `scheduled_for` y `active_date` en el día actual; el cron también escribe filas al completar cupos)
+- `active_date`: fecha en que el juego cuenta como gratis para usuarios (medianoche ART tras el cron en programaciones de mañana, o inmediata si el admin activa hoy)
 - `auto_selected`: `true` si fue elegido automáticamente por el cron, `false` si fue elegido por el admin
 
 ### 7.3 Seguridad
@@ -787,12 +789,12 @@ Los juegos HTML corren dentro de iframes sandboxed. La seguridad se implementa e
 
 ### 9.1 Juegos Gratuitos del Día
 
-- El admin puede seleccionar hasta 3 juegos gratuitos manualmente desde el panel, programándolos con `scheduled_for = mañana`
-- Los juegos faltantes se completan automáticamente por el cron a las 00:00 hora Argentina (UTC-3)
-- El cron activa los juegos programados seteando `active_date = hoy`
+- El admin asigna juegos gratuitos desde el panel con **Activar hoy** o **Programar mañana** (`/api/admin/daily-games` con `when`: `today` \| `tomorrow`)
+- Por defecto se avisa a partir de 3 juegos ya asignados para esa fecha; el admin puede confirmar y seguir agregando (**override manual** con `force: true`)
+- Los juegos faltantes hasta **3** activos el día del cron se completan automáticamente solo si el admin dejó menos de 3: job **pg_cron** en Supabase (03:00 UTC = 00:00 ART) invoca el endpoint Next `/api/cron/daily-games` con secreto compartido
+- El cron activa filas programadas para ese día (`scheduled_for = hoy` → `active_date = hoy`) y completa con selección **determinística**: prioriza juegos que nunca estuvieron en `daily_free_games`, luego los de menor cantidad de jugadores únicos (no es aleatorio)
 - Los juegos ya desbloqueados por compra permanecen desbloqueados para ese usuario
-- No se puede programar el mismo juego dos veces para el mismo día (validado en API)
-- Máximo 3 juegos programados por día (validado en API)
+- Anti-duplicado: un mismo `game_id` no puede repetirse para la misma fecha lógica (validación API: `scheduled_for` **o** `active_date` igual a la fecha objetivo)
 
 ### 9.2 Precios
 
