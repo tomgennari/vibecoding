@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { ANTHROPIC_MODEL } from '@/lib/constants.js';
 
 export const maxDuration = 300;
 
@@ -8,7 +9,6 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
 
-const MODEL = 'claude-sonnet-4-6';
 const MAX_OUTPUT_TOKENS = 8192;
 
 /** ~4 chars/token en castellano; dejamos margen para system + overhead (~50k input total). */
@@ -185,7 +185,7 @@ export async function POST(request) {
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model: MODEL,
+      model: ANTHROPIC_MODEL,
       max_tokens: MAX_OUTPUT_TOKENS,
       stream: true,
       system: SYSTEM_PROMPT,

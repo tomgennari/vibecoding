@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { ANTHROPIC_MODEL } from '@/lib/constants.js';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -9,7 +10,6 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
-const MODEL = 'claude-sonnet-4-6';
 const MAX_TOKENS = 16000;
 
 function getAuthUser(request) {
@@ -275,7 +275,7 @@ export async function POST(request) {
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model: MODEL,
+      model: ANTHROPIC_MODEL,
       max_tokens: MAX_TOKENS,
       stream: true,
       system: systemPrompt,

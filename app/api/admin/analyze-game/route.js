@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { ANTHROPIC_MODEL } from '@/lib/constants.js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -79,7 +80,7 @@ Respondé en formato JSON exacto (sin markdown, sin backticks):
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: ANTHROPIC_MODEL,
         max_tokens: 1000,
         messages: [
           { role: 'user', content: `Analizá este juego HTML:\n\n${html.substring(0, 50000)}` },
