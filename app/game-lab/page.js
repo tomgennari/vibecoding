@@ -1577,6 +1577,7 @@ export default function GameLabPage() {
                       <iframe
                         title="Vista previa del juego generado"
                         sandbox="allow-scripts allow-same-origin"
+                        scrolling="no"
                         srcDoc={prepareGameHtml(currentHtml)}
                         className={`absolute inset-0 w-full h-full border-0 transition-all duration-300 ease-out ${iframeRevealed ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-4'}`}
                         style={{ touchAction: 'auto', objectFit: 'contain' }}
@@ -1615,6 +1616,7 @@ export default function GameLabPage() {
             <iframe
               title="Juego en pantalla completa"
               sandbox="allow-scripts allow-same-origin"
+              scrolling="no"
               srcDoc={prepareGameHtml(currentHtml)}
               className="w-full h-full border-0"
               style={{ touchAction: 'auto' }}

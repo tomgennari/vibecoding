@@ -21,6 +21,8 @@ Este es el esqueleto que Andy usa para juegos p5.js. Ideal para juegos artístic
 <body>
 <script>
 // === CONFIGURACIÓN ===
+// Portrait: const W = 480, H = 640  |  Landscape: const W = 960, H = 540
+// Elegí según la tabla de orientación en quality-rules.md
 const W = 480, H = 640;
 
 // === ESTADOS ===
@@ -130,7 +132,8 @@ function gameOverFn() {
 
 ## Notas para Andy
 
-- p5.js crea su propio canvas — no necesitás `<canvas>` en el HTML
+- Resolución fija **480×640** o **960×540** según género (tabla en `quality-rules.md`); sin lógica de escalado dentro del sketch.
+- p5.js crea su propio canvas — no necesitás `<canvas>` en el HTML; el tamaño sale de `createCanvas(W, H)` con `const W, H` arriba (coherente con el parser).
 - `setup()` se ejecuta una vez, `draw()` es el game loop (60fps default)
 - `deltaTime` es una variable global de p5.js que da **milisegundos** desde el último frame
 - **SIEMPRE** al inicio de `update()`: `const dt = deltaTime / 1000;`

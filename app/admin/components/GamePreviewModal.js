@@ -493,6 +493,7 @@ export default function GamePreviewModal({
                 <iframe
                   srcDoc={prepareGameHtml(editedHtml)}
                   sandbox="allow-scripts allow-same-origin"
+                  scrolling="no"
                   title={game.title || 'Vista previa del juego'}
                   className="absolute inset-0 w-full h-full border-0"
                   style={{ objectFit: 'contain' }}

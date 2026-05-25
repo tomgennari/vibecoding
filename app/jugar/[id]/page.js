@@ -540,6 +540,7 @@ export default function JugarPage() {
                       srcDoc={gameHtml}
                       title={game?.title || 'Juego'}
                       sandbox="allow-scripts allow-same-origin"
+                      scrolling="no"
                       className="absolute inset-0 w-full h-full border-0 bg-black"
                       style={{ objectFit: 'contain' }}
                     />

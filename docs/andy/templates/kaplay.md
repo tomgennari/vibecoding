@@ -20,9 +20,12 @@ Este es el esqueleto que Andy usa para juegos Kaplay. Ideal para plataformers, s
 <body>
 <script>
 // === INICIALIZAR KAPLAY ===
+// Portrait: const W = 480, H = 640  |  Landscape: const W = 960, H = 540
+// Elegí según la tabla de orientación en quality-rules.md
+const W = 480, H = 640;
 kaplay({
-  width: 480,
-  height: 640,
+  width: W,
+  height: H,
   background: [20, 20, 30],
   stretch: true,
   letterbox: true,
@@ -147,6 +150,8 @@ go("menu");
 
 ## Notas para Andy
 
+- Resolución fija **480×640** o **960×540** según género (tabla en `quality-rules.md`); `kaplay({ width: W, height: H })` siempre con `const W, H`. Sin canvas tag manual ni escalado responsivo dentro del juego — el iframe escala.
+
 ### API de Kaplay — Referencia Rápida
 
 **Crear game objects:**
@@ -267,19 +272,20 @@ La forma correcta es:
 Kaplay hereda la fuente del CSS automáticamente.
 
 **NO pasar canvas manual a kaplay():**
-NUNCA usar `canvas: document.createElement('canvas')` en la config de kaplay(). Dejar que Kaplay cree y agregue su canvas automáticamente. Solo configurar width, height, background, stretch, letterbox y global.
+NUNCA usar `canvas: document.createElement('canvas')` en la config de kaplay(). Dejar que Kaplay cree y agregue su canvas automáticamente. Solo configurar width, height, background, stretch, letterbox y global (con `width: W`, `height: H` desde constantes definidas antes).
 ```javascript
 // ❌ MAL — canvas huérfano que nunca se ve
 kaplay({
   canvas: document.createElement('canvas'),
-  width: 480,
+  width: 960,
   ...
 });
 
-// ✅ BIEN — Kaplay crea el canvas solo
+// ✅ BIEN — Kaplay crea el canvas solo; mismas variables W/H que elegís por género
+const W = 960, H = 540;
 kaplay({
-  width: 480,
-  height: 640,
+  width: W,
+  height: H,
   background: [20, 20, 30],
   stretch: true,
   letterbox: true,

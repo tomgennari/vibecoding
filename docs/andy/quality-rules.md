@@ -2,18 +2,43 @@
 
 ## CANVAS Y ESCALADO — UNIVERSAL
 
-Todos los juegos usan una resolución fija. El iframe del Game Lab se encarga del escalado.
+La orientación se decide según hacia dónde se desarrolla la acción principal. Antes de generar, Andy clasifica internamente el juego y elige una de dos resoluciones fijas:
 
-- **Default:** 480x640 (portrait) — funciona en celular vertical, horizontal con barras, y desktop
-- **Landscape:** 640x480 — solo si Andy decide internamente que el juego es naturalmente horizontal (carreras, shooters laterales, beat'em ups)
-- Andy **NUNCA** pregunta al alumno si es para celular o computadora
-- Andy **NUNCA** implementa lógica de escalado — el contenedor lo maneja
+**PORTRAIT (480x640)** — acción vertical o campo angosto y alto:
+- Caída de objetos (Tetris, atrapar lo que cae), shooters verticales / naves que suben
+- Endless runners verticales, escaladas, torres, Flappy Bird
+- Quiz/trivia, memory, y puzzles en grilla cuadrada (entran cómodos en vertical)
 
-### Implementación según framework:
+**LANDSCAPE (960x540)** — acción a lo ancho:
+- Plataformers (Mario, Celeste), carreras, deportes laterales
+- Side-scrollers, beat'em ups, shooters laterales, tower defense horizontal
+- Juegos de explorar un mundo de izquierda a derecha
 
-**Canvas 2D:**
+**CUADRADO / INDIFERENTE → LANDSCAPE (960x540)** por comodidad en PC:
+- Snake, pong, breakout, asteroids, arena cerrada
+- 2048, minesweeper, sokoban, match-3
+- Canvas de pintura, herramientas creativas, simulación, idle/gestión
+
+REGLA INTERNA OBLIGATORIA: antes de generar, Andy razona (sin mostrárselo al alumno): "Este es un juego de [tipo] → acción [vertical/horizontal] → [PORTRAIT/LANDSCAPE]".
+
+PROHIBIDO elegir orientación al azar o "para no repetir". La consistencia dentro de cada género es deseable: un plataformer SIEMPRE landscape, un Tetris SIEMPRE portrait.
+
+Andy NUNCA pregunta si es para celular o computadora. Andy NUNCA implementa lógica de escalado — el contenedor lo maneja con object-fit: contain.
+
+**CRÍTICO — Una sola fuente de verdad para W y H:** el parser de dimensiones de la plataforma prioriza los atributos `width` / `height` en la **tag** `<canvas>` por encima del `const W, H` en el JavaScript. Resultado: **no** pongas `width` / `height` en la tag en Canvas 2D. Usá `<canvas id="game"></canvas>` y definí el tamaño **solo en JS** (`const W = …, H = …` y `canvas.width = W; canvas.height = H;`). En **p5.js:** sin tag `<canvas>` manual; `createCanvas(W, H)` con `const W, H` arriba. En **Kaplay:** `kaplay({ width: W, height: H, … })` con las mismas constantes.
+
+### Implementación según framework
+
+**Canvas 2D — Portrait (480×640). La tag del canvas va sin width/height:**
 ```html
-<canvas id="game" width="480" height="640"></canvas>
+<canvas id="game"></canvas>
+<script>
+const W = 480, H = 640;
+const canvas = document.getElementById('game');
+canvas.width = W;
+canvas.height = H;
+// … resto del juego usando W y H …
+</script>
 <style>
   * { margin: 0; padding: 0; }
   html, body { width: 100%; height: 100%; overflow: hidden; background: #000; }
@@ -21,18 +46,55 @@ Todos los juegos usan una resolución fija. El iframe del Game Lab se encarga de
 </style>
 ```
 
-**p5.js:**
+**Canvas 2D — Landscape (960×540), mismo patrón (solo cambian W y H):**
+```html
+<canvas id="game"></canvas>
+<script>
+const W = 960, H = 540;
+const canvas = document.getElementById('game');
+canvas.width = W;
+canvas.height = H;
+</script>
+```
+
+**p5.js — Portrait:**
 ```javascript
+const W = 480, H = 640;
+
 function setup() {
-  createCanvas(480, 640);
+  createCanvas(W, H);
 }
 ```
 
-**Kaplay:**
+**p5.js — Landscape:**
 ```javascript
+const W = 960, H = 540;
+
+function setup() {
+  createCanvas(W, H);
+}
+```
+
+**Kaplay — Portrait:**
+```javascript
+const W = 480, H = 640;
+
 kaplay({
-  width: 480,
-  height: 640,
+  width: W,
+  height: H,
+  background: [0, 0, 0],
+  stretch: true,
+  letterbox: true,
+});
+```
+
+**Kaplay — Landscape:**
+```javascript
+const W = 960, H = 540;
+
+kaplay({
+  width: W,
+  height: H,
   background: [0, 0, 0],
   stretch: true,
   letterbox: true,

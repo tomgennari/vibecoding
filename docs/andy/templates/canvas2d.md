@@ -23,6 +23,8 @@ Este es el esqueleto que Andy usa para juegos Canvas 2D. Andy lo adapta según e
 // === CONFIGURACIÓN ===
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
+// Portrait: const W = 480, H = 640  |  Landscape: const W = 960, H = 540
+// Elegí según la tabla de orientación en quality-rules.md
 const W = 480, H = 640;
 canvas.width = W;
 canvas.height = H;
@@ -139,7 +141,9 @@ requestAnimationFrame(gameLoop);
 
 ## Notas para Andy
 
-- El canvas siempre es 480x640 (portrait) o 640x480 (landscape)
+- Resolución fija: **480×640 (portrait)** o **960×540 (landscape)** según género/tipo — ver tabla en `quality-rules.md`. No alternar sin criterio; el plataformer va landscape, el Tetris portrait, etc.
+- **Nunca** pongas `width`/`height` en la tag `<canvas>` — solo `canvas.width` / `canvas.height` en JS (el parser da prioridad a la tag y puede contradecir el `const W, H`).
+- No implementes escalado responsivo dentro del juego; el contenedor usa `object-fit: contain`.
 - `image-rendering: pixelated` en CSS hace que los emojis y formas se vean nítidos
 - El game loop usa `requestAnimationFrame` — nunca `setInterval`
 - `update(dt)` recibe delta time en segundos — **TODO** movimiento debe multiplicar por `dt`
