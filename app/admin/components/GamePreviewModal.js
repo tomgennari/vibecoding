@@ -6,8 +6,10 @@ import { supabase } from '@/utils/supabase/client.js';
 import { ADMIN_THEME } from '../constants.js';
 import { prepareGameHtml } from '@/lib/game-security.js';
 import { scanGameHtml } from '@/lib/game-scan.js';
+import { getGameDimensions } from '@/lib/game-dimensions.js';
 
 const MAX_FILE_BYTES = 500 * 1024;
+const PREVIEW_DIMS_FALLBACK = { width: 480, height: 640 };
 
 export default function GamePreviewModal({
   game,
@@ -207,6 +209,28 @@ export default function GamePreviewModal({
       setSaving(false);
     }
   }
+
+  const previewStageDims = useMemo(() => {
+    const gw = game?.game_width;
+    const gh = game?.game_height;
+    if (gw != null && gh != null) {
+      const w = Number(gw);
+      const h = Number(gh);
+      if (Number.isFinite(w) && Number.isFinite(h) && w >= 1 && h >= 1) {
+        return {
+          width: Math.max(1, Math.min(8192, Math.floor(w))),
+          height: Math.max(1, Math.min(8192, Math.floor(h))),
+        };
+      }
+    }
+    if (editedHtml != null && typeof editedHtml === 'string') {
+      return getGameDimensions(editedHtml, {
+        fallback: PREVIEW_DIMS_FALLBACK,
+        minDimension: 300,
+      });
+    }
+    return PREVIEW_DIMS_FALLBACK;
+  }, [game?.game_width, game?.game_height, editedHtml]);
 
   if (!game) return null;
 
@@ -437,31 +461,44 @@ export default function GamePreviewModal({
         <div
           className="relative w-full rounded-lg overflow-hidden border flex-shrink-0 mb-3"
           style={{
-            minHeight: verCodigo && editedHtml ? 420 : undefined,
-            aspectRatio: verCodigo ? undefined : '480 / 640',
+            minHeight: verCodigo && editedHtml ? 420 : 280,
             borderColor: ADMIN_THEME.border,
             background: ADMIN_THEME.bg,
           }}
         >
           {loading && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 min-h-[200px]">
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 min-h-[200px] z-10" style={{ background: ADMIN_THEME.bg }}>
               <Loader2 size={28} className="animate-spin" style={{ color: ADMIN_THEME.accent }} />
               <p className="text-sm" style={{ color: ADMIN_THEME.textMuted }}>Cargando juego…</p>
             </div>
           )}
           {loadError && (
-            <div className="absolute inset-0 flex items-center justify-center min-h-[200px]">
+            <div className="absolute inset-0 flex items-center justify-center min-h-[200px] z-10">
               <p className="text-sm" style={{ color: '#ef4444' }}>Error al cargar el juego</p>
             </div>
           )}
           {editedHtml != null && !verCodigo && (
-            <iframe
-              srcDoc={prepareGameHtml(editedHtml)}
-              sandbox="allow-scripts allow-same-origin"
-              title={game.title || 'Vista previa del juego'}
-              className="absolute inset-0 w-full h-full"
-              style={{ border: 'none' }}
-            />
+            <div
+              className="w-full flex items-center justify-center overflow-hidden bg-black [container-type:size]"
+              style={{ height: 'min(52vh, 560px)', minHeight: 280 }}
+            >
+              <div
+                className="relative overflow-hidden"
+                style={{
+                  aspectRatio: `${previewStageDims.width} / ${previewStageDims.height}`,
+                  width: `min(100cqw, calc(100cqh * ${previewStageDims.width} / ${previewStageDims.height}))`,
+                  height: `min(100cqh, calc(100cqw * ${previewStageDims.height} / ${previewStageDims.width}))`,
+                }}
+              >
+                <iframe
+                  srcDoc={prepareGameHtml(editedHtml)}
+                  sandbox="allow-scripts allow-same-origin"
+                  title={game.title || 'Vista previa del juego'}
+                  className="absolute inset-0 w-full h-full border-0"
+                  style={{ objectFit: 'contain' }}
+                />
+              </div>
+            </div>
           )}
           {editedHtml != null && verCodigo && (
             <textarea

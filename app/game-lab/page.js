@@ -7,6 +7,7 @@ import { supabase } from '@/utils/supabase/client.js';
 import { useDashboardTheme } from '@/lib/use-dashboard-theme.js';
 import { prepareGameHtml } from '@/lib/game-security.js';
 import { useUser } from '@/lib/user-context.js';
+import { getGameDimensions } from '@/lib/game-dimensions.js';
 import { DashboardNavbar } from '@/components/dashboard-navbar.js';
 import { MobileBottomNav } from '@/components/mobile-bottom-nav.js';
 import ReactMarkdown from 'react-markdown';
@@ -200,61 +201,8 @@ function detectFramework(html) {
   return 'canvas2d';
 }
 
-const PREVIEW_DEFAULT_W = 480;
-const PREVIEW_DEFAULT_H = 640;
-
-/** Entre 1 y 8192 px; null si inválido */
-function clampIntrinsicDim(n) {
-  if (!Number.isFinite(n) || n < 1) return null;
-  return Math.min(8192, Math.floor(n));
-}
-
-/**
- * Tamaño lógico del juego para el aspect-ratio del preview (Canvas/Kaplay/p5 típicos).
- * Fallback portrait Andy 480×640.
- */
-function detectGameIntrinsicSize(html) {
-  const fallback = { w: PREVIEW_DEFAULT_W, h: PREVIEW_DEFAULT_H };
-  if (!html || typeof html !== 'string') return fallback;
-
-  let m = html.match(/<canvas[^>]*\bwidth\s*=\s*["']?(\d+)["']?[^>]*\bheight\s*=\s*["']?(\d+)["']?/i);
-  if (!m) {
-    const m2 = html.match(/<canvas[^>]*\bheight\s*=\s*["']?(\d+)["']?[^>]*\bwidth\s*=\s*["']?(\d+)["']?/i);
-    if (m2) m = [m2[0], m2[2], m2[1]];
-  }
-  if (m) {
-    const w = clampIntrinsicDim(Number(m[1]));
-    const h = clampIntrinsicDim(Number(m[2]));
-    if (w && h) return { w, h };
-  }
-
-  let km = html.match(/kaplay\s*\(\s*\{[\s\S]*?\bwidth\s*:\s*(\d+)[\s\S]*?\bheight\s*:\s*(\d+)/i);
-  if (!km) {
-    km = html.match(/kaplay\s*\(\s*\{[\s\S]*?\bheight\s*:\s*(\d+)[\s\S]*?\bwidth\s*:\s*(\d+)/i);
-    if (km) km = [km[0], km[2], km[1]];
-  }
-  if (km) {
-    const w = clampIntrinsicDim(Number(km[1]));
-    const h = clampIntrinsicDim(Number(km[2]));
-    if (w && h) return { w, h };
-  }
-
-  const cc = html.match(/createCanvas\s*\(\s*(\d+)\s*,\s*(\d+)\s*\)/);
-  if (cc) {
-    const w = clampIntrinsicDim(Number(cc[1]));
-    const h = clampIntrinsicDim(Number(cc[2]));
-    if (w && h) return { w, h };
-  }
-
-  const wh = html.match(/const\s+W\s*=\s*(\d+)\s*,\s*H\s*=\s*(\d+)\s*;/);
-  if (wh) {
-    const w = clampIntrinsicDim(Number(wh[1]));
-    const h = clampIntrinsicDim(Number(wh[2]));
-    if (w && h) return { w, h };
-  }
-
-  return fallback;
-}
+/** Fallback portrait Andy — misma base que moderación / templates. */
+const PREVIEW_FALLBACK_DIMS = { width: 480, height: 640 };
 
 /**
  * Valida el HTML de un juego antes de cargarlo en el iframe.
@@ -341,7 +289,10 @@ export default function GameLabPage() {
 
   // 6 ideas al azar para la columna desktop; en mobile se usa el mismo set para el carrusel
   const inspirationCards = useMemo(() => pickRandom(IDEAS_JUEGOS, 6), []);
-  const previewIntrinsicSize = useMemo(() => detectGameIntrinsicSize(currentHtml), [currentHtml]);
+  const previewIntrinsicSize = useMemo(
+    () => getGameDimensions(currentHtml, { fallback: PREVIEW_FALLBACK_DIMS, minDimension: 300 }),
+    [currentHtml],
+  );
 
   const isDark = theme === 'dark';
   const bg = isDark ? '#0a0a0f' : '#ffffff';
@@ -1617,9 +1568,9 @@ export default function GameLabPage() {
                     <div
                       className="relative overflow-hidden"
                       style={{
-                        aspectRatio: `${previewIntrinsicSize.w} / ${previewIntrinsicSize.h}`,
-                        width: `min(100cqw, calc(100cqh * ${previewIntrinsicSize.w} / ${previewIntrinsicSize.h}))`,
-                        height: `min(100cqh, calc(100cqw * ${previewIntrinsicSize.h} / ${previewIntrinsicSize.w}))`,
+                        aspectRatio: `${previewIntrinsicSize.width} / ${previewIntrinsicSize.height}`,
+                        width: `min(100cqw, calc(100cqh * ${previewIntrinsicSize.width} / ${previewIntrinsicSize.height}))`,
+                        height: `min(100cqh, calc(100cqw * ${previewIntrinsicSize.height} / ${previewIntrinsicSize.width}))`,
                         touchAction: 'manipulation',
                       }}
                     >
