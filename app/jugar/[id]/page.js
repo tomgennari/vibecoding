@@ -44,6 +44,7 @@ export default function JugarPage() {
 
   const [gameHtml, setGameHtml] = useState(null);
   const [needsUnlock, setNeedsUnlock] = useState(false);
+  /** Solo UI del botón (expandir/contraer); el layout del iframe usa container queries en el ref. */
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [highScores, setHighScores] = useState([]);
   const [showHighScores, setShowHighScores] = useState(false);
@@ -296,6 +297,9 @@ export default function JugarPage() {
 
   const width = game?.game_width ?? DEFAULT_WIDTH;
   const height = game?.game_height ?? DEFAULT_HEIGHT;
+  /** Tamaño lógico para aspect-ratio del stage (clamped como en otros visores). */
+  const playW = Math.max(1, Math.min(8192, Number(width) || DEFAULT_WIDTH));
+  const playH = Math.max(1, Math.min(8192, Number(height) || DEFAULT_HEIGHT));
 
   const shareUrl = `${BASE_URL}/jugar/${id}`;
   const shareText = `Jugá ${game?.title || 'este juego'} en Campus San Andrés: ${shareUrl}`;
@@ -384,8 +388,9 @@ export default function JugarPage() {
         onClick={toggleFullscreen}
         className="hidden lg:inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold border transition-colors"
         style={{ borderColor: border, color: textMuted }}
+        aria-label={isFullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}
       >
-        ⛶ Expandir
+        {isFullscreen ? '⛶ Contraer' : '⛶ Expandir'}
       </button>
       <button
         type="button"
@@ -520,24 +525,25 @@ export default function JugarPage() {
             <div className="flex-1 flex items-center justify-center w-full p-2 lg:p-4 min-h-0">
               <div
                 ref={gameContainerRef}
-                className="rounded-xl overflow-hidden border-2 border-[#2a2a3a] shadow-xl fullscreen:border-0 fullscreen:rounded-none flex items-center justify-center max-w-full max-h-full"
-                style={{ background: '#000', width: 'min(100%, 100vw - 1rem)', height: 'auto' }}
+                className="[container-type:size] rounded-xl overflow-hidden border-2 border-[#2a2a3a] shadow-xl fullscreen:border-0 fullscreen:rounded-none flex items-center justify-center w-full h-full min-h-0 max-w-full max-h-full bg-black"
               >
                 {!needsUnlock && gameHtml && (
-                  <iframe
-                    srcDoc={gameHtml}
-                    title={game?.title || 'Juego'}
-                    sandbox="allow-scripts allow-same-origin"
-                    width={width}
-                    height={height}
-                    className="block border-0 bg-black max-w-full"
+                  <div
+                    className="relative overflow-hidden"
                     style={{
-                      maxWidth: '100%',
-                      width: isFullscreen ? '100vw' : width,
-                      height: isFullscreen ? '100vh' : height,
-                      objectFit: 'contain',
+                      aspectRatio: `${playW} / ${playH}`,
+                      width: `min(100cqw, calc(100cqh * ${playW} / ${playH}))`,
+                      height: `min(100cqh, calc(100cqw * ${playH} / ${playW}))`,
                     }}
-                  />
+                  >
+                    <iframe
+                      srcDoc={gameHtml}
+                      title={game?.title || 'Juego'}
+                      sandbox="allow-scripts allow-same-origin"
+                      className="absolute inset-0 w-full h-full border-0 bg-black"
+                      style={{ objectFit: 'contain' }}
+                    />
+                  </div>
                 )}
               </div>
             </div>
