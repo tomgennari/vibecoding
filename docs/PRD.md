@@ -129,12 +129,14 @@ Los usuarios crean juegos con ayuda de la IA dentro de la plataforma y por cuent
 - Todos los demás requieren compra/desbloqueo
 - Los juegos desbloqueados quedan disponibles permanentemente para ese usuario
 - Todos se ejecutan en iframe sandboxeado
+- Orientación según tipo de juego (regla determinista en quality-rules.md): PORTRAIT 480x640 para juegos de acción vertical (Tetris, shooters verticales, Flappy Bird, quiz, puzzles cuadrados); LANDSCAPE 960x540 para juegos de acción horizontal (plataformers, carreras, side-scrollers) y juegos cuadrados/indiferentes. Andy clasifica el juego y elige la orientación; nunca pregunta al alumno si es para celular o computadora. El escalado lo maneja el contenedor del iframe.
+- ✅ Fullscreen en PC: botón "Expandir" abre un overlay fixed inset-0 con estado React (no usa la Fullscreen API del browser, que fallaba sin feedback)
 
 **Subida de juegos (alumnos) — ✅ Implementado:**
 - Página `/juegos/subir` accesible desde el navbar y el modal "Crea tu juego"
 - Formulario: título, descripción (opcional), orientación, archivo .html o .zip (máximo 10MB)
 - House detectada automáticamente del perfil del alumno — no se pide manualmente
-- Dimensiones del juego detectadas automáticamente del HTML si es posible
+- Dimensiones del juego detectadas automáticamente del HTML vía lib/game-dimensions.js (detecta canvas, createCanvas de p5, kaplay con variables o literales, const W/H; devuelve null si el juego es responsive/DOM). Las dimensiones se guardan en game_width/game_height para metadata; el sizing visual del iframe NO depende de ellas.
 - Archivo subido al bucket `games` en Supabase Storage
 - Estado inicial: `pending` → flujo de moderación existente del admin
 - El alumno ve confirmación post-envío y puede ver el estado en su perfil
@@ -598,6 +600,7 @@ Los juegos HTML corren dentro de iframes sandboxed. La seguridad se implementa e
 - `sandbox="allow-scripts allow-same-origin"` en todos los iframes de juegos
 - `allow-same-origin` necesario para touch events en mobile
 - El sandbox aísla el juego: no puede acceder al DOM de la app, cookies, ni hacer requests autenticados
+- Sizing de iframes de juego: el iframe llena su contenedor (w-full h-full flex-1) y el HTML del juego se escala/centra internamente (los templates de Andy tienen canvas con object-fit:contain). Mismo patrón en /perfil, /jugar, game-lab y el modal de admin. NO se calcula aspect-ratio desde React — eso causaba colapsos de layout.
 
 **Capa 2 — CSP inyectado en srcdoc (`lib/game-security.js`):**
 - `prepareGameHtml(html)` inyecta un `<meta>` Content Security Policy + monitor de seguridad + frame cap en el `<head>` de cada juego
@@ -743,6 +746,10 @@ Los juegos HTML corren dentro de iframes sandboxed. La seguridad se implementa e
 
 #### Estado actual de la Fase 2.5 (Mar 2026)
 
+- ✅ Orientación de juegos por tipo (480x640 portrait / 960x540 landscape) decidida por Andy según género del juego
+- ✅ Detección unificada de dimensiones en lib/game-dimensions.js (reemplaza 3 parsers duplicados); solo para metadata DB, no para sizing visual
+- ✅ Sizing de iframes con patrón /perfil (iframe llena contenedor, juego se escala adentro) en /jugar, game-lab y modal de admin — reemplaza enfoque de aspect-ratio que colapsaba el layout
+- ✅ Botón Expandir de /jugar migrado a overlay con estado React (Fullscreen API fallaba)
 - ✅ Delta time obligatorio: quality-rules y templates de Canvas 2D, p5.js y Kaplay actualizados para movimiento frame-independent
 - ✅ Frame cap ~60fps + seguridad: `lib/game-security.js` → `prepareGameHtml()` inyecta CSP restrictivo, monitor de seguridad y throttle de requestAnimationFrame en todos los iframes. `lib/game-frame-cap.js` solo exporta constantes. `lib/game-scan.js` provee scan estático con alertas amigables para el admin.
 
