@@ -8,8 +8,6 @@ const STORAGE_KEY = 'disclaimer_seen';
 const LIST_ITEMS = [
   'Este sitio NO está indexado en Google ni en ningún buscador',
   'NO existen perfiles de redes sociales asociados a este proyecto',
-  'NO se ha utilizado el logo oficial del SASS sin autorización',
-  'NO se realizan transacciones económicas reales',
   'El acceso es exclusivamente para fines de evaluación',
 ];
 
