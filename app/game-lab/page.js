@@ -7,6 +7,7 @@ import { supabase } from '@/utils/supabase/client.js';
 import { useDashboardTheme } from '@/lib/use-dashboard-theme.js';
 import { prepareGameHtml } from '@/lib/game-security.js';
 import { useUser } from '@/lib/user-context.js';
+import { embedGameIframeStyle } from '@/lib/embed-game-iframe-style.js';
 import { getGameDimensions } from '@/lib/game-dimensions.js';
 import { DashboardNavbar } from '@/components/dashboard-navbar.js';
 import { MobileBottomNav } from '@/components/mobile-bottom-nav.js';
@@ -201,9 +202,6 @@ function detectFramework(html) {
   return 'canvas2d';
 }
 
-/** Fallback portrait Andy — misma base que moderación / templates. */
-const PREVIEW_FALLBACK_DIMS = { width: 480, height: 640 };
-
 /**
  * Valida el HTML de un juego antes de cargarlo en el iframe.
  * Retorna { valid: true } o { valid: false, errors: string[] }
@@ -289,8 +287,8 @@ export default function GameLabPage() {
 
   // 6 ideas al azar para la columna desktop; en mobile se usa el mismo set para el carrusel
   const inspirationCards = useMemo(() => pickRandom(IDEAS_JUEGOS, 6), []);
-  const previewIntrinsicSize = useMemo(
-    () => getGameDimensions(currentHtml, { fallback: PREVIEW_FALLBACK_DIMS, minDimension: 300 }),
+  const iframeGameDims = useMemo(
+    () => (currentHtml ? getGameDimensions(currentHtml, { fallback: null, minDimension: 300 }) : null),
     [currentHtml],
   );
 
@@ -1564,25 +1562,15 @@ export default function GameLabPage() {
               <div className="flex-1 p-4 lg:p-6 min-h-0 flex flex-col overflow-hidden">
               <div className="flex-1 rounded-xl border overflow-hidden min-h-0 flex flex-col" style={{ borderColor: border, background: isDark ? '#0a0a0f' : '#fff' }}>
                 {currentHtml ? (
-                  <div className="flex-1 flex items-center justify-center min-h-0 w-full overflow-hidden [container-type:size]">
-                    <div
-                      className="relative overflow-hidden"
-                      style={{
-                        aspectRatio: `${previewIntrinsicSize.width} / ${previewIntrinsicSize.height}`,
-                        width: `min(100cqw, calc(100cqh * ${previewIntrinsicSize.width} / ${previewIntrinsicSize.height}))`,
-                        height: `min(100cqh, calc(100cqw * ${previewIntrinsicSize.height} / ${previewIntrinsicSize.width}))`,
-                        touchAction: 'manipulation',
-                      }}
-                    >
-                      <iframe
-                        title="Vista previa del juego generado"
-                        sandbox="allow-scripts allow-same-origin"
-                        scrolling="no"
-                        srcDoc={prepareGameHtml(currentHtml)}
-                        className={`absolute inset-0 w-full h-full border-0 transition-all duration-300 ease-out ${iframeRevealed ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-4'}`}
-                        style={{ touchAction: 'auto', objectFit: 'contain' }}
-                      />
-                    </div>
+                  <div className={`flex-1 flex min-h-0 w-full overflow-hidden ${iframeGameDims ? 'items-center justify-center' : 'items-stretch'}`}>
+                    <iframe
+                      title="Vista previa del juego generado"
+                      sandbox="allow-scripts allow-same-origin"
+                      scrolling="no"
+                      srcDoc={prepareGameHtml(currentHtml)}
+                      className={`border-0 transition-all duration-300 ease-out ${iframeRevealed ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-4'}`}
+                      style={{ touchAction: 'auto', ...embedGameIframeStyle(iframeGameDims) }}
+                    />
                   </div>
                 ) : (
                   <div
@@ -1612,14 +1600,18 @@ export default function GameLabPage() {
               ✕ Salir del juego
             </button>
           </div>
-          <div className="flex-1 min-h-0 overflow-hidden" style={{ touchAction: 'none' }} ref={iframeContainerRef}>
+          <div
+            className={`flex-1 flex min-h-0 w-full overflow-hidden ${iframeGameDims ? 'items-center justify-center' : 'items-stretch'}`}
+            style={{ touchAction: 'none' }}
+            ref={iframeContainerRef}
+          >
             <iframe
               title="Juego en pantalla completa"
               sandbox="allow-scripts allow-same-origin"
               scrolling="no"
               srcDoc={prepareGameHtml(currentHtml)}
-              className="w-full h-full border-0"
-              style={{ touchAction: 'auto' }}
+              className="border-0"
+              style={{ touchAction: 'auto', ...embedGameIframeStyle(iframeGameDims) }}
             />
           </div>
         </div>

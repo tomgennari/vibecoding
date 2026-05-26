@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -8,6 +8,8 @@ import { supabase } from '@/utils/supabase/client.js';
 import { UnlockGameModal } from '@/components/unlock-game-modal.js';
 import { getTodayArgentina } from '@/lib/dates';
 import { prepareGameHtml } from '@/lib/game-security.js';
+import { getGameDimensions } from '@/lib/game-dimensions.js';
+import { embedGameIframeStyle } from '@/lib/embed-game-iframe-style.js';
 import { HOUSES } from '@/app/admin/constants.js';
 
 const BASE_URL = typeof window !== 'undefined' && window.location.origin ? window.location.origin : 'https://sass.vibecoding.ar';
@@ -19,9 +21,6 @@ function IconShare() {
     </svg>
   );
 }
-
-const DEFAULT_WIDTH = 800;
-const DEFAULT_HEIGHT = 600;
 
 export default function JugarPage() {
   const router = useRouter();
@@ -44,7 +43,7 @@ export default function JugarPage() {
 
   const [gameHtml, setGameHtml] = useState(null);
   const [needsUnlock, setNeedsUnlock] = useState(false);
-  /** Solo UI del botón (expandir/contraer); el layout del iframe usa container queries en el ref. */
+  /** Solo UI del botón expandir/contraer. El iframe escala sin container queries ni object-fit. */
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [highScores, setHighScores] = useState([]);
   const [showHighScores, setShowHighScores] = useState(false);
@@ -295,11 +294,24 @@ export default function JugarPage() {
     };
   }, []);
 
-  const width = game?.game_width ?? DEFAULT_WIDTH;
-  const height = game?.game_height ?? DEFAULT_HEIGHT;
-  /** Tamaño lógico para aspect-ratio del stage (clamped como en otros visores). */
-  const playW = Math.max(1, Math.min(8192, Number(width) || DEFAULT_WIDTH));
-  const playH = Math.max(1, Math.min(8192, Number(height) || DEFAULT_HEIGHT));
+  const iframeDims = useMemo(() => {
+    function clampDims(a, b) {
+      const W = Math.max(1, Math.min(8192, Math.floor(a)));
+      const H = Math.max(1, Math.min(8192, Math.floor(b)));
+      return { width: W, height: H };
+    }
+    const fromHtml =
+      gameHtml != null ? getGameDimensions(gameHtml, { fallback: null, minDimension: 300 }) : null;
+    if (fromHtml) return clampDims(fromHtml.width, fromHtml.height);
+    const gw = game?.game_width;
+    const gh = game?.game_height;
+    if (gw != null && gh != null) {
+      const nw = Number(gw);
+      const nh = Number(gh);
+      if (Number.isFinite(nw) && Number.isFinite(nh) && nw >= 1 && nh >= 1) return clampDims(nw, nh);
+    }
+    return null;
+  }, [gameHtml, game?.game_width, game?.game_height]);
 
   const shareUrl = `${BASE_URL}/jugar/${id}`;
   const shareText = `Jugá ${game?.title || 'este juego'} en Campus San Andrés: ${shareUrl}`;
@@ -525,26 +537,17 @@ export default function JugarPage() {
             <div className="flex-1 flex items-center justify-center w-full p-2 lg:p-4 min-h-0">
               <div
                 ref={gameContainerRef}
-                className="[container-type:size] rounded-xl overflow-hidden border-2 border-[#2a2a3a] shadow-xl fullscreen:border-0 fullscreen:rounded-none flex items-center justify-center w-full h-full min-h-0 max-w-full max-h-full bg-black"
+                className={`rounded-xl overflow-hidden border-2 border-[#2a2a3a] shadow-xl fullscreen:border-0 fullscreen:rounded-none flex w-full h-full min-h-0 max-w-full max-h-full bg-black ${iframeDims ? 'items-center justify-center' : 'items-stretch'}`}
               >
                 {!needsUnlock && gameHtml && (
-                  <div
-                    className="relative overflow-hidden"
-                    style={{
-                      aspectRatio: `${playW} / ${playH}`,
-                      width: `min(100cqw, calc(100cqh * ${playW} / ${playH}))`,
-                      height: `min(100cqh, calc(100cqw * ${playH} / ${playW}))`,
-                    }}
-                  >
-                    <iframe
-                      srcDoc={gameHtml}
-                      title={game?.title || 'Juego'}
-                      sandbox="allow-scripts allow-same-origin"
-                      scrolling="no"
-                      className="absolute inset-0 w-full h-full border-0 bg-black"
-                      style={{ objectFit: 'contain' }}
-                    />
-                  </div>
+                  <iframe
+                    srcDoc={gameHtml}
+                    title={game?.title || 'Juego'}
+                    sandbox="allow-scripts allow-same-origin"
+                    scrolling="no"
+                    className="border-0 bg-black"
+                    style={embedGameIframeStyle(iframeDims)}
+                  />
                 )}
               </div>
             </div>

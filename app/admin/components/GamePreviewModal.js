@@ -7,10 +7,9 @@ import { ADMIN_THEME } from '../constants.js';
 import { prepareGameHtml } from '@/lib/game-security.js';
 import { scanGameHtml } from '@/lib/game-scan.js';
 import { getGameDimensions } from '@/lib/game-dimensions.js';
+import { embedGameIframeStyle } from '@/lib/embed-game-iframe-style.js';
 
 const MAX_FILE_BYTES = 500 * 1024;
-const PREVIEW_DIMS_FALLBACK = { width: 480, height: 640 };
-
 export default function GamePreviewModal({
   game,
   authorName,
@@ -211,6 +210,15 @@ export default function GamePreviewModal({
   }
 
   const previewStageDims = useMemo(() => {
+    if (editedHtml != null && typeof editedHtml === 'string') {
+      const parsed = getGameDimensions(editedHtml, { fallback: null, minDimension: 300 });
+      if (parsed) {
+        return {
+          width: Math.max(1, Math.min(8192, Math.floor(parsed.width))),
+          height: Math.max(1, Math.min(8192, Math.floor(parsed.height))),
+        };
+      }
+    }
     const gw = game?.game_width;
     const gh = game?.game_height;
     if (gw != null && gh != null) {
@@ -223,13 +231,7 @@ export default function GamePreviewModal({
         };
       }
     }
-    if (editedHtml != null && typeof editedHtml === 'string') {
-      return getGameDimensions(editedHtml, {
-        fallback: PREVIEW_DIMS_FALLBACK,
-        minDimension: 300,
-      });
-    }
-    return PREVIEW_DIMS_FALLBACK;
+    return null;
   }, [game?.game_width, game?.game_height, editedHtml]);
 
   if (!game) return null;
@@ -479,26 +481,17 @@ export default function GamePreviewModal({
           )}
           {editedHtml != null && !verCodigo && (
             <div
-              className="w-full flex items-center justify-center overflow-hidden bg-black [container-type:size]"
+              className={`w-full flex overflow-hidden bg-black ${previewStageDims ? 'items-center justify-center' : 'items-stretch'}`}
               style={{ height: 'min(52vh, 560px)', minHeight: 280 }}
             >
-              <div
-                className="relative overflow-hidden"
-                style={{
-                  aspectRatio: `${previewStageDims.width} / ${previewStageDims.height}`,
-                  width: `min(100cqw, calc(100cqh * ${previewStageDims.width} / ${previewStageDims.height}))`,
-                  height: `min(100cqh, calc(100cqw * ${previewStageDims.height} / ${previewStageDims.width}))`,
-                }}
-              >
-                <iframe
-                  srcDoc={prepareGameHtml(editedHtml)}
-                  sandbox="allow-scripts allow-same-origin"
-                  scrolling="no"
-                  title={game.title || 'Vista previa del juego'}
-                  className="absolute inset-0 w-full h-full border-0"
-                  style={{ objectFit: 'contain' }}
-                />
-              </div>
+              <iframe
+                srcDoc={prepareGameHtml(editedHtml)}
+                sandbox="allow-scripts allow-same-origin"
+                scrolling="no"
+                title={game.title || 'Vista previa del juego'}
+                className="border-0"
+                style={embedGameIframeStyle(previewStageDims)}
+              />
             </div>
           )}
           {editedHtml != null && verCodigo && (
