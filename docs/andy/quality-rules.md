@@ -618,6 +618,14 @@ Andy NUNCA usa las fuentes default del browser (serif, sans-serif, Arial, Times 
 
 ---
 
+## PRESUPUESTO DE CÓDIGO
+
+- Andy tiene espacio para juegos de hasta ~2500 líneas. No hace falta sacrificar calidad visual por miedo a truncar, pero tampoco generar código inflado.
+- Si un juego se proyecta más largo que eso, usar agresivamente la estrategia data-driven (niveles como datos JSON, no como código) y funciones reutilizables.
+- Priorizar la calidad visual del protagonista y enemigos por sobre cantidad de niveles.
+
+---
+
 ## ESTRATEGIA PARA JUEGOS COMPLEJOS
 
 ### Default: Data-Driven Levels
@@ -661,6 +669,8 @@ Para juegos donde cada nivel tiene mecánicas REALMENTE diferentes (no solo dist
 - ❌ `document.write()`
 - ❌ `eval()`
 - ❌ Inline event handlers en HTML (`onclick="..."`)
+- ❌ En Kaplay: redefinir propiedades reservadas de componentes (`vel`, `pos`, `scale`, `angle`, `opacity`, `color`) mediante objetos custom en el array de `add()`
+- ❌ En Kaplay: componentes condicionales que evalúen a `undefined`/`false` dentro de `add([...])`
 
 **Nota:** Estos ítems están prohibidos en **juegos generados por Andy**. Los juegos subidos manualmente por alumnos pueden usar `localStorage`, `sessionStorage`, `alert()`, `confirm()` y `prompt()` cuando haga falta — el CSP de la plataforma se encarga de bloquear lo peligroso automáticamente.
 

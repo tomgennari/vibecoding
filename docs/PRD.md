@@ -1,5 +1,5 @@
 # Campus San Andrés — Vibe Coding San Andrés
-## Product Requirements Document (PRD) v4.0
+## Product Requirements Document (PRD) v4.1
 
 **Fecha:** Marzo 2026  
 **Autor:** Tomás Gennari  
@@ -537,7 +537,7 @@ Estilo gaming tipo Discord + Fortnite. Donde los usuarios pasan la mayor parte d
 | IDE | Cursor Pro | USD 20/mes, Agent mode habilitado |
 | 3D (Fase 4) | Three.js / Babylon.js | NO Unity — 3D nativo web, sin descarga |
 | React Context API | CreateGameContext, UserContext | Estado global: modal "Crea tu juego" y perfil/stats del usuario |
-| Game Lab — IA | Claude Sonnet 4.6 via Anthropic API | Streaming SSE, max 16K tokens, system prompt modular en `docs/andy/` |
+| Game Lab — IA | Claude Sonnet 4.6 via Anthropic API | Streaming SSE, max 32K tokens, system prompt modular en `docs/andy/` |
 | Game Lab — Frameworks | Canvas 2D, p5.js, Kaplay, Three.js (r128) | Librerías hosteadas en Supabase Storage (`libs/` bucket) |
 | MobileBottomNav | Componente reutilizable | Barra de navegación inferior mobile, presente en todas las páginas excepto /jugar |
 | DashboardNavbar | Componente reutilizable | Navbar superior con botones: dark mode toggle, soporte (HelpCircle → /soporte), logout |
@@ -752,6 +752,7 @@ Los juegos HTML corren dentro de iframes sandboxed. La seguridad se implementa e
 - ✅ Botón Expandir de /jugar migrado a overlay con estado React (Fullscreen API fallaba)
 - ✅ Delta time obligatorio: quality-rules y templates de Canvas 2D, p5.js y Kaplay actualizados para movimiento frame-independent
 - ✅ Frame cap ~60fps + seguridad: `lib/game-security.js` → `prepareGameHtml()` inyecta CSP restrictivo, monitor de seguridad y throttle de requestAnimationFrame en todos los iframes. `lib/game-frame-cap.js` solo exporta constantes. `lib/game-scan.js` provee scan estático con alertas amigables para el admin.
+- ✅ Límite de generación de Andy subido de 16K a 32K tokens (`max_tokens` en Game Lab) para reducir truncamiento y permitir mejor calidad visual
 
 ### Fase 2.6 — Landing Page Pública ✅ Implementada
 
