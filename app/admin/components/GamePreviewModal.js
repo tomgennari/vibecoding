@@ -6,8 +6,6 @@ import { supabase } from '@/utils/supabase/client.js';
 import { ADMIN_THEME } from '../constants.js';
 import { prepareGameHtml } from '@/lib/game-security.js';
 import { scanGameHtml } from '@/lib/game-scan.js';
-import { getGameDimensions } from '@/lib/game-dimensions.js';
-import { embedGameIframeStyle } from '@/lib/embed-game-iframe-style.js';
 
 const MAX_FILE_BYTES = 500 * 1024;
 export default function GamePreviewModal({
@@ -208,31 +206,6 @@ export default function GamePreviewModal({
       setSaving(false);
     }
   }
-
-  const previewStageDims = useMemo(() => {
-    if (editedHtml != null && typeof editedHtml === 'string') {
-      const parsed = getGameDimensions(editedHtml, { fallback: null, minDimension: 300 });
-      if (parsed) {
-        return {
-          width: Math.max(1, Math.min(8192, Math.floor(parsed.width))),
-          height: Math.max(1, Math.min(8192, Math.floor(parsed.height))),
-        };
-      }
-    }
-    const gw = game?.game_width;
-    const gh = game?.game_height;
-    if (gw != null && gh != null) {
-      const w = Number(gw);
-      const h = Number(gh);
-      if (Number.isFinite(w) && Number.isFinite(h) && w >= 1 && h >= 1) {
-        return {
-          width: Math.max(1, Math.min(8192, Math.floor(w))),
-          height: Math.max(1, Math.min(8192, Math.floor(h))),
-        };
-      }
-    }
-    return null;
-  }, [game?.game_width, game?.game_height, editedHtml]);
 
   if (!game) return null;
 
@@ -461,8 +434,9 @@ export default function GamePreviewModal({
         )}
 
         <div
-          className="relative w-full rounded-lg overflow-hidden border flex-shrink-0 mb-3"
+          className="relative w-full rounded-lg overflow-hidden border flex-shrink-0 mb-3 flex flex-col min-h-0"
           style={{
+            height: 'min(52vh, 560px)',
             minHeight: verCodigo && editedHtml ? 420 : 280,
             borderColor: ADMIN_THEME.border,
             background: ADMIN_THEME.bg,
@@ -480,19 +454,13 @@ export default function GamePreviewModal({
             </div>
           )}
           {editedHtml != null && !verCodigo && (
-            <div
-              className={`w-full flex overflow-hidden bg-black ${previewStageDims ? 'items-center justify-center' : 'items-stretch'}`}
-              style={{ height: 'min(52vh, 560px)', minHeight: 280 }}
-            >
-              <iframe
-                srcDoc={prepareGameHtml(editedHtml)}
-                sandbox="allow-scripts allow-same-origin"
-                scrolling="no"
-                title={game.title || 'Vista previa del juego'}
-                className="border-0"
-                style={embedGameIframeStyle(previewStageDims)}
-              />
-            </div>
+            <iframe
+              srcDoc={prepareGameHtml(editedHtml)}
+              sandbox="allow-scripts allow-same-origin"
+              title={game.title || 'Vista previa del juego'}
+              className="w-full flex-1 min-h-0 border-0 bg-black"
+              style={{ touchAction: 'auto' }}
+            />
           )}
           {editedHtml != null && verCodigo && (
             <textarea

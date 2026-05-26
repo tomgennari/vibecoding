@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -8,8 +8,6 @@ import { supabase } from '@/utils/supabase/client.js';
 import { UnlockGameModal } from '@/components/unlock-game-modal.js';
 import { getTodayArgentina } from '@/lib/dates';
 import { prepareGameHtml } from '@/lib/game-security.js';
-import { getGameDimensions } from '@/lib/game-dimensions.js';
-import { embedGameIframeStyle } from '@/lib/embed-game-iframe-style.js';
 import { HOUSES } from '@/app/admin/constants.js';
 
 const BASE_URL = typeof window !== 'undefined' && window.location.origin ? window.location.origin : 'https://sass.vibecoding.ar';
@@ -43,8 +41,8 @@ export default function JugarPage() {
 
   const [gameHtml, setGameHtml] = useState(null);
   const [needsUnlock, setNeedsUnlock] = useState(false);
-  /** Solo UI del botón expandir/contraer. El iframe escala sin container queries ni object-fit. */
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  /** Overlay tipo /perfil — sin Fullscreen API del navegador. */
+  const [gameExpandedOverlay, setGameExpandedOverlay] = useState(false);
   const [highScores, setHighScores] = useState([]);
   const [showHighScores, setShowHighScores] = useState(false);
   const [unlockCredits, setUnlockCredits] = useState(0);
@@ -56,14 +54,6 @@ export default function JugarPage() {
     }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  useEffect(() => {
-    function onFsChange() {
-      setIsFullscreen(!!document.fullscreenElement);
-    }
-    document.addEventListener('fullscreenchange', onFsChange);
-    return () => document.removeEventListener('fullscreenchange', onFsChange);
   }, []);
 
   useEffect(() => {
@@ -294,25 +284,6 @@ export default function JugarPage() {
     };
   }, []);
 
-  const iframeDims = useMemo(() => {
-    function clampDims(a, b) {
-      const W = Math.max(1, Math.min(8192, Math.floor(a)));
-      const H = Math.max(1, Math.min(8192, Math.floor(b)));
-      return { width: W, height: H };
-    }
-    const fromHtml =
-      gameHtml != null ? getGameDimensions(gameHtml, { fallback: null, minDimension: 300 }) : null;
-    if (fromHtml) return clampDims(fromHtml.width, fromHtml.height);
-    const gw = game?.game_width;
-    const gh = game?.game_height;
-    if (gw != null && gh != null) {
-      const nw = Number(gw);
-      const nh = Number(gh);
-      if (Number.isFinite(nw) && Number.isFinite(nh) && nw >= 1 && nh >= 1) return clampDims(nw, nh);
-    }
-    return null;
-  }, [gameHtml, game?.game_width, game?.game_height]);
-
   const shareUrl = `${BASE_URL}/jugar/${id}`;
   const shareText = `Jugá ${game?.title || 'este juego'} en Campus San Andrés: ${shareUrl}`;
   const border = '#2a2a3a';
@@ -364,14 +335,8 @@ export default function JugarPage() {
     }
   }
 
-  function toggleFullscreen() {
-    const el = gameContainerRef.current;
-    if (!el) return;
-    if (document.fullscreenElement) {
-      document.exitFullscreen();
-    } else {
-      el.requestFullscreen().catch(() => {});
-    }
+  function toggleExpandedGameView() {
+    setGameExpandedOverlay((v) => !v);
   }
 
   if (loading) {
@@ -397,12 +362,12 @@ export default function JugarPage() {
     <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-4 px-2 py-3">
       <button
         type="button"
-        onClick={toggleFullscreen}
+        onClick={toggleExpandedGameView}
         className="hidden lg:inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold border transition-colors"
         style={{ borderColor: border, color: textMuted }}
-        aria-label={isFullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}
+        aria-label={gameExpandedOverlay ? 'Salir del juego expandido' : 'Expandir el juego a pantalla completa'}
       >
-        {isFullscreen ? '⛶ Contraer' : '⛶ Expandir'}
+        {gameExpandedOverlay ? '⛶ Contraer' : '⛶ Expandir'}
       </button>
       <button
         type="button"
@@ -534,19 +499,19 @@ export default function JugarPage() {
         {/* Juego */}
         {!needsUnlock && (
           <>
-            <div className="flex-1 flex items-center justify-center w-full p-2 lg:p-4 min-h-0">
+            {/* flex-1 + min-h-0: alto concreto del main menos barra inferior (mobile tiene pb en main) */}
+            <div className="flex-1 flex flex-col min-h-0 w-full p-2 lg:p-4 overflow-hidden">
               <div
                 ref={gameContainerRef}
-                className={`rounded-xl overflow-hidden border-2 border-[#2a2a3a] shadow-xl fullscreen:border-0 fullscreen:rounded-none flex w-full h-full min-h-0 max-w-full max-h-full bg-black ${iframeDims ? 'items-center justify-center' : 'items-stretch'}`}
+                className="flex-1 flex flex-col min-h-0 w-full rounded-xl overflow-hidden border-2 border-[#2a2a3a] shadow-xl fullscreen:border-0 fullscreen:rounded-none bg-black max-w-full"
               >
-                {!needsUnlock && gameHtml && (
+                {gameHtml && (
                   <iframe
                     srcDoc={gameHtml}
                     title={game?.title || 'Juego'}
                     sandbox="allow-scripts allow-same-origin"
-                    scrolling="no"
-                    className="border-0 bg-black"
-                    style={embedGameIframeStyle(iframeDims)}
+                    className="w-full flex-1 min-h-0 border-0 bg-black"
+                    style={{ touchAction: 'auto' }}
                   />
                 )}
               </div>
@@ -558,6 +523,30 @@ export default function JugarPage() {
           </>
         )}
       </main>
+
+      {gameExpandedOverlay && gameHtml && (
+        <div className="fixed inset-0 z-[60] flex flex-col" style={{ background: '#000' }}>
+          <div className="shrink-0 flex items-center justify-between px-4 py-2" style={{ background: 'rgba(0,0,0,0.9)' }}>
+            <span className="text-white text-sm font-bold truncate mr-4">🎮 {game?.title || 'Juego'}</span>
+            <button
+              type="button"
+              onClick={() => setGameExpandedOverlay(false)}
+              className="text-red-400 text-sm font-bold px-3 py-1 rounded-lg border border-red-400/50 hover:bg-red-400/10 shrink-0"
+            >
+              ✕ Contraer
+            </button>
+          </div>
+          <div className="flex-1 min-h-0 overflow-hidden flex flex-col" style={{ touchAction: 'none' }}>
+            <iframe
+              srcDoc={gameHtml}
+              title={game?.title || 'Juego'}
+              sandbox="allow-scripts allow-same-origin"
+              className="w-full h-full border-0 flex-1 min-h-0 bg-black"
+              style={{ touchAction: 'auto' }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

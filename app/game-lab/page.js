@@ -7,8 +7,6 @@ import { supabase } from '@/utils/supabase/client.js';
 import { useDashboardTheme } from '@/lib/use-dashboard-theme.js';
 import { prepareGameHtml } from '@/lib/game-security.js';
 import { useUser } from '@/lib/user-context.js';
-import { embedGameIframeStyle } from '@/lib/embed-game-iframe-style.js';
-import { getGameDimensions } from '@/lib/game-dimensions.js';
 import { DashboardNavbar } from '@/components/dashboard-navbar.js';
 import { MobileBottomNav } from '@/components/mobile-bottom-nav.js';
 import ReactMarkdown from 'react-markdown';
@@ -287,11 +285,6 @@ export default function GameLabPage() {
 
   // 6 ideas al azar para la columna desktop; en mobile se usa el mismo set para el carrusel
   const inspirationCards = useMemo(() => pickRandom(IDEAS_JUEGOS, 6), []);
-  const iframeGameDims = useMemo(
-    () => (currentHtml ? getGameDimensions(currentHtml, { fallback: null, minDimension: 300 }) : null),
-    [currentHtml],
-  );
-
   const isDark = theme === 'dark';
   const bg = isDark ? '#0a0a0f' : '#ffffff';
   const cardBg = isDark ? '#13131a' : '#f8fafc';
@@ -1562,14 +1555,13 @@ export default function GameLabPage() {
               <div className="flex-1 p-4 lg:p-6 min-h-0 flex flex-col overflow-hidden">
               <div className="flex-1 rounded-xl border overflow-hidden min-h-0 flex flex-col" style={{ borderColor: border, background: isDark ? '#0a0a0f' : '#fff' }}>
                 {currentHtml ? (
-                  <div className={`flex-1 flex min-h-0 w-full overflow-hidden ${iframeGameDims ? 'items-center justify-center' : 'items-stretch'}`}>
+                  <div className="flex-1 flex flex-col min-h-0 w-full overflow-hidden">
                     <iframe
                       title="Vista previa del juego generado"
                       sandbox="allow-scripts allow-same-origin"
-                      scrolling="no"
                       srcDoc={prepareGameHtml(currentHtml)}
-                      className={`border-0 transition-all duration-300 ease-out ${iframeRevealed ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-4'}`}
-                      style={{ touchAction: 'auto', ...embedGameIframeStyle(iframeGameDims) }}
+                      className={`w-full flex-1 min-h-0 border-0 transition-all duration-300 ease-out ${iframeRevealed ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-4'}`}
+                      style={{ touchAction: 'auto' }}
                     />
                   </div>
                 ) : (
@@ -1601,17 +1593,16 @@ export default function GameLabPage() {
             </button>
           </div>
           <div
-            className={`flex-1 flex min-h-0 w-full overflow-hidden ${iframeGameDims ? 'items-center justify-center' : 'items-stretch'}`}
+            className="flex-1 flex flex-col min-h-0 w-full overflow-hidden"
             style={{ touchAction: 'none' }}
             ref={iframeContainerRef}
           >
             <iframe
               title="Juego en pantalla completa"
               sandbox="allow-scripts allow-same-origin"
-              scrolling="no"
               srcDoc={prepareGameHtml(currentHtml)}
-              className="border-0"
-              style={{ touchAction: 'auto', ...embedGameIframeStyle(iframeGameDims) }}
+              className="w-full h-full border-0 flex-1 min-h-0 bg-black"
+              style={{ touchAction: 'auto' }}
             />
           </div>
         </div>
