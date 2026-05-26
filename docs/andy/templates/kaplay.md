@@ -148,6 +148,18 @@ go("menu");
 </html>
 ```
 
+## ERRORES COMUNES A EVITAR
+
+- NUNCA agregar una propiedad custom `vel` a un objeto que ya tiene `body()`. El componente `body()` ya provee `vel` (la velocidad). Para mover un objeto con body, usar `jugador.vel` directamente o los métodos `move()`/`jump()`, nunca redefinir `vel` en el array de componentes.
+- NUNCA poner componentes condicionales que puedan evaluar a `undefined`/`false` dentro del array de `add([...])`. En vez de `add([sprite, esBoss && health(5)])`, construir el array primero y hacer push condicional:
+  ```javascript
+  const comps = [text("👾"), pos(x,y), area(), "enemigo"];
+  if (esBoss) comps.push(health(5));
+  add(comps);
+  ```
+- NUNCA agregar dos veces el mismo componente al mismo objeto (ej: dos `pos()`, dos `body()`).
+- Si un objeto necesita guardar estado custom, usar un objeto plano al final del array con propiedades que NO colisionen con componentes de Kaplay (`vel`, `pos`, `scale`, `angle`, `opacity`, `color` están reservadas). Usar nombres propios como `velocidadCustom`, `estado`, `vidaJugador`.
+
 ## Notas para Andy
 
 - Resolución fija **480×640** o **960×540** según género (tabla en `quality-rules.md`); `kaplay({ width: W, height: H })` siempre con `const W, H`. Sin canvas tag manual ni escalado responsivo dentro del juego — el iframe escala.
