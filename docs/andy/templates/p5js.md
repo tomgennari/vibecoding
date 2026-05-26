@@ -39,7 +39,30 @@ const NIVELES = [
 ];
 
 // === ENTIDADES ===
-// Definir jugador, enemigos, items, etc.
+const jugador = { x: W / 2, y: H - 120, color: '#4A90E2', tam: 40 };
+const items = [{ x: W / 2, y: 200 }];
+
+function dibujarPersonaje(x, y, col, tam) {
+  fill(col);
+  rectMode(CENTER);
+  rect(x, y, tam * 0.6, tam * 0.5, 6);
+  circle(x, y - tam * 0.35, tam * 0.6);
+  fill(255);
+  circle(x - tam * 0.12, y - tam * 0.4, tam * 0.2);
+  circle(x + tam * 0.12, y - tam * 0.4, tam * 0.2);
+  fill(0);
+  circle(x - tam * 0.1, y - tam * 0.4, tam * 0.1);
+  circle(x + tam * 0.1, y - tam * 0.4, tam * 0.1);
+  rectMode(CORNER);
+}
+
+function dibujarEnemigo(x, y, tam) {
+  fill(192, 57, 43);
+  rectMode(CENTER);
+  rect(x, y, tam * 0.6, tam * 0.5, 4);
+  circle(x, y - tam * 0.35, tam * 0.55);
+  rectMode(CORNER);
+}
 
 function setup() {
   createCanvas(W, H);
@@ -96,8 +119,11 @@ function update() {
 }
 
 function dibujarJuego() {
-  // Dibujar entidades...
-  // Para emojis: textSize(48); text('🚀', x, y);
+  // REGLA DE ORO: protagonista y enemigos con formas, no emojis
+  dibujarPersonaje(jugador.x, jugador.y, jugador.color, jugador.tam);
+  // dibujarEnemigo(enemigo.x, enemigo.y, 36);
+  textSize(28);
+  items.forEach(item => text('\u2B50', item.x, item.y));
 }
 
 // === CONTROLES ===
@@ -140,7 +166,7 @@ function gameOverFn() {
 - **TODO** movimiento y cambios graduales deben multiplicar por `dt`: `jugador.x += velocidad * dt;`
 - Para movimiento continuo: usar `keyIsDown(LEFT_ARROW)` dentro de `draw()` o `update()` con velocidades × `dt`
 - Para acciones discretas (saltar, disparar): usar `keyPressed()`
-- Emojis: `textSize(48); text('🚀', x, y);` — funcionan perfecto
+- **REGLA DE ORO:** protagonista y enemigos SIEMPRE con formas (`rect()`, `circle()`, funciones `dibujarPersonaje()` / `dibujarEnemigo()`). Emojis solo para \u00edtems coleccionables: `textSize(28); text('\u2B50', x, y);`
 - Formas: `rect()`, `ellipse()`, `triangle()`, `line()` con `fill()` y `stroke()`
 - Colores: `fill(255, 100, 50)` o `fill('#FF6432')`
 - Para partículas y efectos: usar arrays de objetos con posición, velocidad, vida

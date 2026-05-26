@@ -66,14 +66,25 @@ scene("juego", ({ nivel: nivelActual, score: scoreActual }) => {
   // Gravedad (para plataformers)
   setGravity(1200);
 
-  // Jugador
+  // Jugador — formas compuestas (REGLA DE ORO: nunca emoji)
   const jugador = add([
-    text("🧑", { size: 40 }),
+    rect(28, 36, { radius: 6 }),
     pos(width() / 2, height() - 100),
-    area({ shape: new Rect(vec2(0), 36, 36) }),
+    color(74, 144, 226),
+    area(),
     body(),
     anchor("center"),
     "jugador",
+  ]);
+  jugador.add([circle(10), pos(0, -22), color(255, 220, 180), anchor("center")]);
+
+  // \u00cdtem coleccionable — emoji permitido solo para \u00edtems secundarios
+  add([
+    text("\u2B50", { size: 24 }),
+    pos(width() / 2, 200),
+    area({ shape: new Rect(vec2(0), 24, 24) }),
+    anchor("center"),
+    "item",
   ]);
 
   // Plataforma base
@@ -153,7 +164,7 @@ go("menu");
 - NUNCA agregar una propiedad custom `vel` a un objeto que ya tiene `body()`. El componente `body()` ya provee `vel` (la velocidad). Para mover un objeto con body, usar `jugador.vel` directamente o los métodos `move()`/`jump()`, nunca redefinir `vel` en el array de componentes.
 - NUNCA poner componentes condicionales que puedan evaluar a `undefined`/`false` dentro del array de `add([...])`. En vez de `add([sprite, esBoss && health(5)])`, construir el array primero y hacer push condicional:
   ```javascript
-  const comps = [text("👾"), pos(x,y), area(), "enemigo"];
+  const comps = [rect(28, 28, { radius: 4 }), pos(x, y), area(), color(192, 57, 43), "enemigo"];
   if (esBoss) comps.push(health(5));
   add(comps);
   ```
@@ -168,20 +179,29 @@ go("menu");
 
 **Crear game objects:**
 ```javascript
-const cosa = add([
-  text("🚀", { size: 48 }),  // o rect(40, 40) para un rectángulo
-  pos(100, 200),               // posición
-  area(),                      // colisionador
-  body(),                      // cuerpo físico (afectado por gravedad)
-  anchor("center"),            // punto de anclaje
-  color(255, 0, 0),           // color (solo para rect/circle, no para text)
-  "miTag",                     // tag para identificar
+// Protagonista — formas compuestas (REGLA DE ORO: nunca emoji)
+const jugador = add([
+  rect(28, 36, { radius: 6 }),
+  pos(100, 200),
+  color(74, 144, 226),
+  area(),
+  body(),
+  anchor("center"),
+  "jugador",
+]);
+
+// \u00cdtem coleccionable — emoji solo para \u00edtems inocuos
+add([
+  text("\u2B50", { size: 24 }),
+  pos(300, 150),
+  area({ shape: new Rect(vec2(0), 24, 24) }),
+  "item",
 ]);
 ```
 
 **Componentes útiles:**
 - `pos(x, y)` — posición
-- `area()` — habilita colisiones. Para emojis: `area({ shape: new Rect(vec2(0), w, h) })`
+- `area()` — habilita colisiones. Para objetos pequeños: `area({ shape: new Rect(vec2(0), w, h) })`
 - `body()` — cuerpo físico con gravedad. `body({ isStatic: true })` para plataformas
 - `anchor("center")` — punto de anclaje
 - `move(dir, speed)` — movimiento constante: `move(LEFT, 200)`
@@ -236,25 +256,45 @@ const mapa = addLevel([
 ```
 Esto permite definir niveles enteros como strings ASCII — extremadamente eficiente en tokens.
 
-### Emojis como sprites
-En Kaplay, los emojis se usan con `text()`:
+### Formas compuestas para protagonista y enemigos (REGLA DE ORO)
+
+Protagonista y enemigos **siempre** con `rect()`, `circle()` y `color()`. Nunca `text()` con emoji.
+
 ```javascript
-add([
-  text("👾", { size: 40 }),
+// Enemigo con formas
+const enemigo = add([
+  rect(28, 28, { radius: 4 }),
   pos(200, 100),
-  area({ shape: new Rect(vec2(0), 36, 36) }),
+  color(192, 57, 43),
+  area(),
+  anchor("center"),
   "enemigo",
 ]);
+enemigo.add([circle(8), pos(0, -16), color(255, 200, 200), anchor("center")]);
 ```
-**IMPORTANTE:** cuando usés emojis con `text()`, el `area()` necesita shape explícito porque `text()` no calcula el área automáticamente para emojis.
+
+### Emojis solo para \u00edtems coleccionables
+
+Los emojis con `text()` est\u00e1n **prohibidos** para jugador y enemigos. Solo para \u00edtems secundarios:
+
+```javascript
+add([
+  text("\u2B50", { size: 24 }),
+  pos(200, 100),
+  area({ shape: new Rect(vec2(0), 24, 24) }),
+  "item",
+]);
+```
+
+**IMPORTANTE:** cuando us\u00e9s emojis con `text()` para \u00edtems, el `area()` necesita shape expl\u00edcito porque `text()` no calcula el \u00e1rea autom\u00e1ticamente.
 
 ### Errores comunes en Kaplay — EVITAR
 
 **Gravedad en platformers:**
 Si el juego tiene plataformas y el jugador necesita saltar, SIEMPRE incluir `setGravity(1200)` (o el valor apropiado) al inicio de la escena. Sin esto, `body()` no hace nada y el jugador flota.
 
-**Salto con emojis:**
-`jugador.isGrounded()` puede fallar con emojis porque `text()` no calcula el área automáticamente. Solución confiable: usar un contador de contactos con plataformas:
+**Salto con formas compuestas:**
+Si `isGrounded()` falla con personajes hechos de varias formas, usar un contador de contactos con plataformas:
 ```javascript
 let contactosPiso = 0;
 jugador.onCollide("plataforma", () => { contactosPiso++; });

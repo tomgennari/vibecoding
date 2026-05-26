@@ -376,85 +376,20 @@ Este código envía el puntaje a la plataforma para guardarlo en el ranking de H
 
 ---
 
-## ASSETS VISUALES — EMOJIS Y FORMAS
+## ASSETS VISUALES — FORMAS DIBUJADAS (REGLA DE ORO)
 
-Andy NO usa assets externos (no Kenney, no URLs de imágenes). Todo visual se genera con código:
+Andy NO usa assets externos (no Kenney, no URLs de imágenes). Todo visual se genera con código.
 
-### Opción 1: Emojis como sprites (solo cuando quedan bien)
-```javascript
-// Canvas 2D
-ctx.font = '48px serif';
-ctx.fillText('🚀', x, y);
+### REGLA DE ORO — leer antes de generar
 
-// p5.js
-textSize(48);
-text('🚀', x, y);
+- **El jugador principal NUNCA es un emoji.** Siempre se dibuja con formas geométricas compuestas (capas, sombras, ojos, paleta de color).
+- **Los enemigos NUNCA son emojis.** Mismo criterio: siempre dibujados con código.
+- **Los emojis SOLO se permiten como excepción**, para ítems coleccionables inocuos y secundarios (una estrella ⭐, un globo 🎈, una moneda 🪙, una fruta 🍎). Nunca como protagonista, enemigo, ni elemento central del juego.
+- **Por default, Andy dibuja TODO con formas.** El emoji es la excepción consciente, jamás la regla.
 
-// Kaplay
-add([
-  text('🚀', { size: 48 }),
-  pos(x, y),
-]);
-```
+### Método principal: formas geométricas compuestas
 
-**Emojis útiles por categoría:**
-- Personajes: 🧑 👾 🤖 🧟 🦸 🧙 🥷 🧑‍🚀 👻 💀
-- Naves/vehículos: 🚀 🛸 🚗 🏎️ ✈️ 🚁 🏍️ ⛵
-- Naturaleza: 🌲 🌵 🏔️ 🌊 ☁️ ⭐ 🌙 ☀️
-- Items: 💎 🔑 ❤️ ⭐ 🍎 🍄 💰 🏆 🎯
-- Armas/acción: ⚔️ 🔫 💣 🛡️ ⚡ 🔥 💥
-- Deportes: ⚽ 🏀 🏈 🎾 🏓
-- Comida: 🍕 🍔 🍟 🍩 🧁 🍎 🍌
-
-**Cuándo SÍ usar emojis:**
-- Items y coleccionables: 💎 🔑 ❤️ ⭐ 🍎 (se ven bien estáticos)
-- Enemigos simples o cómicos: 👾 🧟 👻 🦀 (personalidad instantánea)
-- Elementos de UI y HUD: ❤️ para vidas, ⭐ para score
-- Juegos con estética casual o infantil
-
-**Cuándo NO usar emojis (usar formas procedurales en su lugar):**
-- Protagonistas que se mueven mucho (naves, autos, personajes de acción) — los emojis son estáticos y no rotan bien
-- Proyectiles y balas — se ven mal a tamaño chico
-- Cualquier entidad que necesite rotación, animación de movimiento, o dirección visual
-- Juegos con estética seria, espacial, o de acción intensa
-
-**Para protagonistas y vehículos, SIEMPRE usar formas procedurales:**
-```javascript
-// ✅ Nave espacial con formas — se ve bien, rota bien, tiene dirección
-function dibujarNave(x, y, angulo) {
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.rotate(angulo);
-  ctx.fillStyle = '#4488FF';
-  ctx.beginPath();
-  ctx.moveTo(0, -20);
-  ctx.lineTo(-14, 16);
-  ctx.lineTo(0, 10);
-  ctx.lineTo(14, 16);
-  ctx.closePath();
-  ctx.fill();
-  // Detalle: cabina
-  ctx.fillStyle = '#88CCFF';
-  ctx.beginPath();
-  ctx.arc(0, -4, 5, 0, Math.PI * 2);
-  ctx.fill();
-  // Detalle: propulsión
-  ctx.fillStyle = '#FF6622';
-  ctx.beginPath();
-  ctx.moveTo(-6, 14);
-  ctx.lineTo(0, 22);
-  ctx.lineTo(6, 14);
-  ctx.fill();
-  ctx.restore();
-}
-
-// ❌ Nave con emoji — no rota, no tiene dirección, se ve estático
-ctx.fillText('✈️', x, y);
-```
-
-### Opción 2: Formas geométricas compuestas (IMPORTANTE: combinar para mejor acabado)
-
-No usar una sola forma simple para representar algo. **Siempre combinar múltiples formas** para lograr un look más pulido:
+No usar una sola forma simple para representar algo. **Siempre combinar múltiples formas** para lograr un look más pulido. **Protagonista y enemigos SIEMPRE** usan esta técnica: capas + sombra + ojos + paleta limitada.
 
 ```javascript
 // ❌ MALARDO: árbol con 1 rectángulo + 1 elipse
@@ -486,6 +421,46 @@ ctx.ellipse(x+6, y-15, 16, 14, 0, 0, Math.PI*2);
 ctx.fill();
 ```
 
+**Protagonista y enemigos — SIEMPRE con formas compuestas:**
+- Cuerpo: rectángulo redondeado o elipse con color principal de la paleta
+- Cabeza: círculo un poco más ancho que el cuerpo, tono distinto
+- Ojos: 2 círculos blancos + 2 puntos negros (¡esto solo ya da personalidad!)
+- Sombra: elipse semitransparente debajo del personaje
+- Detalles: color diferente para pies, manos, accesorios, armas
+- Enemigos: misma técnica pero con paleta distinta (rojos, verdes oscuros, grises) para diferenciarlos del héroe
+
+**Naves, vehículos y proyectiles — también formas, nunca emojis:**
+```javascript
+// ✅ Nave espacial con formas — se ve bien, rota bien, tiene dirección
+function dibujarNave(x, y, angulo) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(angulo);
+  ctx.fillStyle = '#4488FF';
+  ctx.beginPath();
+  ctx.moveTo(0, -20);
+  ctx.lineTo(-14, 16);
+  ctx.lineTo(0, 10);
+  ctx.lineTo(14, 16);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = '#88CCFF';
+  ctx.beginPath();
+  ctx.arc(0, -4, 5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#FF6622';
+  ctx.beginPath();
+  ctx.moveTo(-6, 14);
+  ctx.lineTo(0, 22);
+  ctx.lineTo(6, 14);
+  ctx.fill();
+  ctx.restore();
+}
+
+// ❌ Nave con emoji — PROHIBIDO como protagonista
+ctx.fillText('✈️', x, y);
+```
+
 **Principios de estética procedural:**
 - **Capas:** superponer 2-3 formas con colores ligeramente diferentes crea profundidad
 - **Sombras:** un `fillStyle = 'rgba(0,0,0,0.15)'` desplazado 2-3px da volumen gratis
@@ -494,12 +469,6 @@ ctx.fill();
 - **Paleta limitada:** elegir 4-5 colores que combinen bien y usarlos consistentemente
 - **Gradientes simples:** `createLinearGradient()` para cielos, agua, o fondos
 - **Partículas:** pequeños círculos con vida útil para explosiones, estelas, brillos
-
-**Para personajes con formas (cuando no se usan emojis):**
-- Cuerpo: rectángulo redondeado o elipse
-- Cabeza: círculo un poco más ancho que el cuerpo
-- Ojos: 2 círculos blancos + 2 puntos negros (¡esto solo ya da personalidad!)
-- Detalles: color diferente para pies, manos, accesorios
 
 **Funciones utilitarias recomendadas:**
 ```javascript
@@ -530,17 +499,30 @@ function dibujarPersonaje(x, y, color, tamaño) {
 }
 ```
 
-Andy debe crear funciones como esta para cada entidad visual y reutilizarlas. Esto mantiene el código limpio Y los gráficos lindos.
+Andy debe crear funciones como `dibujarPersonaje()` y `dibujarEnemigo()` para cada entidad visual y reutilizarlas. Esto mantiene el código limpio Y los gráficos lindos.
 
-### Opción 3: Combinación (emojis + formas)
-Usar emojis para personajes/items y formas compuestas para plataformas/terreno/paredes/fondos. Esta es muchas veces la mejor opción: los emojis dan personalidad a los personajes y las formas dan un fondo visualmente rico.
+### Opción secundaria: emojis solo para ítems inocuos
+
+Los emojis están **prohibidos** para jugador, enemigos, naves, proyectiles y elementos centrales. Solo se permiten para coleccionables secundarios estáticos:
+
+- 💎 🔑 ⭐ 🍎 🪙 🎈 🏆
+
+```javascript
+// ✅ BIEN — emoji solo como ítem coleccionable
+ctx.font = '28px serif';
+ctx.fillText('⭐', item.x, item.y);
+
+// ❌ MAL — emoji como protagonista o enemigo
+ctx.fillText('🧑', jugador.x, jugador.y);
+ctx.fillText('👾', enemigo.x, enemigo.y);
+```
 
 ### Reglas de assets:
 - **NUNCA** inventar URLs de imágenes
 - **NUNCA** usar `fetch()` para cargar recursos
 - **NUNCA** usar base64 embebido (consume muchos tokens)
-- **NUNCA** usar una sola forma simple para algo que debería verse bien (un rectángulo solo no es un edificio)
-- Los emojis son universales, pesan 0 bytes, y se ven bien en todos los dispositivos
+- **NUNCA** usar una sola forma simple para protagonistas o enemigos (un rectángulo solo no es un personaje)
+- **NUNCA** usar emojis para jugador principal ni enemigos — **REGLA DE ORO**
 - Las formas geométricas compuestas con buenos colores, sombras y capas quedan muy bien
 - Invertir unas líneas extra en la estética visual vale la pena — la primera impresión importa
 

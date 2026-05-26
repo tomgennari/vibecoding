@@ -753,6 +753,7 @@ Los juegos HTML corren dentro de iframes sandboxed. La seguridad se implementa e
 - ✅ Delta time obligatorio: quality-rules y templates de Canvas 2D, p5.js y Kaplay actualizados para movimiento frame-independent
 - ✅ Frame cap ~60fps + seguridad: `lib/game-security.js` → `prepareGameHtml()` inyecta CSP restrictivo, monitor de seguridad y throttle de requestAnimationFrame en todos los iframes. `lib/game-frame-cap.js` solo exporta constantes. `lib/game-scan.js` provee scan estático con alertas amigables para el admin.
 - ✅ Límite de generación de Andy subido de 16K a 32K tokens (`max_tokens` en Game Lab) para reducir truncamiento y permitir mejor calidad visual
+- ✅ REGLA DE ORO: protagonista y enemigos siempre dibujados con formas; emojis solo como ítems coleccionables inocuos
 
 ### Fase 2.6 — Landing Page Pública ✅ Implementada
 

@@ -55,7 +55,43 @@ document.addEventListener('keydown', e => {
 document.addEventListener('keyup', e => { teclas[e.code] = false; });
 
 // === ENTIDADES ===
-// Definir jugador, enemigos, items, etc.
+const jugador = { x: W / 2, y: H - 120, color: '#4A90E2', tam: 40 };
+const items = [{ x: W / 2, y: 200 }];
+
+function dibujarPersonaje(x, y, color, tam) {
+  ctx.fillStyle = 'rgba(0,0,0,0.2)';
+  ctx.beginPath();
+  ctx.ellipse(x, y + tam * 0.4, tam * 0.5, tam * 0.15, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = color;
+  ctx.fillRect(x - tam * 0.3, y - tam * 0.2, tam * 0.6, tam * 0.5);
+  ctx.beginPath();
+  ctx.arc(x, y - tam * 0.35, tam * 0.3, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#FFF';
+  ctx.beginPath();
+  ctx.arc(x - tam * 0.12, y - tam * 0.4, tam * 0.1, 0, Math.PI * 2);
+  ctx.arc(x + tam * 0.12, y - tam * 0.4, tam * 0.1, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#000';
+  ctx.beginPath();
+  ctx.arc(x - tam * 0.1, y - tam * 0.4, tam * 0.05, 0, Math.PI * 2);
+  ctx.arc(x + tam * 0.1, y - tam * 0.4, tam * 0.05, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function dibujarEnemigo(x, y, tam) {
+  ctx.fillStyle = '#C0392B';
+  ctx.fillRect(x - tam * 0.3, y - tam * 0.2, tam * 0.6, tam * 0.5);
+  ctx.beginPath();
+  ctx.arc(x, y - tam * 0.35, tam * 0.28, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#FFF';
+  ctx.beginPath();
+  ctx.arc(x - tam * 0.1, y - tam * 0.38, tam * 0.08, 0, Math.PI * 2);
+  ctx.arc(x + tam * 0.1, y - tam * 0.38, tam * 0.08, 0, Math.PI * 2);
+  ctx.fill();
+}
 
 // === FUNCIONES ===
 function iniciarJuego() {
@@ -120,7 +156,11 @@ function draw() {
   ctx.clearRect(0, 0, W, H);
   if (estado === ESTADO.MENU) { dibujarMenu(); return; }
   if (estado === ESTADO.GAMEOVER) { dibujarGameOver(); return; }
-  // Dibujar juego...
+  // Dibujar juego — REGLA DE ORO: protagonista y enemigos con formas, no emojis
+  dibujarPersonaje(jugador.x, jugador.y, jugador.color, jugador.tam);
+  // dibujarEnemigo(enemigo.x, enemigo.y, 36);
+  ctx.font = '28px serif';
+  items.forEach(item => ctx.fillText('\u2B50', item.x, item.y));
   dibujarHUD();
 }
 
@@ -144,12 +184,12 @@ requestAnimationFrame(gameLoop);
 - Resolución fija: **480×640 (portrait)** o **960×540 (landscape)** según género/tipo — ver tabla en `quality-rules.md`. No alternar sin criterio; el plataformer va landscape, el Tetris portrait, etc.
 - **Nunca** pongas `width`/`height` en la tag `<canvas>` — solo `canvas.width` / `canvas.height` en JS (el parser da prioridad a la tag y puede contradecir el `const W, H`).
 - No implementes escalado responsivo dentro del juego; el contenedor usa `object-fit: contain`.
-- `image-rendering: pixelated` en CSS hace que los emojis y formas se vean nítidos
+- `image-rendering: pixelated` en CSS hace que las formas se vean n\u00edtidas
 - El game loop usa `requestAnimationFrame` — nunca `setInterval`
 - `update(dt)` recibe delta time en segundos — **TODO** movimiento debe multiplicar por `dt`
 - El guard `if (dt > 0.1)` evita saltos enormes cuando el tab estaba inactivo
-- **NUNCA** usar `gameLoop()` sin parámetro — siempre `requestAnimationFrame(gameLoop)` para que el browser pase el `timestamp`
-- Para emojis como sprites: `ctx.font = '48px serif'; ctx.fillText('🚀', x, y);`
+- **NUNCA** usar `gameLoop()` sin par\u00e1metro — siempre `requestAnimationFrame(gameLoop)` para que el browser pase el `timestamp`
+- **REGLA DE ORO:** protagonista y enemigos SIEMPRE con `dibujarPersonaje()` / `dibujarEnemigo()` (formas compuestas). Emojis solo para \u00edtems coleccionables: `ctx.font = '28px serif'; ctx.fillText('\u2B50', x, y);`
 - Para colisiones simples: comparar rectangulos con función utilitaria
 - Estados del juego con constantes numéricas (rápido y eficiente)
 - Controles con objeto `teclas` — consultar `teclas['ArrowLeft']` en update(dt); al mover con teclas, usar `velocidad * dt`
