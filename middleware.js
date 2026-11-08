@@ -44,6 +44,11 @@ export function middleware(request) {
     return NextResponse.next();
   }
 
+  // "El pez por dentro y por fuera": material para el aula, publico (sin contraseña)
+  if (pathname === '/pez' || pathname.startsWith('/pez/')) {
+    return NextResponse.next();
+  }
+
   if (!request.cookies.get('site_access')?.value) {
     const url = request.nextUrl.clone();
     url.pathname = '/gate';
