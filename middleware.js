@@ -49,6 +49,11 @@ export function middleware(request) {
     return NextResponse.next();
   }
 
+  // "El tucán toco": material para el aula, publico (sin contraseña)
+  if (pathname === '/tucan' || pathname.startsWith('/tucan/')) {
+    return NextResponse.next();
+  }
+
   if (!request.cookies.get('site_access')?.value) {
     const url = request.nextUrl.clone();
     url.pathname = '/gate';
